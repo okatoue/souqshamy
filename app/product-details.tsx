@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CategoryInfo from '@/components/product-details/categoryInfo';
+import ContactSection from '@/components/product-details/contactSection';
 import DescriptionSection from '@/components/product-details/descriptionSection';
 import ImageUploadSection from '@/components/product-details/imageUploadSection';
 import PriceSection from '@/components/product-details/priceSection';
@@ -30,25 +31,44 @@ export default function ProductDetailsScreen() {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('SYP');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
 
   // Handle form submission
   const handleSubmit = () => {
+    // Check if description is provided
     if (!description.trim()) {
       Alert.alert('Missing Information', 'Please add a description');
       return;
     }
     
-    if (!price.trim()) {
-      Alert.alert('Missing Information', 'Please set a price');
+    // Check if price is provided (can be 0)
+    if (price === '') {
+      Alert.alert('Missing Information', 'Please set a price (can be 0)');
       return;
     }
 
-    if (images.length === 0) {
-      Alert.alert('Missing Information', 'Please add at least one image');
+    // Check if at least one contact method is provided
+    if (!phoneNumber.trim() && !whatsappNumber.trim()) {
+      Alert.alert('Missing Information', 'Please add either a phone number or WhatsApp number');
       return;
     }
 
     // Here you would typically send the data to your backend
+    const listingData = {
+      title,
+      category,
+      subcategory,
+      description,
+      price,
+      currency,
+      phoneNumber,
+      whatsappNumber,
+      images, // Images are optional
+    };
+
+    console.log('Submitting listing:', listingData);
+
     Alert.alert(
       'Success!', 
       'Your listing has been created',
@@ -61,7 +81,11 @@ export default function ProductDetailsScreen() {
     );
   };
 
-  const isFormValid = description && price && images.length > 0;
+  // Validation: price must be set (can be 0), description required, and at least one contact method
+  const isFormValid = 
+    description.trim() !== '' && 
+    price !== '' && 
+    (phoneNumber.trim() !== '' || whatsappNumber.trim() !== '');
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -95,6 +119,13 @@ export default function ProductDetailsScreen() {
               setPrice={setPrice}
               currency={currency}
               setCurrency={setCurrency}
+            />
+
+            <ContactSection 
+              phoneNumber={phoneNumber}
+              setPhoneNumber={setPhoneNumber}
+              whatsappNumber={whatsappNumber}
+              setWhatsappNumber={setWhatsappNumber}
             />
 
             <SubmitButton 
