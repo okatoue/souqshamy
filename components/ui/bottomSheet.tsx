@@ -3,8 +3,8 @@ import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, u
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Import the categories data and types
+import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
-import { Category, Subcategory } from '../../assets/categories.ts';
 
 // Define the ref handle type
 export interface CategoryBottomSheetRefProps {
