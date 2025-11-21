@@ -83,10 +83,9 @@ export default function PostListingScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Alternative: If you prefer the original button style */}
-        {/* <View style={styles.browseButton}>
-          <Button title={getCategoryDisplayText()} onPress={handleOpenPress} />
-        </View> */}
+        <TouchableOpacity style={styles.continueButton}>
+          <ThemedText>Continue</ThemedText>
+        </TouchableOpacity>
 
         <CategoryBottomSheet
           ref={categorySheetRef}
@@ -142,7 +141,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryButton: {
-    marginTop: 50,
+    marginTop: 20,
     marginBottom: 25,
     marginLeft: 20,
     marginRight: 20,
@@ -176,5 +175,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 30,
     color: '#333',
+  },
+  continueButton: {
+    backgroundColor: '#2388CB',
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 25,
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#1C6EA4',
+    alignItems: 'center',
   },
 });

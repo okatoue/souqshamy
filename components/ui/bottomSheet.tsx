@@ -14,10 +14,13 @@ export interface CategoryBottomSheetRefProps {
 
 interface CategoryBottomSheetProps {
     onCategorySelect?: (category: Category, subcategory: Subcategory) => void;
+    showCategories?: boolean; // NEW: Control whether to show categories
+    children?: React.ReactNode; // NEW: Allow custom content
+    title?: string; // NEW: Custom title when not using categories
 }
 
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBottomSheetProps>(
-    ({ onCategorySelect }, ref) => {
+    ({ onCategorySelect, showCategories = true, children, title }, ref) => {
         // Reference to the bottom sheet
         const bottomSheetRef = useRef<BottomSheet>(null);
         
@@ -121,8 +124,10 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             console.log('Sheet changed to index:', index);
         }, []);
 
-        // Current title based on selection
-        const currentTitle = selectedCategory ? selectedCategory.name : 'Select Category';
+        // Current title based on selection and props
+        const currentTitle = showCategories 
+            ? (selectedCategory ? selectedCategory.name : 'Select Category')
+            : (title || 'Options');
 
         return (
             <BottomSheet
@@ -137,7 +142,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             >
                 <View style={styles.contentContainer}>
                     <View style={styles.header}>
-                        {selectedCategory && (
+                        {showCategories && selectedCategory && (
                             <TouchableOpacity 
                                 style={styles.backButton} 
                                 onPress={handleBackPress}
@@ -158,10 +163,15 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollViewContent}
                     >
-                        {selectedCategory 
-                            ? selectedCategory.subcategories.map(renderSubcategoryItem)
-                            : categoriesData.categories.map(renderCategoryItem)
-                        }
+                        {showCategories ? (
+                            // Show categories if showCategories is true
+                            selectedCategory 
+                                ? selectedCategory.subcategories.map(renderSubcategoryItem)
+                                : categoriesData.categories.map(renderCategoryItem)
+                        ) : (
+                            // Show custom children if showCategories is false
+                            children
+                        )}
                     </BottomSheetScrollView>
                 </View>
             </BottomSheet>
