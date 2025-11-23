@@ -13,20 +13,51 @@ import {
 } from 'react-native';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
 
+  // Helper function to detect if input is email or phone
+  const isEmail = (input: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  };
+
+  const isPhoneNumber = (input: string) => {
+    // Remove any spaces, dashes, or parentheses
+    const cleaned = input.replace(/[\s\-\(\)]/g, '');
+    // Check if it contains only digits and possibly starts with +
+    const phoneRegex = /^\+?\d{7,15}$/;
+    return phoneRegex.test(cleaned);
+  };
+
   const handleSignIn = async () => {
-    if (!email || !password) {
+    if (!emailOrPhone || !password) {
       alert('Please fill in all fields');
+      return;
+    }
+
+    // Validate input
+    const trimmedInput = emailOrPhone.trim();
+    const isValidEmail = isEmail(trimmedInput);
+    const isValidPhone = isPhoneNumber(trimmedInput);
+
+    if (!isValidEmail && !isValidPhone) {
+      alert('Please enter a valid email address or phone number');
       return;
     }
 
     setLoading(true);
     try {
-      await signIn(email, password);
+      if (isValidEmail) {
+        // Sign in with email
+        await signIn(trimmedInput, password);
+      } else {
+        // Sign in with phone number
+        const cleanedPhone = trimmedInput.replace(/[\s\-\(\)]/g, '');
+        await signIn(undefined, password, cleanedPhone);
+      }
       router.replace('/(tabs)');
     } catch (error) {
       // Error handled in auth context
@@ -46,11 +77,12 @@ export default function SignIn() {
 
         <TextInput
           style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          placeholder="Email or Phone Number"
+          value={emailOrPhone}
+          onChangeText={setEmailOrPhone}
+          keyboardType="default"
           autoCapitalize="none"
+          autoCorrect={false}
           editable={!loading}
         />
 

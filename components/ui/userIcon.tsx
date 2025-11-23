@@ -1,9 +1,13 @@
 import Feather from '@expo/vector-icons/Feather';
-import { Alert, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
+
+import { useAuth } from '@/lib/auth_context';
 
 export function UserIcon() {
+    const { signOut } = useAuth();
+
     return (
-        <Pressable onPress={() => Alert.alert('User pressed!')}>
+        <Pressable onPress={signOut}>
             <Feather name="user" size={26} color="white" />
         </Pressable>
     );

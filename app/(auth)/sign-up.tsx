@@ -14,23 +14,57 @@ import {
 } from 'react-native';
 
 export default function SignUp() {
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
 
+  // Helper function to detect if input is email or phone
+  const isEmail = (input: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(input);
+  };
+
+  const isPhoneNumber = (input: string) => {
+    // Remove any spaces, dashes, or parentheses
+    const cleaned = input.replace(/[\s\-\(\)]/g, '');
+    // Check if it contains only digits and possibly starts with +
+    const phoneRegex = /^\+?\d{7,15}$/;
+    return phoneRegex.test(cleaned);
+  };
+
   const handleSignUp = async () => {
-    if (!email || !password) {
-      alert('Please fill in email and password');
+    if (!emailOrPhone || !password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    // Validate input
+    const trimmedInput = emailOrPhone.trim();
+    const isValidEmail = isEmail(trimmedInput);
+    const isValidPhone = isPhoneNumber(trimmedInput);
+
+    if (!isValidEmail && !isValidPhone) {
+      alert('Please enter a valid email address or phone number');
       return;
     }
 
     setLoading(true);
     try {
-      await signUp(email, password, phone, whatsapp);
-      alert('Sign up successful! Please check your email for verification.');
+      if (isValidEmail) {
+        // Sign up with email
+        await signUp(trimmedInput, password, undefined);
+      } else {
+        // Sign up with phone number
+        const cleanedPhone = trimmedInput.replace(/[\s\-\(\)]/g, '');
+        await signUp(undefined, password, cleanedPhone);
+      }
+      
+      if (isValidEmail) {
+        alert('Sign up successful! Please check your email for verification.');
+      } else {
+        alert('Sign up successful! You can now sign in.');
+      }
       router.push('/(auth)/sign-in');
     } catch (error) {
       // Error handled in auth context
@@ -51,11 +85,12 @@ export default function SignUp() {
 
           <TextInput
             style={styles.input}
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
+            placeholder="Email or Phone Number"
+            value={emailOrPhone}
+            onChangeText={setEmailOrPhone}
+            keyboardType="default"
             autoCapitalize="none"
+            autoCorrect={false}
             editable={!loading}
           />
 
@@ -68,14 +103,9 @@ export default function SignUp() {
             editable={!loading}
           />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Phone Number (optional)"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-            editable={!loading}
-          />
+          <Text style={styles.helperText}>
+            You can sign up with either your email address or phone number
+          </Text>
 
           <TouchableOpacity 
             style={[styles.button, loading && styles.buttonDisabled]} 
@@ -165,5 +195,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontSize: 16,
+  },
+  helperText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontStyle: 'italic',
   },
 });
