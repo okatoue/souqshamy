@@ -4,7 +4,7 @@ import { ThemedText } from '../themed-text';
 
 export function Location() {
     return (
-        <Pressable onPress={() => Alert.alert('Image pressed!')} style={styles.locationBar}>
+        <Pressable onPress={() => Alert.alert('Location pressed!')} style={styles.locationBar}>
             <ThemedText style={styles.locationText}>Mneen</ThemedText>
             <Entypo name="location-pin" size={28} color="white" />
         </Pressable>

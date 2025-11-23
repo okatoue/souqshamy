@@ -3,7 +3,7 @@ import { Alert, Pressable } from 'react-native';
 
 export function UserIcon() {
     return (
-        <Pressable onPress={() => Alert.alert('Location pressed!')}>
+        <Pressable onPress={() => Alert.alert('User pressed!')}>
             <Feather name="user" size={26} color="white" />
         </Pressable>
     );
