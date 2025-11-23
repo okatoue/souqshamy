@@ -1,12 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface SubmitButtonProps {
   onPress: () => void;
   disabled: boolean;
+  loading?: boolean;
 }
 
-export default function SubmitButton({ onPress, disabled }: SubmitButtonProps) {
+export default function SubmitButton({ onPress, disabled, loading }: SubmitButtonProps) {
   return (
     <TouchableOpacity 
       style={[
@@ -16,7 +17,11 @@ export default function SubmitButton({ onPress, disabled }: SubmitButtonProps) {
       onPress={onPress}
       disabled={disabled}
     >
-      <Text style={styles.submitButtonText}>Post Listing</Text>
+      {loading ? (
+        <ActivityIndicator color="white" size="small" />
+      ) : (
+        <Text style={styles.submitButtonText}>Post Listing</Text>
+      )}
     </TouchableOpacity>
   );
 }
