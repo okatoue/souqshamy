@@ -1,5 +1,4 @@
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import {
   Alert,
   Keyboard,
@@ -16,10 +15,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Category, Subcategory } from '@/assets/categories';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { UserIcon } from '../../components/ui/userIcon';
+
 
 export default function PostListingScreen() {
   const [listingTitle, setListingTitle] = useState('');
@@ -28,6 +29,13 @@ export default function PostListingScreen() {
 
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
   const router = useRouter();
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const placeholderColor = useThemeColor({ light: '#888', dark: '#aaa' }, 'text');
+  const borderColor = useThemeColor({ light: '#ccc', dark: '#444' }, 'icon');
+  const buttonColor = useThemeColor({}, 'tint');
+  const disabledButtonColor = useThemeColor({ light: '#ccc', dark: '#444' }, 'icon');
 
   const handleOpenPress = () => {
     categorySheetRef.current?.open();
@@ -80,47 +88,47 @@ export default function PostListingScreen() {
   };
 
   return (
-    <GestureHandlerRootView style={styles.container}>
+    <GestureHandlerRootView style={[styles.container, { backgroundColor }]}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
+            style={[styles.container, { backgroundColor }]}
           >
             <View style={styles.headerRow}>
               <UserIcon />
             </View>
 
-            <ThemedView style={styles.titleContainer}>
+            <View style={styles.titleContainer}>
               <ThemedText type="title">Post a Listing</ThemedText>
-            </ThemedView>
+            </View>
 
-            <ThemedView style={styles.listingContainer}>
+            <View style={[styles.listingContainer, { borderColor }]}>
               <TextInput
                 placeholder="Title..."
                 value={listingTitle}
                 onChangeText={setListingTitle}
-                style={styles.listingTitleContent}
-                placeholderTextColor="#888"
+                style={[styles.listingTitleContent, { color: textColor }]}
+                placeholderTextColor={placeholderColor}
                 returnKeyType="done"
                 blurOnSubmit={true}
                 onSubmitEditing={Keyboard.dismiss}
               />
-            </ThemedView>
+            </View>
 
             <TouchableOpacity
-              style={styles.categoryButton}
+              style={[styles.categoryButton, { borderColor }]}
               onPress={handleOpenPress}
               activeOpacity={0.8}
             >
               <View style={styles.categoryButtonContent}>
                 <Text style={[
                   styles.categoryButtonText,
-                  selectedCategory && styles.categoryButtonTextSelected
+                  { color: selectedCategory ? textColor : placeholderColor }
                 ]}>
                   {getCategoryDisplayText()}
                 </Text>
-                <Text style={styles.categoryButtonIcon}>›</Text>
+                <Text style={[styles.categoryButtonIcon, { color: placeholderColor }]}>›</Text>
               </View>
             </TouchableOpacity>
 
@@ -128,7 +136,7 @@ export default function PostListingScreen() {
             <TouchableOpacity
               style={[
                 styles.continueButton,
-                (!listingTitle || !selectedCategory) && styles.continueButtonDisabled
+                { backgroundColor: (!listingTitle || !selectedCategory) ? disabledButtonColor : buttonColor }
               ]}
               onPress={handleContinue}
               activeOpacity={0.8}
@@ -161,7 +169,6 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginRight: 20,
     height: 50,
-    borderColor: 'white',
     borderWidth: 1,
     borderRadius: 8,
     paddingLeft: 8,
@@ -169,7 +176,6 @@ const styles = StyleSheet.create({
   },
   listingTitleContent: {
     fontSize: 18,
-    color: 'white',
     paddingHorizontal: 12,
   },
   container: {
@@ -187,7 +193,6 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginRight: 20,
     height: 50,
-    borderColor: 'white',
     borderWidth: 1,
     borderRadius: 8,
     justifyContent: 'center',
@@ -200,29 +205,19 @@ const styles = StyleSheet.create({
   },
   categoryButtonText: {
     fontSize: 16,
-    color: '#888',
     flex: 1,
-  },
-  categoryButtonTextSelected: {
-    color: 'white',
   },
   categoryButtonIcon: {
     fontSize: 24,
-    color: '#888',
     marginLeft: 8,
   },
   continueButton: {
     marginTop: 30,
     marginHorizontal: 20,
     height: 50,
-    backgroundColor: '#007AFF',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  continueButtonDisabled: {
-    backgroundColor: '#333',
-    opacity: 0.5,
   },
   continueButtonText: {
     fontSize: 18,

@@ -3,6 +3,7 @@ import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, u
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Import the categories data and types
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
 
@@ -23,13 +24,13 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
     ({ onCategorySelect, showCategories = true, children, title }, ref) => {
         // Reference to the bottom sheet
         const bottomSheetRef = useRef<BottomSheet>(null);
-        
+
         // State to track the selected main category
         const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-        
+
         // Define snap points
         const snapPoints = useMemo(() => ['50%', '75%', '90%'], []);
-        
+
         // Expose methods to parent component
         useImperativeHandle(ref, () => ({
             open: () => {
@@ -72,39 +73,12 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             bottomSheetRef.current?.snapToIndex(0); // Go back to 50%
         }, []);
 
-        // Render main category item
-        const renderCategoryItem = useCallback(
-            (category: Category) => (
-                <TouchableOpacity
-                    key={category.id}
-                    style={styles.categoryItem}
-                    onPress={() => handleCategoryPress(category)}
-                    activeOpacity={0.7}
-                >
-                    <View style={styles.categoryContent}>
-                        <Text style={styles.categoryIcon}>{category.icon}</Text>
-                        <Text style={styles.categoryText}>{category.name}</Text>
-                    </View>
-                    <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-            ),
-            [handleCategoryPress]
-        );
-
-        // Render subcategory item
-        const renderSubcategoryItem = useCallback(
-            (subcategory: Subcategory) => (
-                <TouchableOpacity
-                    key={subcategory.id}
-                    style={styles.categoryItem}
-                    onPress={() => handleSubcategoryPress(subcategory)}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.categoryText}>{subcategory.name}</Text>
-                </TouchableOpacity>
-            ),
-            [handleSubcategoryPress]
-        );
+        const backgroundColor = useThemeColor({}, 'background');
+        const textColor = useThemeColor({}, 'text');
+        const iconColor = useThemeColor({}, 'icon');
+        const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
+        const handleColor = useThemeColor({ light: '#DDDDDD', dark: '#444' }, 'icon');
+        const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
 
         // Handle backdrop press
         const renderBackdrop = useCallback(
@@ -125,7 +99,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
         }, []);
 
         // Current title based on selection and props
-        const currentTitle = showCategories 
+        const currentTitle = showCategories
             ? (selectedCategory ? selectedCategory.name : 'Select Category')
             : (title || 'Options');
 
@@ -135,16 +109,16 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                 index={-1} // Start closed
                 snapPoints={snapPoints}
                 enablePanDownToClose={true}
-                backgroundStyle={styles.bottomSheetBackground}
-                handleIndicatorStyle={styles.handleIndicator}
+                backgroundStyle={[styles.bottomSheetBackground, { backgroundColor }]}
+                handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: handleColor }]}
                 backdropComponent={renderBackdrop}
                 onChange={handleSheetChanges}
             >
                 <View style={styles.contentContainer}>
                     <View style={styles.header}>
                         {showCategories && selectedCategory && (
-                            <TouchableOpacity 
-                                style={styles.backButton} 
+                            <TouchableOpacity
+                                style={styles.backButton}
                                 onPress={handleBackPress}
                                 activeOpacity={0.7}
                             >
@@ -152,22 +126,45 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                             </TouchableOpacity>
                         )}
                         <Text style={[
-                            styles.title, 
+                            styles.title,
+                            { color: textColor },
                             selectedCategory && styles.titleWithBack
                         ]}>
                             {currentTitle}
                         </Text>
                     </View>
-                    
-                    <BottomSheetScrollView 
+
+                    <BottomSheetScrollView
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollViewContent}
                     >
                         {showCategories ? (
                             // Show categories if showCategories is true
-                            selectedCategory 
-                                ? selectedCategory.subcategories.map(renderSubcategoryItem)
-                                : categoriesData.categories.map(renderCategoryItem)
+                            selectedCategory
+                                ? selectedCategory.subcategories.map((subcategory) => (
+                                    <TouchableOpacity
+                                        key={subcategory.id}
+                                        style={[styles.categoryItem, { backgroundColor: itemBackground }]}
+                                        onPress={() => handleSubcategoryPress(subcategory)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[styles.categoryText, { color: textColor }]}>{subcategory.name}</Text>
+                                    </TouchableOpacity>
+                                ))
+                                : categoriesData.categories.map((category) => (
+                                    <TouchableOpacity
+                                        key={category.id}
+                                        style={[styles.categoryItem, { backgroundColor: itemBackground }]}
+                                        onPress={() => handleCategoryPress(category)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.categoryContent}>
+                                            <Text style={[styles.categoryIcon, { color: iconColor }]}>{category.icon}</Text>
+                                            <Text style={[styles.categoryText, { color: textColor }]}>{category.name}</Text>
+                                        </View>
+                                        <Text style={[styles.chevron, { color: chevronColor }]}>›</Text>
+                                    </TouchableOpacity>
+                                ))
                         ) : (
                             // Show custom children if showCategories is false
                             children
@@ -183,7 +180,6 @@ CategoryBottomSheet.displayName = 'CategoryBottomSheet';
 
 const styles = StyleSheet.create({
     bottomSheetBackground: {
-        backgroundColor: 'white',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         shadowColor: '#000',
@@ -196,7 +192,6 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     handleIndicator: {
-        backgroundColor: '#DDDDDD',
         width: 40,
         height: 4,
         marginTop: 8,
@@ -230,7 +225,6 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: '600',
         textAlign: 'center',
-        color: '#333',
         flex: 1,
     },
     titleWithBack: {
@@ -243,7 +237,6 @@ const styles = StyleSheet.create({
         paddingVertical: 16,
         paddingHorizontal: 20,
         marginVertical: 4,
-        backgroundColor: '#F5F5F5',
         borderRadius: 12,
     },
     categoryContent: {
@@ -257,13 +250,11 @@ const styles = StyleSheet.create({
     },
     categoryText: {
         fontSize: 16,
-        color: '#333',
         fontWeight: '500',
         flex: 1,
     },
     chevron: {
         fontSize: 24,
-        color: '#999',
         marginLeft: 8,
     },
 });
