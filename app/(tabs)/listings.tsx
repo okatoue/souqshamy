@@ -18,6 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useUserListings } from '@/hooks/useUserListings';
+import { Listing } from '@/types/listing';
 
 export default function ListingsScreen() {
   const { user } = useAuth();
@@ -38,6 +39,11 @@ export default function ListingsScreen() {
   // Handle refresh
   const onRefresh = () => {
     fetchUserListings(true);
+  };
+
+  // Handle navigation to detail page
+  const handleListingPress = (listing: Listing) => {
+    router.push(`/listing/${listing.id}`);
   };
 
   // Empty state
@@ -94,7 +100,15 @@ export default function ListingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <ThemedView style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>My Listings</ThemedText>
+        <View style={styles.headerTop}>
+          <ThemedText type="title" style={styles.headerTitle}>My Listings</ThemedText>
+          <Pressable
+            style={styles.addButton}
+            onPress={() => router.push('/(tabs)/post')}
+          >
+            <MaterialIcons name="add" size={24} color="white" />
+          </Pressable>
+        </View>
         <Text style={[styles.listingCount, { color: textColor }]}>
           {listings.length} {listings.length === 1 ? 'item' : 'items'}
         </Text>
@@ -105,6 +119,7 @@ export default function ListingsScreen() {
         renderItem={({ item }) => (
           <ListingItem
             item={item}
+            onPress={handleListingPress}
             onUpdateStatus={handleUpdateStatus}
             onSoftDelete={handleSoftDelete}
             onPermanentDelete={handlePermanentDelete}
@@ -132,9 +147,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: '#007AFF',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listingCount: {
     fontSize: 14,

@@ -7,12 +7,19 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface ListingItemProps {
     item: Listing;
+    onPress: (item: Listing) => void;
     onUpdateStatus: (listing: Listing, newStatus: 'active' | 'sold') => void;
     onSoftDelete: (listingId: number) => void;
     onPermanentDelete: (listingId: number) => void;
 }
 
-export function ListingItem({ item, onUpdateStatus, onSoftDelete, onPermanentDelete }: ListingItemProps) {
+export function ListingItem({
+    item,
+    onPress,
+    onUpdateStatus,
+    onSoftDelete,
+    onPermanentDelete
+}: ListingItemProps) {
     const textColor = useThemeColor({}, 'text');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
     const placeholderColor = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
@@ -59,59 +66,78 @@ export function ListingItem({ item, onUpdateStatus, onSoftDelete, onPermanentDel
     }
 
     return (
-        <View style={[styles.listingCard, { borderColor }]}>
-            <View style={styles.listingHeader}>
-                <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryIcon}>{categoryIcon}</Text>
-                    <Text style={[styles.categoryText, { color: textColor }]} numberOfLines={1}>
-                        {categoryName} › {subcategoryName}
-                    </Text>
+        <Pressable
+            onPress={() => onPress(item)}
+            style={({ pressed }) => [
+                styles.listingCard,
+                { borderColor },
+                pressed && styles.listingCardPressed
+            ]}
+        >
+            {/* Clickable content area */}
+            <View style={styles.mainContent}>
+                <View style={styles.listingHeader}>
+                    <View style={styles.categoryBadge}>
+                        <Text style={styles.categoryIcon}>{categoryIcon}</Text>
+                        <Text style={[styles.categoryText, { color: textColor }]} numberOfLines={1}>
+                            {categoryName} › {subcategoryName}
+                        </Text>
+                    </View>
+                    <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: badgeColor, flexDirection: 'row', alignItems: 'center', gap: 4 }
+                    ]}>
+                        {showRemovedIcon && <MaterialIcons name="delete" size={12} color="white" />}
+                        <Text style={styles.statusText}>
+                            {statusText}
+                        </Text>
+                    </View>
                 </View>
-                <View style={[
-                    styles.statusBadge,
-                    { backgroundColor: badgeColor, flexDirection: 'row', alignItems: 'center', gap: 4 }
-                ]}>
-                    {showRemovedIcon && <MaterialIcons name="delete" size={12} color="white" />}
-                    <Text style={styles.statusText}>
-                        {statusText}
-                    </Text>
+
+                <View style={styles.listingContent}>
+                    {item.images && item.images.length > 0 ? (
+                        <Image source={{ uri: item.images[0] }} style={styles.listingImage} />
+                    ) : (
+                        <View style={[styles.imagePlaceholder, { backgroundColor: placeholderColor }]}>
+                            <MaterialIcons name="image" size={30} color="#666" />
+                        </View>
+                    )}
+
+                    <View style={styles.listingDetails}>
+                        <Text style={[styles.listingTitle, { color: textColor }]} numberOfLines={2}>
+                            {item.title}
+                        </Text>
+
+                        <Text style={[styles.listingPrice, { color: textColor }]}>
+                            {item.currency === 'SYP' ? 'SYP ' : '$'}
+                            {item.price.toLocaleString()}
+                        </Text>
+
+                        <View style={styles.listingMeta}>
+                            <Ionicons name="location-outline" size={14} color="#888" />
+                            <Text style={styles.locationText}>{item.location}</Text>
+                            <Text style={styles.dateText}>• {formatDate(item.created_at)}</Text>
+                        </View>
+                    </View>
+
+                    {/* View Details Arrow */}
+                    <View style={styles.viewArrow}>
+                        <Ionicons name="chevron-forward" size={20} color="#888" />
+                    </View>
                 </View>
             </View>
 
-            <View style={styles.listingContent}>
-                {item.images && item.images.length > 0 ? (
-                    <Image source={{ uri: item.images[0] }} style={styles.listingImage} />
-                ) : (
-                    <View style={[styles.imagePlaceholder, { backgroundColor: placeholderColor }]}>
-                        <MaterialIcons name="image" size={30} color="#666" />
-                    </View>
-                )}
-
-                <View style={styles.listingDetails}>
-                    <Text style={[styles.listingTitle, { color: textColor }]} numberOfLines={2}>
-                        {item.title}
-                    </Text>
-
-                    <Text style={[styles.listingPrice, { color: textColor }]}>
-                        {item.currency === 'SYP' ? 'SYP ' : '$'}
-                        {item.price.toLocaleString()}
-                    </Text>
-
-                    <View style={styles.listingMeta}>
-                        <Ionicons name="location-outline" size={14} color="#888" />
-                        <Text style={styles.locationText}>{item.location}</Text>
-                        <Text style={styles.dateText}>• {formatDate(item.created_at)}</Text>
-                    </View>
-                </View>
-            </View>
-
+            {/* Action buttons - separated from main clickable area */}
             <View style={styles.actionButtons}>
                 {/* ACTIVE LISTING BUTTONS */}
                 {item.status === 'active' && (
                     <>
                         <Pressable
                             style={[styles.actionButton, styles.editButton]}
-                            onPress={() => onUpdateStatus(item, 'sold')}
+                            onPress={(e) => {
+                                e.stopPropagation(); // Prevent triggering parent onPress
+                                onUpdateStatus(item, 'sold');
+                            }}
                         >
                             <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" />
                             <Text style={styles.actionButtonText}>Mark Sold</Text>
@@ -119,7 +145,10 @@ export function ListingItem({ item, onUpdateStatus, onSoftDelete, onPermanentDel
 
                         <Pressable
                             style={[styles.actionButton, styles.deleteButton]}
-                            onPress={() => onSoftDelete(item.id)}
+                            onPress={(e) => {
+                                e.stopPropagation(); // Prevent triggering parent onPress
+                                onSoftDelete(item.id);
+                            }}
                         >
                             <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
                             <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Remove</Text>
@@ -131,44 +160,59 @@ export function ListingItem({ item, onUpdateStatus, onSoftDelete, onPermanentDel
                 {item.status === 'sold' && (
                     <Pressable
                         style={[styles.actionButton, styles.deleteButton, { flex: 1, justifyContent: 'center' }]}
-                        onPress={() => onPermanentDelete(item.id)}
+                        onPress={(e) => {
+                            e.stopPropagation(); // Prevent triggering parent onPress
+                            onSoftDelete(item.id);
+                        }}
                     >
-                        <MaterialIcons name="delete-forever" size={20} color="#f44336" />
-                        <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Delete</Text>
+                        <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
+                        <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Remove</Text>
                     </Pressable>
                 )}
 
-                {/* REMOVED (INACTIVE) LISTING BUTTONS */}
+                {/* REMOVED LISTING BUTTONS */}
                 {item.status === 'inactive' && (
                     <>
                         <Pressable
                             style={[styles.actionButton, styles.editButton]}
-                            onPress={() => onUpdateStatus(item, 'active')}
+                            onPress={(e) => {
+                                e.stopPropagation(); // Prevent triggering parent onPress
+                                onUpdateStatus(item, 'active');
+                            }}
                         >
                             <MaterialCommunityIcons name="restore" size={20} color="#4CAF50" />
-                            <Text style={styles.actionButtonText}>Reactivate</Text>
+                            <Text style={styles.actionButtonText}>Restore</Text>
                         </Pressable>
 
                         <Pressable
-                            style={[styles.actionButton, styles.deleteButton]}
-                            onPress={() => onPermanentDelete(item.id)}
+                            style={[styles.actionButton, { backgroundColor: 'rgba(244, 67, 54, 0.2)' }]}
+                            onPress={(e) => {
+                                e.stopPropagation(); // Prevent triggering parent onPress
+                                onPermanentDelete(item.id);
+                            }}
                         >
-                            <MaterialIcons name="delete-forever" size={20} color="#f44336" />
-                            <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Delete</Text>
+                            <MaterialIcons name="delete-forever" size={20} color="#D32F2F" />
+                            <Text style={[styles.actionButtonText, { color: '#D32F2F' }]}>Delete Forever</Text>
                         </Pressable>
                     </>
                 )}
             </View>
-        </View>
+        </Pressable>
     );
 }
 
 const styles = StyleSheet.create({
     listingCard: {
-        borderWidth: 1,
-        borderRadius: 12,
-        padding: 12,
         marginBottom: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        overflow: 'hidden',
+    },
+    listingCardPressed: {
+        opacity: 0.7,
+    },
+    mainContent: {
+        padding: 12,
     },
     listingHeader: {
         flexDirection: 'row',
@@ -245,10 +289,14 @@ const styles = StyleSheet.create({
         color: '#888',
         marginLeft: 4,
     },
+    viewArrow: {
+        justifyContent: 'center',
+        paddingLeft: 8,
+    },
     actionButtons: {
         flexDirection: 'row',
-        marginTop: 10,
-        paddingTop: 10,
+        padding: 12,
+        paddingTop: 0,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255, 255, 255, 0.1)',
     },

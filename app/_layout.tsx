@@ -24,19 +24,20 @@ function RootLayoutNav() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)/sign-in" options={{ 
+      <Stack.Screen name="(auth)/sign-in" options={{
         title: 'Sign In',
-        headerShown: true 
+        headerShown: true
       }} />
-      <Stack.Screen name="(auth)/sign-up" options={{ 
+      <Stack.Screen name="(auth)/sign-up" options={{
         title: 'Sign Up',
-        headerShown: true 
+        headerShown: true
       }} />
-      <Stack.Screen name="(test)/test-supabase" options={{ 
+      <Stack.Screen name="(test)/test-supabase" options={{
         title: 'Test',
-        headerShown: true 
+        headerShown: true
       }} />
       <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="product-details" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>

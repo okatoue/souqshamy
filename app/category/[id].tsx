@@ -37,7 +37,7 @@ export default function CategoryListingScreen() {
 
     // Initialize with empty array - in production, this would fetch from API
     setFilteredListings([]);
-    
+
     // TODO: Add API call here to fetch actual listings for this category
     // fetchCategoryListings(params.id).then(setFilteredListings);
   }, [params.id]);
@@ -67,7 +67,7 @@ export default function CategoryListingScreen() {
       <View style={styles.itemImage}>
         <MaterialIcons name="image" size={40} color="#666" />
       </View>
-      
+
       <View style={styles.itemDetails}>
         <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.itemPrice}>
@@ -88,8 +88,8 @@ export default function CategoryListingScreen() {
       <MaterialIcons name="inbox" size={64} color="#666" />
       <Text style={styles.emptyText}>No listings in this category yet</Text>
       <Text style={styles.emptySubtext}>Be the first to post something!</Text>
-      
-      <Pressable 
+
+      <Pressable
         style={styles.postButton}
         onPress={() => router.push('/post')}
       >
@@ -136,7 +136,7 @@ export default function CategoryListingScreen() {
             data={selectedCategory.subcategories}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <Pressable 
+              <Pressable
                 style={[
                   styles.subcategoryChip,
                   selectedSubcategory === item.id && styles.subcategoryChipActive
