@@ -7,22 +7,24 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface ListingItemProps {
     item: Listing;
-    onToggleStatus: (listing: Listing) => void;
-    onDelete: (listingId: number) => void;
+    onUpdateStatus: (listing: Listing, newStatus: 'active' | 'sold') => void;
+    onSoftDelete: (listingId: number) => void;
+    onPermanentDelete: (listingId: number) => void;
 }
 
-export function ListingItem({ item, onToggleStatus, onDelete }: ListingItemProps) {
+export function ListingItem({ item, onUpdateStatus, onSoftDelete, onPermanentDelete }: ListingItemProps) {
     const textColor = useThemeColor({}, 'text');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
     const placeholderColor = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
 
     const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
-        const category = categoriesData.categories.find(c => parseInt(c.id) === categoryId);
-        const subcategory = category?.subcategories.find(s => parseInt(s.id) === subcategoryId);
+        const category = categoriesData.categories.find(c => c.id === categoryId);
+        const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
+
         return {
-            categoryName: category?.name || 'Unknown',
-            categoryIcon: category?.icon || '📦',
-            subcategoryName: subcategory?.name || 'Unknown'
+            categoryName: category?.name,
+            categoryIcon: category?.icon,
+            subcategoryName: subcategory?.name
         };
     };
 
@@ -42,6 +44,20 @@ export function ListingItem({ item, onToggleStatus, onDelete }: ListingItemProps
         item.subcategory_id
     );
 
+    // Determine badge style based on status
+    let badgeColor = '#4CAF50'; // Active (Green)
+    let statusText = 'Active';
+    let showRemovedIcon = false;
+
+    if (item.status === 'sold') {
+        badgeColor = '#FF9800'; // Sold (Orange)
+        statusText = 'Sold';
+    } else if (item.status === 'inactive') {
+        badgeColor = '#D32F2F'; // Removed (Red)
+        statusText = 'Removed';
+        showRemovedIcon = true;
+    }
+
     return (
         <View style={[styles.listingCard, { borderColor }]}>
             <View style={styles.listingHeader}>
@@ -53,17 +69,11 @@ export function ListingItem({ item, onToggleStatus, onDelete }: ListingItemProps
                 </View>
                 <View style={[
                     styles.statusBadge,
-                    {
-                        backgroundColor:
-                            item.status === 'active' ? '#4CAF50' :
-                                item.status === 'sold' ? '#FF9800' :
-                                    '#9E9E9E'
-                    }
+                    { backgroundColor: badgeColor, flexDirection: 'row', alignItems: 'center', gap: 4 }
                 ]}>
+                    {showRemovedIcon && <MaterialIcons name="delete" size={12} color="white" />}
                     <Text style={styles.statusText}>
-                        {item.status === 'active' ? 'Active' :
-                            item.status === 'sold' ? 'Sold' :
-                                'Inactive'}
+                        {statusText}
                     </Text>
                 </View>
             </View>
@@ -96,35 +106,58 @@ export function ListingItem({ item, onToggleStatus, onDelete }: ListingItemProps
             </View>
 
             <View style={styles.actionButtons}>
-                <Pressable
-                    style={[styles.actionButton, styles.editButton]}
-                    onPress={() => onToggleStatus(item)}
-                >
-                    <MaterialCommunityIcons
-                        name={
-                            item.status === 'active' ? 'check-circle' :
-                                item.status === 'sold' ? 'archive' :
-                                    'restore'
-                        }
-                        size={20}
-                        color="#4CAF50"
-                    />
-                    <Text style={styles.actionButtonText}>
-                        {item.status === 'active' ? 'Mark Sold' :
-                            item.status === 'sold' ? 'Deactivate' :
-                                'Reactivate'}
-                    </Text>
-                </Pressable>
+                {/* ACTIVE LISTING BUTTONS */}
+                {item.status === 'active' && (
+                    <>
+                        <Pressable
+                            style={[styles.actionButton, styles.editButton]}
+                            onPress={() => onUpdateStatus(item, 'sold')}
+                        >
+                            <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" />
+                            <Text style={styles.actionButtonText}>Mark Sold</Text>
+                        </Pressable>
 
-                <Pressable
-                    style={[styles.actionButton, styles.deleteButton]}
-                    onPress={() => onDelete(item.id)}
-                >
-                    <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
-                    <Text style={[styles.actionButtonText, { color: '#f44336' }]}>
-                        Remove
-                    </Text>
-                </Pressable>
+                        <Pressable
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={() => onSoftDelete(item.id)}
+                        >
+                            <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
+                            <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Remove</Text>
+                        </Pressable>
+                    </>
+                )}
+
+                {/* SOLD LISTING BUTTONS */}
+                {item.status === 'sold' && (
+                    <Pressable
+                        style={[styles.actionButton, styles.deleteButton, { flex: 1, justifyContent: 'center' }]}
+                        onPress={() => onPermanentDelete(item.id)}
+                    >
+                        <MaterialIcons name="delete-forever" size={20} color="#f44336" />
+                        <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Delete</Text>
+                    </Pressable>
+                )}
+
+                {/* REMOVED (INACTIVE) LISTING BUTTONS */}
+                {item.status === 'inactive' && (
+                    <>
+                        <Pressable
+                            style={[styles.actionButton, styles.editButton]}
+                            onPress={() => onUpdateStatus(item, 'active')}
+                        >
+                            <MaterialCommunityIcons name="restore" size={20} color="#4CAF50" />
+                            <Text style={styles.actionButtonText}>Reactivate</Text>
+                        </Pressable>
+
+                        <Pressable
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={() => onPermanentDelete(item.id)}
+                        >
+                            <MaterialIcons name="delete-forever" size={20} color="#f44336" />
+                            <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Delete</Text>
+                        </Pressable>
+                    </>
+                )}
             </View>
         </View>
     );

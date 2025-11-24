@@ -42,10 +42,10 @@ export function useUserListings() {
         fetchUserListings();
     }, [fetchUserListings]);
 
-    const handleDeleteListing = async (listingId: number) => {
+    const handleSoftDelete = async (listingId: number) => {
         Alert.alert(
             'Remove Listing',
-            'Are you sure you want to remove this listing? You can reactivate it later.',
+            'This will remove the listing from your active/sold items.',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
@@ -62,11 +62,9 @@ export function useUserListings() {
                             if (error) throw error;
 
                             setListings(prev =>
-                                prev.map(l =>
-                                    l.id === listingId ? { ...l, status: 'inactive' } : l
-                                )
+                                prev.map(l => l.id === listingId ? { ...l, status: 'inactive' } : l)
                             );
-                            Alert.alert('Success', 'Listing has been removed');
+                            Alert.alert('Success', 'Listing moved to removed items');
                         } catch (error) {
                             console.error('Remove error:', error);
                             Alert.alert('Error', 'Failed to remove listing');
@@ -77,16 +75,38 @@ export function useUserListings() {
         );
     };
 
-    const handleToggleStatus = async (listing: Listing) => {
-        let newStatus: 'active' | 'sold' | 'inactive';
-        if (listing.status === 'active') {
-            newStatus = 'sold';
-        } else if (listing.status === 'sold') {
-            newStatus = 'inactive';
-        } else {
-            newStatus = 'active';
-        }
+    const handlePermanentDelete = async (listingId: number) => {
+        Alert.alert(
+            'Delete Permanently',
+            'Are you sure you want to permanently delete this listing? This cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const { error } = await supabase
+                                .from('listings')
+                                .delete()
+                                .eq('id', listingId)
+                                .eq('user_id', user?.id);
 
+                            if (error) throw error;
+
+                            setListings(prev => prev.filter(l => l.id !== listingId));
+                            Alert.alert('Success', 'Listing permanently deleted');
+                        } catch (error) {
+                            console.error('Delete error:', error);
+                            Alert.alert('Error', 'Failed to delete listing');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleUpdateStatus = async (listing: Listing, newStatus: 'active' | 'sold') => {
         try {
             const { error } = await supabase
                 .from('listings')
@@ -102,12 +122,7 @@ export function useUserListings() {
                 )
             );
 
-            let message = '';
-            if (newStatus === 'active') message = 'Listing reactivated';
-            else if (newStatus === 'sold') message = 'Listing marked as sold';
-            else message = 'Listing deactivated';
-
-            Alert.alert('Success', message);
+            Alert.alert('Success', `Listing marked as ${newStatus}`);
         } catch (error) {
             console.error('Status update error:', error);
             Alert.alert('Error', 'Failed to update listing status');
@@ -119,7 +134,8 @@ export function useUserListings() {
         isLoading,
         isRefreshing,
         fetchUserListings,
-        handleDeleteListing,
-        handleToggleStatus
+        handleSoftDelete,
+        handlePermanentDelete,
+        handleUpdateStatus
     };
 }

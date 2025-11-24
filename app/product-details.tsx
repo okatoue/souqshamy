@@ -1,6 +1,3 @@
-// Simplified product-details.tsx - No more lookups needed!
-// This version uses numeric IDs directly from the UI
-
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -18,6 +15,8 @@ import CategoryInfo from '@/components/product-details/categoryInfo';
 import ContactSection from '@/components/product-details/contactSection';
 import DescriptionSection from '@/components/product-details/descriptionSection';
 import ImageUploadSection from '@/components/product-details/imageUploadSection';
+import LocationSection from '@/components/product-details/locationSection';
+import MapModal from '@/components/product-details/mapModal';
 import PriceSection from '@/components/product-details/priceSection';
 import ProductHeader from '@/components/product-details/productHeader';
 import SubmitButton from '@/components/product-details/submitButton';
@@ -47,8 +46,21 @@ export default function ProductDetailsScreen() {
   const [currency, setCurrency] = useState('SYP');
   const [phoneNumber, setPhoneNumber] = useState('');
 
+  // Location state
+  const [location, setLocation] = useState('Damascus'); // Default to Damascus
+  const [locationCoordinates, setLocationCoordinates] = useState({
+    latitude: 33.5138,
+    longitude: 36.2765,
+  });
+  const [showMapModal, setShowMapModal] = useState(false);
+
   const { createListing, isLoading: isSubmitting } = useCreateListing();
   const backgroundColor = useThemeColor({}, 'background');
+
+  const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
+    setLocation(selectedLocation);
+    setLocationCoordinates(coordinates);
+  };
 
   // Much simpler handleSubmit - no lookups needed!
   const handleSubmit = async () => {
@@ -75,6 +87,11 @@ export default function ProductDetailsScreen() {
       return;
     }
 
+    if (!location) {
+      Alert.alert('Missing Information', 'Please select a location');
+      return;
+    }
+
     const listingData = {
       user_id: user.id,
       title: title as string,
@@ -86,7 +103,10 @@ export default function ProductDetailsScreen() {
       phone_number: phoneNumber.trim() || null,
       images: images.length > 0 ? images : null,
       status: 'active' as const,
-      location: 'Damascus',
+      location,
+      // You can also store coordinates in your database if needed
+      // location_lat: locationCoordinates.latitude,
+      // location_lon: locationCoordinates.longitude,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -117,7 +137,8 @@ export default function ProductDetailsScreen() {
   const isFormValid =
     description.trim() !== '' &&
     price !== '' &&
-    (phoneNumber.trim() !== '');
+    phoneNumber.trim() !== '' &&
+    location !== '';
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -157,6 +178,11 @@ export default function ProductDetailsScreen() {
               setCurrency={setCurrency}
             />
 
+            <LocationSection
+              location={location}
+              onPress={() => setShowMapModal(true)}
+            />
+
             <ContactSection
               phoneNumber={phoneNumber}
               setPhoneNumber={setPhoneNumber}
@@ -169,6 +195,13 @@ export default function ProductDetailsScreen() {
             />
           </ScrollView>
         </KeyboardAvoidingView>
+
+        <MapModal
+          visible={showMapModal}
+          currentLocation={location}
+          onSelectLocation={handleLocationSelect}
+          onClose={() => setShowMapModal(false)}
+        />
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
