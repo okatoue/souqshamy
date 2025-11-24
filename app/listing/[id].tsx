@@ -1,3 +1,4 @@
+// ... existing imports
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { supabase } from '@/lib/supabase';
@@ -19,17 +20,23 @@ import {
     Text,
     View
 } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
+    // ... existing state
     const params = useLocalSearchParams<{ id: string }>();
     const [listing, setListing] = useState<Listing | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalImageIndex, setModalImageIndex] = useState(0);
+
+    // Animation values
+    const translateY = useSharedValue(0);
 
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
@@ -41,6 +48,15 @@ export default function ListingDetailScreen() {
     useEffect(() => {
         fetchListingDetails();
     }, [params.id]);
+
+    // Reset animation when modal opens
+    useEffect(() => {
+        if (modalVisible) {
+            translateY.value = 0;
+        }
+    }, [modalVisible]);
+
+    // ... existing functions (fetchListingDetails, getCategoryInfo, formatDate, etc.)
 
     const fetchListingDetails = async () => {
         try {
@@ -77,9 +93,12 @@ export default function ListingDetailScreen() {
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
-        const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+        const diffInMs = now.getTime() - date.getTime();
+        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
-        if (diffInHours < 1) return 'Just now';
+        if (diffInMinutes < 1) return 'Just now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
         if (diffInHours < 24) return `${diffInHours}h ago`;
         if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
         return date.toLocaleDateString();
@@ -119,6 +138,30 @@ export default function ListingDetailScreen() {
     const closeImageModal = () => {
         setModalVisible(false);
     };
+
+    // Gesture Handler for Swipe Down
+    const panGesture = Gesture.Pan()
+        .onUpdate((e) => {
+            translateY.value = e.translationY;
+        })
+        .onEnd((e) => {
+            // Close if swiped down significantly or with velocity
+            if (e.translationY > 100 || e.velocityY > 500) {
+                runOnJS(closeImageModal)();
+            } else {
+                // Reset position if not closed
+                translateY.value = withSpring(0);
+            }
+        });
+
+    const animatedModalStyle = useAnimatedStyle(() => {
+        // Interpolate opacity based on swipe distance
+        const opacity = 1 - Math.abs(translateY.value) / screenHeight;
+        return {
+            transform: [{ translateY: translateY.value }],
+            backgroundColor: `rgba(0, 0, 0, ${Math.max(0, opacity * 0.95)})`,
+        };
+    });
 
     if (loading) {
         return (
@@ -295,48 +338,52 @@ export default function ListingDetailScreen() {
                 animationType="fade"
                 onRequestClose={closeImageModal}
             >
-                <View style={styles.modalContainer}>
-                    {/* Close Button */}
-                    <Pressable style={styles.modalCloseButton} onPress={closeImageModal}>
-                        <Ionicons name="close-circle" size={36} color="white" />
-                    </Pressable>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                    <GestureDetector gesture={panGesture}>
+                        <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
+                            {/* Close Button */}
+                            <Pressable style={styles.modalCloseButton} onPress={closeImageModal}>
+                                <Ionicons name="close-circle" size={36} color="white" />
+                            </Pressable>
 
-                    {/* Image Counter */}
-                    {listing.images && listing.images.length > 1 && (
-                        <View style={styles.modalCounter}>
-                            <Text style={styles.modalCounterText}>
-                                {modalImageIndex + 1} / {listing.images.length}
-                            </Text>
-                        </View>
-                    )}
+                            {/* Image Counter */}
+                            {listing.images && listing.images.length > 1 && (
+                                <View style={styles.modalCounter}>
+                                    <Text style={styles.modalCounterText}>
+                                        {modalImageIndex + 1} / {listing.images.length}
+                                    </Text>
+                                </View>
+                            )}
 
-                    {/* Full Screen Images */}
-                    {listing.images && (
-                        <FlatList
-                            data={listing.images}
-                            renderItem={renderModalImage}
-                            horizontal
-                            pagingEnabled
-                            showsHorizontalScrollIndicator={false}
-                            initialScrollIndex={modalImageIndex}
-                            onMomentumScrollEnd={(event) => {
-                                const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                                setModalImageIndex(newIndex);
-                            }}
-                            keyExtractor={(item, index) => index.toString()}
-                            getItemLayout={(data, index) => ({
-                                length: screenWidth,
-                                offset: screenWidth * index,
-                                index,
-                            })}
-                        />
-                    )}
+                            {/* Full Screen Images */}
+                            {listing.images && (
+                                <FlatList
+                                    data={listing.images}
+                                    renderItem={renderModalImage}
+                                    horizontal
+                                    pagingEnabled
+                                    showsHorizontalScrollIndicator={false}
+                                    initialScrollIndex={modalImageIndex}
+                                    onMomentumScrollEnd={(event) => {
+                                        const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                                        setModalImageIndex(newIndex);
+                                    }}
+                                    keyExtractor={(item, index) => index.toString()}
+                                    getItemLayout={(data, index) => ({
+                                        length: screenWidth,
+                                        offset: screenWidth * index,
+                                        index,
+                                    })}
+                                />
+                            )}
 
-                    {/* Instructions */}
-                    <View style={styles.modalInstructions}>
-                        <Text style={styles.modalInstructionsText}>Swipe to browse • Tap X to close</Text>
-                    </View>
-                </View>
+                            {/* Instructions */}
+                            <View style={styles.modalInstructions}>
+                                <Text style={styles.modalInstructionsText}>Swipe down to close</Text>
+                            </View>
+                        </Animated.View>
+                    </GestureDetector>
+                </GestureHandlerRootView>
             </Modal>
         </SafeAreaView>
     );
@@ -544,7 +591,7 @@ const styles = StyleSheet.create({
     // Modal Styles
     modalContainer: {
         flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        // backgroundColor removed to be controlled by Animated
         justifyContent: 'center',
         alignItems: 'center',
     },

@@ -5,7 +5,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for listing items
@@ -22,17 +22,25 @@ interface ListingItem {
 }
 
 export default function CategoryListingScreen() {
-  const params = useLocalSearchParams<{ id: string; name: string }>();
+  // Add subcategoryId to params type
+  const params = useLocalSearchParams<{ id: string; name: string; subcategoryId?: string }>();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [filteredListings, setFilteredListings] = useState<ListingItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<number | null>(null);
 
   useEffect(() => {
     // Find the category from the data
-    const category = categoriesData.categories.find(cat => cat.id === params.id);
+    // Handle both string (url param) and number (json data) comparison
+    const category = categoriesData.categories.find(cat => cat.id.toString() === params.id.toString());
+
     if (category) {
       setSelectedCategory(category);
+    }
+
+    // If subcategoryId param exists, pre-select it
+    if (params.subcategoryId) {
+      setSelectedSubcategory(Number(params.subcategoryId));
     }
 
     // Initialize with empty array - in production, this would fetch from API
@@ -40,19 +48,18 @@ export default function CategoryListingScreen() {
 
     // TODO: Add API call here to fetch actual listings for this category
     // fetchCategoryListings(params.id).then(setFilteredListings);
-  }, [params.id]);
+  }, [params.id, params.subcategoryId]);
 
   const handleBack = () => {
     router.back();
   };
 
   const handleItemPress = (item: ListingItem) => {
-    Alert.alert('Item Selected', `You selected: ${item.title}`);
-    // Navigate to item detail page
-    // router.push(`/listing/${item.id}`);
+    // Alert.alert('Item Selected', `You selected: ${item.title}`);
+    router.push(`/listing/${item.id}`);
   };
 
-  const handleSubcategoryPress = (subcategoryId: string) => {
+  const handleSubcategoryPress = (subcategoryId: number) => {
     setSelectedSubcategory(subcategoryId === selectedSubcategory ? null : subcategoryId);
     // TODO: Filter listings based on subcategory
     // filterListingsBySubcategory(subcategoryId);
@@ -115,7 +122,7 @@ export default function CategoryListingScreen() {
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder={`Search in ${params.name}...`}
+          placeholder={`Search in ${params.name || 'category'}...`}
           style={styles.searchBar}
         />
       </View>
@@ -134,7 +141,7 @@ export default function CategoryListingScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={selectedCategory.subcategories}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <Pressable
                 style={[
