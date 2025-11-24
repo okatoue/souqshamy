@@ -1,13 +1,12 @@
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+// 1. Change import from BottomSheet to BottomSheetModal
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-// Import the categories data and types
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
 
-// Define the ref handle type
 export interface CategoryBottomSheetRefProps {
     open: () => void;
     close: () => void;
@@ -15,62 +14,55 @@ export interface CategoryBottomSheetRefProps {
 
 interface CategoryBottomSheetProps {
     onCategorySelect?: (category: Category, subcategory: Subcategory) => void;
-    showCategories?: boolean; // NEW: Control whether to show categories
-    children?: React.ReactNode; // NEW: Allow custom content
-    title?: string; // NEW: Custom title when not using categories
+    showCategories?: boolean;
+    children?: React.ReactNode;
+    title?: string;
 }
 
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBottomSheetProps>(
     ({ onCategorySelect, showCategories = true, children, title }, ref) => {
-        // Reference to the bottom sheet
-        const bottomSheetRef = useRef<BottomSheet>(null);
+        // 2. Change ref type to BottomSheetModal
+        const bottomSheetRef = useRef<BottomSheetModal>(null);
 
-        // State to track the selected main category
         const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
-        // Define snap points
         const snapPoints = useMemo(() => ['50%', '75%', '90%'], []);
 
-        // Expose methods to parent component
         useImperativeHandle(ref, () => ({
             open: () => {
-                // Reset to main categories when opening
                 setSelectedCategory(null);
-                bottomSheetRef.current?.snapToIndex(0);
+                // 3. Use present() instead of snapToIndex for Modals
+                bottomSheetRef.current?.present();
             },
             close: () => {
-                bottomSheetRef.current?.close();
-                // Reset state when closing
+                // 4. Use dismiss() for Modals
+                bottomSheetRef.current?.dismiss();
                 setTimeout(() => setSelectedCategory(null), 300);
             },
         }));
 
-        // Handle main category selection
         const handleCategoryPress = useCallback((category: Category) => {
             setSelectedCategory(category);
-            // Snap to a higher position for categories with many subcategories
+            // You can still use snapToIndex on the modal ref if needed
             if (category.subcategories.length > 10) {
-                bottomSheetRef.current?.snapToIndex(1); // Snap to 75%
+                bottomSheetRef.current?.snapToIndex(1);
             }
         }, []);
 
-        // Handle subcategory selection
         const handleSubcategoryPress = useCallback(
             (subcategory: Subcategory) => {
                 if (selectedCategory) {
                     onCategorySelect?.(selectedCategory, subcategory);
-                    // Close the bottom sheet after selection
-                    bottomSheetRef.current?.close();
+                    bottomSheetRef.current?.dismiss(); // Changed to dismiss
                     setTimeout(() => setSelectedCategory(null), 300);
                 }
             },
             [selectedCategory, onCategorySelect]
         );
 
-        // Handle back button press
         const handleBackPress = useCallback(() => {
             setSelectedCategory(null);
-            bottomSheetRef.current?.snapToIndex(0); // Go back to 50%
+            bottomSheetRef.current?.snapToIndex(0);
         }, []);
 
         const backgroundColor = useThemeColor({}, 'background');
@@ -80,7 +72,6 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
         const handleColor = useThemeColor({ light: '#DDDDDD', dark: '#444' }, 'icon');
         const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
 
-        // Handle backdrop press
         const renderBackdrop = useCallback(
             (props: any) => (
                 <BottomSheetBackdrop
@@ -93,20 +84,18 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             []
         );
 
-        // Handle sheet changes
         const handleSheetChanges = useCallback((index: number) => {
             console.log('Sheet changed to index:', index);
         }, []);
 
-        // Current title based on selection and props
         const currentTitle = showCategories
             ? (selectedCategory ? selectedCategory.name : 'Select Category')
             : (title || 'Options');
 
+        // 5. Replace BottomSheet with BottomSheetModal and remove index={-1}
         return (
-            <BottomSheet
+            <BottomSheetModal
                 ref={bottomSheetRef}
-                index={-1} // Start closed
                 snapPoints={snapPoints}
                 enablePanDownToClose={true}
                 backgroundStyle={[styles.bottomSheetBackground, { backgroundColor }]}
@@ -139,7 +128,6 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                         contentContainerStyle={styles.scrollViewContent}
                     >
                         {showCategories ? (
-                            // Show categories if showCategories is true
                             selectedCategory
                                 ? selectedCategory.subcategories.map((subcategory) => (
                                     <TouchableOpacity
@@ -166,12 +154,11 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                     </TouchableOpacity>
                                 ))
                         ) : (
-                            // Show custom children if showCategories is false
                             children
                         )}
                     </BottomSheetScrollView>
                 </View>
-            </BottomSheet>
+            </BottomSheetModal>
         );
     }
 );
@@ -179,6 +166,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
 CategoryBottomSheet.displayName = 'CategoryBottomSheet';
 
 const styles = StyleSheet.create({
+    // ... existing styles remain the same
     bottomSheetBackground: {
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
@@ -228,7 +216,6 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     titleWithBack: {
-        // Title stays centered when back button is present
     },
     categoryItem: {
         flexDirection: 'row',

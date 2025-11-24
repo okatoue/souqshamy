@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from '@/lib/auth_context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -48,9 +49,12 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      {/* 2. Add the Provider wrapping your app */}
+      <BottomSheetModalProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </BottomSheetModalProvider>
     </GestureHandlerRootView>
   );
 }
