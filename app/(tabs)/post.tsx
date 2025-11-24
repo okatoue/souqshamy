@@ -25,7 +25,7 @@ export default function PostListingScreen() {
   const [listingTitle, setListingTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
-  
+
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
   const router = useRouter();
 
@@ -36,9 +36,11 @@ export default function PostListingScreen() {
   const handleCategorySelect = (category: Category, subcategory: Subcategory) => {
     console.log('Selected:', {
       category: category.name,
-      subcategory: subcategory.name
+      categoryId: category.id,
+      subcategory: subcategory.name,
+      subcategoryId: subcategory.id
     });
-    
+
     setSelectedCategory(category);
     setSelectedSubcategory(subcategory);
   };
@@ -49,19 +51,21 @@ export default function PostListingScreen() {
       Alert.alert('Missing Information', 'Please enter a title for your listing');
       return;
     }
-    
+
     if (!selectedCategory || !selectedSubcategory) {
       Alert.alert('Missing Information', 'Please select a category');
       return;
     }
 
-    // Navigate to product details page with the data
+    // Navigate to product details page with numeric IDs!
     router.push({
       pathname: '/product-details',
       params: {
         title: listingTitle,
-        category: selectedCategory.name,
-        subcategory: selectedSubcategory.name,
+        categoryId: selectedCategory.id,         // Numeric ID
+        subcategoryId: selectedSubcategory.id,   // Numeric ID
+        categoryName: selectedCategory.name,     // For display
+        subcategoryName: selectedSubcategory.name, // For display
         categoryIcon: selectedCategory.icon
       }
     });
@@ -79,7 +83,7 @@ export default function PostListingScreen() {
     <GestureHandlerRootView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.container}>
-          <KeyboardAvoidingView 
+          <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.container}
           >
@@ -104,8 +108,8 @@ export default function PostListingScreen() {
               />
             </ThemedView>
 
-            <TouchableOpacity 
-              style={styles.categoryButton} 
+            <TouchableOpacity
+              style={styles.categoryButton}
               onPress={handleOpenPress}
               activeOpacity={0.8}
             >
@@ -121,11 +125,11 @@ export default function PostListingScreen() {
             </TouchableOpacity>
 
             {/* Continue Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
-                styles.continueButton, 
+                styles.continueButton,
                 (!listingTitle || !selectedCategory) && styles.continueButtonDisabled
-              ]} 
+              ]}
               onPress={handleContinue}
               activeOpacity={0.8}
               disabled={!listingTitle || !selectedCategory}

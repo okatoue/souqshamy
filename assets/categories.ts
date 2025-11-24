@@ -1,12 +1,10 @@
-// types/categories.ts
-
 export interface Subcategory {
-    id: string;
+    id: number;  // Changed from string to number
     name: string;
 }
 
 export interface Category {
-    id: string;
+    id: number;  // Changed from string to number
     name: string;
     icon: string;
     subcategories: Subcategory[];

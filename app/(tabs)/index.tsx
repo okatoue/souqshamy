@@ -1,30 +1,34 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { CategoriesList } from '@/components/ui/CategoriesList';
+import { Location } from '@/components/ui/location';
 import { SearchBar } from '@/components/ui/SearchBar';
+import { UserIcon } from '@/components/ui/userIcon';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ItemBubble } from '../../components/ui/itemBubble';
-
-import { Location } from '../../components/ui/location';
-import { UserIcon } from '../../components/ui/userIcon';
 
 export default function HomeScreen() {
-//souqJirana.com
-//bay3o.com
-//KulshiAds.com
-//SouqJama3a.com
-//LelBay3.com
-//yallahbe3.com
-//souqshami.com
+  //souqJirana.com
+  //bay3o.com
+  //KulshiAds.com
+  //SouqJama3a.com
+  //LelBay3.com
+  //yallahbe3.com
+  //souqshami.com
+  const backgroundColor = useThemeColor({}, 'background');
+  const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
+  const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
       <ScrollView>
         <View style={styles.headerRow}>
           <UserIcon />
           <Location />
         </View>
 
-        <ThemedView style={styles.searchContainer}>
+        <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
           <SearchBar
             style={styles.searchBarContent} />
         </ThemedView>
@@ -32,7 +36,7 @@ export default function HomeScreen() {
           <ThemedText type="title">Popular Categories</ThemedText>
         </ThemedView>
 
-        <ItemBubble />
+        <CategoriesList />
 
       </ScrollView>
     </SafeAreaView>
@@ -46,18 +50,15 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginRight: 20,
     height: 50,
-    borderColor: 'white',
     borderWidth: 1,
     paddingLeft: 8,
     borderRadius: 30,
-    color: 'white',
     fontSize: 40,
   },
   searchBarContent: {
     marginTop: 8,
     marginLeft: 20,
     fontSize: 18,
-    color: 'white',
   },
   container: {
     flex: 1,

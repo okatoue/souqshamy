@@ -1,132 +1,169 @@
 {
   "categories": [
     {
-      "id": "buy-sell",
+      "id": 1,
       "name": "Buy & Sell",
       "icon": "🛍️",
       "subcategories": [
-        { "id": "arts-collectibles", "name": "Arts & Collectibles" },
-        { "id": "audio", "name": "Audio" },
-        { "id": "baby-items", "name": "Baby Items" },
-        { "id": "bags-luggage", "name": "Bags & Luggage" },
-        { "id": "bikes", "name": "Bikes" },
-        { "id": "books", "name": "Books" },
-        { "id": "business-industrial", "name": "Business & Industrial" },
-        { "id": "cameras-camcorders", "name": "Cameras & Camcorders" },
-        { "id": "cds-dvds-bluray", "name": "CDs, DVDs & Blu-ray" },
-        { "id": "clothing", "name": "Clothing" },
-        { "id": "computers", "name": "Computers" },
-        { "id": "computer-accessories", "name": "Computer Accessories" },
-        { "id": "electronics", "name": "Electronics" },
-        { "id": "free-stuff", "name": "Free Stuff" },
-        { "id": "furniture", "name": "Furniture" },
-        { "id": "garage-sales", "name": "Garage Sales" },
-        { "id": "health-special-needs", "name": "Health & Special Needs" },
-        { "id": "hobbies-crafts", "name": "Hobbies & Crafts" },
-        { "id": "home-appliances", "name": "Home Appliances" },
-        { "id": "home-indoor", "name": "Home - Indoor" },
-        { "id": "home-outdoor-garden", "name": "Home - Outdoor & Garden" },
-        { "id": "home-renovation-materials", "name": "Home Renovation Materials" },
-        { "id": "jewellery-watches", "name": "Jewellery & Watches" },
-        { "id": "musical-instruments", "name": "Musical Instruments" },
-        { "id": "phones", "name": "Phones" },
-        { "id": "sporting-goods-exercise", "name": "Sporting Goods & Exercise" },
-        { "id": "tickets", "name": "Tickets" },
-        { "id": "tools", "name": "Tools" },
-        { "id": "toys-games", "name": "Toys & Games" },
-        { "id": "tvs-video", "name": "TVs & Video" },
-        { "id": "video-games-consoles", "name": "Video Games & Consoles" },
-        { "id": "other", "name": "Other" }
+        {
+          "id": 1,
+          "name": "Electronics"
+        },
+        {
+          "id": 2,
+          "name": "Furniture"
+        },
+        {
+          "id": 3,
+          "name": "Clothing"
+        },
+        {
+          "id": 4,
+          "name": "Books"
+        },
+        {
+          "id": 5,
+          "name": "Phones"
+        },
+        {
+          "id": 6,
+          "name": "Computers"
+        },
+        {
+          "id": 7,
+          "name": "Home Appliances"
+        },
+        {
+          "id": 8,
+          "name": "Toys & Games"
+        },
+        {
+          "id": 9,
+          "name": "Sports Equipment"
+        },
+        {
+          "id": 10,
+          "name": "Other"
+        }
       ]
     },
     {
-      "id": "cars",
+      "id": 2,
       "name": "Cars",
       "icon": "🚗",
       "subcategories": [
-        { "id": "cars-trucks", "name": "Cars & Trucks" },
-        { "id": "classic-cars", "name": "Classic Cars" },
-        { "id": "vehicle-parts", "name": "Vehicle Parts, Tires & Accessories" },
-        { "id": "automotive-services", "name": "Automotive Services" },
-        { "id": "motorcycles", "name": "Motorcycles" },
-        { "id": "atvs-snowmobiles", "name": "ATVs & Snowmobiles" },
-        { "id": "boats-watercraft", "name": "Boats & Watercraft" },
-        { "id": "rvs-campers-trailers", "name": "RVs, Campers & Trailers" },
-        { "id": "heavy-equipment", "name": "Heavy Equipment" },
-        { "id": "farming-equipment", "name": "Farming Equipment" },
-        { "id": "other", "name": "Other" }
+        {
+          "id": 11,
+          "name": "Cars & Trucks"
+        },
+        {
+          "id": 12,
+          "name": "Motorcycles"
+        },
+        {
+          "id": 13,
+          "name": "Vehicle Parts"
+        },
+        {
+          "id": 14,
+          "name": "Other"
+        }
       ]
     },
     {
-      "id": "real-estate",
+      "id": 3,
       "name": "Real Estate",
       "icon": "🏠",
       "subcategories": [
-        { "id": "for-rent", "name": "For Rent" },
-        { "id": "for-sale", "name": "For Sale" }
+        {
+          "id": 15,
+          "name": "For Rent"
+        },
+        {
+          "id": 16,
+          "name": "For Sale"
+        }
       ]
     },
     {
-      "id": "jobs",
+      "id": 4,
       "name": "Jobs",
       "icon": "💼",
       "subcategories": [
-        { "id": "accounting-management", "name": "Accounting & Management" },
-        { "id": "child-care", "name": "Child Care" },
-        { "id": "cleaning-housekeeping", "name": "Cleaning & Housekeeping" },
-        { "id": "construction-trades", "name": "Construction & Trades" },
-        { "id": "customer-service", "name": "Customer Service" },
-        { "id": "drivers-security", "name": "Drivers & Security" },
-        { "id": "general-labour", "name": "General Labour" },
-        { "id": "graphic-web-design", "name": "Graphic & Web Design" },
-        { "id": "healthcare", "name": "Healthcare" },
-        { "id": "hair-stylist-salon", "name": "Hair Stylist & Salon" },
-        { "id": "office-manager-receptionist", "name": "Office Manager & Receptionist" },
-        { "id": "part-time-students", "name": "Part Time & Students" },
-        { "id": "programmers-computer", "name": "Programmers & Computer" },
-        { "id": "sales-retail", "name": "Sales & Retail Sales" },
-        { "id": "tv-media-fashion", "name": "TV, Media, & Fashion" },
-        { "id": "other", "name": "Other" }
+        {
+          "id": 17,
+          "name": "Accounting"
+        },
+        {
+          "id": 18,
+          "name": "Customer Service"
+        },
+        {
+          "id": 19,
+          "name": "Healthcare"
+        },
+        {
+          "id": 20,
+          "name": "Sales"
+        },
+        {
+          "id": 21,
+          "name": "IT & Programming"
+        },
+        {
+          "id": 22,
+          "name": "Other"
+        }
       ]
     },
     {
-      "id": "services",
+      "id": 5,
       "name": "Services",
       "icon": "🛠️",
       "subcategories": [
-        { "id": "childcare-nanny", "name": "Childcare & Nanny" },
-        { "id": "cleaners-cleaning", "name": "Cleaners & Cleaning" },
-        { "id": "entertainment", "name": "Entertainment" },
-        { "id": "financial-legal", "name": "Financial & Legal" },
-        { "id": "fitness-personal-trainer", "name": "Fitness & Personal Trainer" },
-        { "id": "food-catering", "name": "Food & Catering" },
-        { "id": "health-beauty", "name": "Health & Beauty" },
-        { "id": "moving-storage", "name": "Moving & Storage" },
-        { "id": "music-lessons", "name": "Music Lessons" },
-        { "id": "photography-video", "name": "Photography & Video" },
-        { "id": "skilled-trades", "name": "Skilled Trades" },
-        { "id": "tutors-languages", "name": "Tutors & Languages" },
-        { "id": "wedding", "name": "Wedding" },
-        { "id": "travel-vacations", "name": "Travel & Vacations" },
-        { "id": "other", "name": "Other" }
+        {
+          "id": 23,
+          "name": "Home Maintenance"
+        },
+        {
+          "id": 24,
+          "name": "Tutoring"
+        },
+        {
+          "id": 25,
+          "name": "Cleaning"
+        },
+        {
+          "id": 26,
+          "name": "Moving"
+        },
+        {
+          "id": 27,
+          "name": "Other"
+        }
       ]
     },
     {
-      "id": "pets",
+      "id": 6,
       "name": "Pets",
       "icon": "🐾",
       "subcategories": [
-        { "id": "animal-pet-services", "name": "Animal & Pet Services" },
-        { "id": "birds-rehoming", "name": "Birds for Rehoming" },
-        { "id": "cats-kittens-rehoming", "name": "Cats & Kittens for Rehoming" },
-        { "id": "dogs-puppies-rehoming", "name": "Dogs & Puppies for Rehoming" },
-        { "id": "equestrian-livestock-accessories", "name": "Equestrian & Livestock Accessories" },
-        { "id": "fish-rehoming", "name": "Fish for Rehoming" },
-        { "id": "horses-ponies-rehoming", "name": "Horses & Ponies for Rehoming" },
-        { "id": "livestock", "name": "Livestock" },
-        { "id": "lost-found", "name": "Lost & Found" },
-        { "id": "accessories", "name": "Accessories" },
-        { "id": "other-pets-rehoming", "name": "Other Pets for Rehoming" }
+        {
+          "id": 28,
+          "name": "Cats"
+        },
+        {
+          "id": 29,
+          "name": "Dogs"
+        },
+        {
+          "id": 30,
+          "name": "Birds"
+        },
+        {
+          "id": 31,
+          "name": "Other"
+        }
       ]
     }
   ]

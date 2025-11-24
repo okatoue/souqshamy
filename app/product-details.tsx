@@ -1,3 +1,6 @@
+// Simplified product-details.tsx - No more lookups needed!
+// This version uses numeric IDs directly from the UI
+
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -18,16 +21,24 @@ import ImageUploadSection from '@/components/product-details/imageUploadSection'
 import PriceSection from '@/components/product-details/priceSection';
 import ProductHeader from '@/components/product-details/productHeader';
 import SubmitButton from '@/components/product-details/submitButton';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
-import { supabase } from '@/lib/supabase';
 
 export default function ProductDetailsScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuth(); // Get authenticated user
+  const { user } = useAuth();
 
-  // Extract params
-  const { title, category, subcategory, categoryIcon } = params;
+  // Extract params - NOW WITH NUMERIC IDS!
+  const {
+    title,
+    categoryId,      // This is now a number (1, 2, 3...)
+    subcategoryId,   // This is now a number (1, 2, 3...)
+    categoryName,    // Display name
+    subcategoryName, // Display name
+    categoryIcon
+  } = params;
 
   // State for product details
   const [images, setImages] = useState<string[]>([]);
@@ -35,52 +46,11 @@ export default function ProductDetailsScreen() {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('SYP');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state
 
-  // Function to get category ID from category name
-  const getCategoryId = async (categoryName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', categoryName)
-        .single();
+  const { createListing, isLoading: isSubmitting } = useCreateListing();
+  const backgroundColor = useThemeColor({}, 'background');
 
-      if (error) {
-        console.error('Error fetching category ID:', error);
-        return null;
-      }
-
-      return data?.id;
-    } catch (error) {
-      console.error('Unexpected error getting category ID:', error);
-      return null;
-    }
-  };
-
-  const getSubcategoryId = async (categoryId: number, subcategoryName: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('subcategories')
-        .select('id')
-        .eq('category_id', categoryId)
-        .eq('name', subcategoryName)
-        .single();
-
-      if (error) {
-        console.error('Error fetching subcategory ID:', error);
-        return null;
-      }
-
-      return data?.id;
-    } catch (error) {
-      console.error('Unexpected error getting subcategory ID:', error);
-      return null;
-    }
-  };
-
-  // Updated handleSubmit function:
+  // Much simpler handleSubmit - no lookups needed!
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!user) {
@@ -89,115 +59,69 @@ export default function ProductDetailsScreen() {
       return;
     }
 
-    // Check if description is provided
+    // Validation
     if (!description.trim()) {
       Alert.alert('Missing Information', 'Please add a description');
       return;
     }
 
-    // Check if price is provided (can be 0)
     if (price === '') {
       Alert.alert('Missing Information', 'Please set a price (can be 0)');
       return;
     }
 
-    // Check if at least one contact method is provided
-    if (!phoneNumber.trim() && !whatsappNumber.trim()) {
+    if (!phoneNumber.trim()) {
       Alert.alert('Missing Information', 'Please add either a phone number or WhatsApp number');
       return;
     }
 
-    setIsSubmitting(true);
+    const listingData = {
+      user_id: user.id,
+      title: title as string,
+      category_id: Number(categoryId),
+      subcategory_id: Number(subcategoryId),
+      description: description.trim(),
+      price: parseFloat(price),
+      currency,
+      phone_number: phoneNumber.trim() || null,
+      images: images.length > 0 ? images : null,
+      status: 'active' as const,
+      location: 'Damascus',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    try {
-      // Get the category ID from the category name
-      const categoryId = await getCategoryId(category as string);
+    const { error } = await createListing(listingData);
 
-      if (!categoryId) {
-        Alert.alert('Error', 'Invalid category selected. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Get the subcategory ID from the subcategory name and category ID
-      const subcategoryId = await getSubcategoryId(categoryId, subcategory as string);
-
-      if (!subcategoryId) {
-        Alert.alert('Error', 'Invalid subcategory selected. Please try again.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Prepare the listing data for Supabase
-      const listingData = {
-        user_id: user.id,
-        title: title as string,
-        category_id: categoryId,
-        subcategory_id: subcategoryId,  // Using subcategory_id instead of subcategory
-        description: description.trim(),
-        price: parseFloat(price),
-        currency,
-        phone_number: phoneNumber.trim() || null,
-        whatsapp_number: whatsappNumber.trim() || null,
-        images: images.length > 0 ? images : null,
-        status: 'active',
-        location: 'Damascus',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      console.log('Submitting listing to Supabase:', listingData);
-
-      // Insert the listing into Supabase
-      const { data, error } = await supabase
-        .from('listings')
-        .insert([listingData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase insert error:', error);
-        Alert.alert(
-          'Error',
-          `Failed to create listing: ${error.message}`,
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      console.log('Listing created successfully:', data);
-
-      Alert.alert(
-        'Success!',
-        'Your listing has been created',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(tabs)/listings')
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Unexpected error:', error);
+    if (error) {
       Alert.alert(
         'Error',
-        'An unexpected error occurred. Please try again.',
+        `Failed to create listing: ${error.message}`,
         [{ text: 'OK' }]
       );
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
+
+    Alert.alert(
+      'Success!',
+      'Your listing has been created',
+      [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/listings')
+        }
+      ]
+    );
   };
 
-  // Validation: price must be set (can be 0), description required, and at least one contact method
   const isFormValid =
     description.trim() !== '' &&
     price !== '' &&
-    (phoneNumber.trim() !== '' || whatsappNumber.trim() !== '');
+    (phoneNumber.trim() !== '');
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
@@ -210,8 +134,8 @@ export default function ProductDetailsScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <CategoryInfo
-              category={category as string}
-              subcategory={subcategory as string}
+              category={categoryName as string || 'Category'}
+              subcategory={subcategoryName as string || 'Subcategory'}
               categoryIcon={categoryIcon as string}
               title={title as string}
             />
@@ -235,9 +159,7 @@ export default function ProductDetailsScreen() {
 
             <ContactSection
               phoneNumber={phoneNumber}
-              whatsappNumber={whatsappNumber}
               setPhoneNumber={setPhoneNumber}
-              setWhatsappNumber={setWhatsappNumber}
             />
 
             <SubmitButton
@@ -255,7 +177,6 @@ export default function ProductDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   scrollContainer: {
     flex: 1,
