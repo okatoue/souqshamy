@@ -3,7 +3,7 @@ import { Listing } from '@/types/listing';
 import { useCallback, useEffect, useState } from 'react';
 
 interface UseCategoryListingsParams {
-    categoryId: string;
+    categoryId: string | undefined;
     subcategoryId?: string | null;
 }
 
@@ -13,6 +13,21 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
     const [error, setError] = useState<Error | null>(null);
 
     const fetchListings = useCallback(async () => {
+        // Validate categoryId before making the query
+        if (!categoryId) {
+            console.log('useCategoryListings: No categoryId provided, skipping fetch');
+            setIsLoading(false);
+            return;
+        }
+
+        const parsedCategoryId = parseInt(categoryId, 10);
+        if (isNaN(parsedCategoryId)) {
+            console.error('useCategoryListings: Invalid categoryId:', categoryId);
+            setError(new Error('Invalid category ID'));
+            setIsLoading(false);
+            return;
+        }
+
         try {
             setIsLoading(true);
             setError(null);
@@ -20,13 +35,16 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
             let query = supabase
                 .from('listings')
                 .select('*')
-                .eq('category_id', parseInt(categoryId))
+                .eq('category_id', parsedCategoryId)
                 .eq('status', 'active')
                 .order('created_at', { ascending: false });
 
             // Add subcategory filter if provided
             if (subcategoryId) {
-                query = query.eq('subcategory_id', parseInt(subcategoryId));
+                const parsedSubcategoryId = parseInt(subcategoryId, 10);
+                if (!isNaN(parsedSubcategoryId)) {
+                    query = query.eq('subcategory_id', parsedSubcategoryId);
+                }
             }
 
             const { data, error: fetchError } = await query;

@@ -14,7 +14,7 @@ export default function HomeScreen() {
   //KulshiAds.com
   //SouqJama3a.com
   //LelBay3.com
-  //yallahbe3.com
+  //yallahbee3.com
   //souqshami.com
   const backgroundColor = useThemeColor({}, 'background');
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
