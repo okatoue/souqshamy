@@ -5,10 +5,13 @@ import { Location } from '@/components/ui/location';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { UserIcon } from '@/components/ui/userIcon';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const [searchQuery, setSearchQuery] = useState('');
   //souqJirana.com
   //bay3o.com
   //KulshiAds.com
@@ -20,9 +23,24 @@ export default function HomeScreen() {
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
   const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
 
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      Keyboard.dismiss();
+      router.push({
+        pathname: '/search',
+        params: { q: searchQuery.trim() }
+      });
+    }
+  };
+
+  const handleSearchBarFocus = () => {
+    // Navigate to search page immediately on focus (optional - uncomment if you want this behavior)
+    // router.push('/search');
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <UserIcon />
           <Location />
@@ -30,8 +48,17 @@ export default function HomeScreen() {
 
         <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
           <SearchBar
-            style={styles.searchBarContent} />
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleSearch}
+            onFocus={handleSearchBarFocus}
+            placeholder="Search all listings..."
+            showIcon={true}
+            showClearButton={true}
+            style={styles.searchBarContent}
+          />
         </ThemedView>
+
         <ThemedView style={styles.titleContainer}>
           <ThemedText type="title">Popular Categories</ThemedText>
         </ThemedView>
@@ -51,14 +78,12 @@ const styles = StyleSheet.create({
     marginRight: 20,
     height: 50,
     borderWidth: 1,
-    paddingLeft: 8,
+    paddingHorizontal: 16,
     borderRadius: 30,
-    fontSize: 40,
+    justifyContent: 'center',
   },
   searchBarContent: {
-    marginTop: 8,
-    marginLeft: 20,
-    fontSize: 18,
+    flex: 1,
   },
   container: {
     flex: 1,

@@ -184,8 +184,6 @@ const styles = StyleSheet.create({
   titleContainer: {
     marginTop: 100,
     marginLeft: 16,
-    flexDirection: 'row-reverse',
-    flexWrap: 'wrap',
   },
   categoryButton: {
     marginTop: 50,
