@@ -25,7 +25,7 @@ export function Location() {
         if (locationFilter.radius >= 100) {
             return `${locationFilter.name}`;
         }
-        return `${locationFilter.name} · ${locationFilter.radius}km`;
+        return `${locationFilter.name} · ${locationFilter.radius} كم`;
     };
 
     return (

@@ -10,7 +10,7 @@ interface LocationFilter {
 }
 
 const DEFAULT_LOCATION: LocationFilter = {
-    name: 'Damascus',
+    name: 'دمشق',
     coordinates: { latitude: 33.5138, longitude: 36.2765 },
     radius: 25,
 };
