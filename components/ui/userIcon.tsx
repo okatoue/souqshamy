@@ -1,15 +1,15 @@
 import Feather from '@expo/vector-icons/Feather';
+import { useRouter } from 'expo-router';
 import { Pressable } from 'react-native';
 
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/lib/auth_context';
 
 export function UserIcon() {
-    const { signOut } = useAuth();
+    const router = useRouter();
     const iconColor = useThemeColor({}, 'icon');
 
     return (
-        <Pressable onPress={signOut}>
+        <Pressable onPress={() => router.push('/user')}>
             <Feather name="user" size={26} color={iconColor} />
         </Pressable>
     );

@@ -46,6 +46,13 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-file-text" size={24} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: 'Favorites',
+          tabBarIcon: ({ color }) => <MaterialIcons name="favorite-outline" size={24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

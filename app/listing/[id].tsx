@@ -1,6 +1,6 @@
-// ... existing imports
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useFavorites } from '@/hooks/useFavorites';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
@@ -28,13 +28,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
-    // ... existing state
     const params = useLocalSearchParams<{ id: string }>();
     const [listing, setListing] = useState<Listing | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalImageIndex, setModalImageIndex] = useState(0);
+
+    // Favorites
+    const { isFavorite, toggleFavorite } = useFavorites();
+    const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+    const [localIsFavorite, setLocalIsFavorite] = useState(false);
 
     // Animation values
     const translateY = useSharedValue(0);
@@ -43,21 +47,24 @@ export default function ListingDetailScreen() {
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const secondaryBg = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
+    const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
+    const secondaryBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
     const placeholderColor = useThemeColor({ light: '#999', dark: '#666' }, 'text');
 
     useEffect(() => {
-        fetchListingDetails();
+        fetchListing();
     }, [params.id]);
 
-    // Reset animation when modal opens
+    // Sync favorite state when listing loads
     useEffect(() => {
-        if (modalVisible) {
-            translateY.value = 0;
+        if (listing) {
+            setLocalIsFavorite(isFavorite(listing.id));
         }
-    }, [modalVisible]);
+    }, [listing, isFavorite]);
 
-    const fetchListingDetails = async () => {
+    const fetchListing = async () => {
+        if (!params.id) return;
+
         try {
             setLoading(true);
             const { data, error } = await supabase
@@ -70,13 +77,13 @@ export default function ListingDetailScreen() {
 
             setListing(data);
 
+            // Track this listing as recently viewed
             if (data?.id) {
                 addToRecentlyViewed(data.id);
             }
         } catch (error) {
             console.error('Error fetching listing:', error);
-            Alert.alert('Error', 'Failed to load listing details');
-            router.back();
+            Alert.alert('Error', 'Failed to load listing');
         } finally {
             setLoading(false);
         }
@@ -85,7 +92,6 @@ export default function ListingDetailScreen() {
     const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
         const category = categoriesData.categories.find(c => c.id === categoryId);
         const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
-
         return {
             categoryName: category?.name,
             categoryIcon: category?.icon,
@@ -118,7 +124,6 @@ export default function ListingDetailScreen() {
 
     const handleWhatsApp = () => {
         if (listing?.phone_number) {
-            // Remove any non-digit characters and add country code if needed
             const cleanNumber = listing.phone_number.replace(/\D/g, '');
             const whatsappUrl = `whatsapp://send?phone=${cleanNumber}`;
 
@@ -129,8 +134,24 @@ export default function ListingDetailScreen() {
     };
 
     const handleShare = () => {
-        // You can implement share functionality here
         Alert.alert('Share', 'Share functionality coming soon!');
+    };
+
+    const handleToggleFavorite = async () => {
+        if (!listing || isTogglingFavorite) return;
+
+        setIsTogglingFavorite(true);
+        // Optimistic update
+        setLocalIsFavorite(!localIsFavorite);
+
+        const success = await toggleFavorite(listing.id);
+
+        if (!success) {
+            // Revert on failure
+            setLocalIsFavorite(localIsFavorite);
+        }
+
+        setIsTogglingFavorite(false);
     };
 
     const openImageModal = (index: number) => {
@@ -148,17 +169,14 @@ export default function ListingDetailScreen() {
             translateY.value = e.translationY;
         })
         .onEnd((e) => {
-            // Close if swiped down significantly or with velocity
             if (e.translationY > 100 || e.velocityY > 500) {
                 runOnJS(closeImageModal)();
             } else {
-                // Reset position if not closed
                 translateY.value = withSpring(0);
             }
         });
 
     const animatedModalStyle = useAnimatedStyle(() => {
-        // Interpolate opacity based on swipe distance
         const opacity = 1 - Math.abs(translateY.value) / screenHeight;
         return {
             transform: [{ translateY: translateY.value }],
@@ -216,15 +234,30 @@ export default function ListingDetailScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <Pressable onPress={() => router.back()} style={styles.headerButton}>
-                        <Ionicons name="arrow-back" size={24} color={textColor} />
-                    </Pressable>
+                    <View style={styles.headerSide}>
+                        <Pressable onPress={() => router.back()} style={styles.headerButton}>
+                            <Ionicons name="arrow-back" size={24} color={textColor} />
+                        </Pressable>
+                    </View>
                     <Text style={[styles.headerTitle, { color: textColor }]} numberOfLines={1}>
                         {listing.title}
                     </Text>
-                    <Pressable onPress={handleShare} style={styles.headerButton}>
-                        <Ionicons name="share-outline" size={24} color={textColor} />
-                    </Pressable>
+                    <View style={[styles.headerSide, styles.headerRightButtons]}>
+                        <Pressable onPress={handleToggleFavorite} style={styles.headerButton} disabled={isTogglingFavorite}>
+                            {isTogglingFavorite ? (
+                                <ActivityIndicator size="small" color="#FF3B30" />
+                            ) : (
+                                <Ionicons
+                                    name={localIsFavorite ? "heart" : "heart-outline"}
+                                    size={24}
+                                    color={localIsFavorite ? "#FF3B30" : textColor}
+                                />
+                            )}
+                        </Pressable>
+                        <Pressable onPress={handleShare} style={styles.headerButton}>
+                            <Ionicons name="share-outline" size={24} color={textColor} />
+                        </Pressable>
+                    </View>
                 </View>
 
                 {/* Images */}
@@ -233,39 +266,40 @@ export default function ListingDetailScreen() {
                         <FlatList
                             data={listing.images}
                             renderItem={renderImageItem}
+                            keyExtractor={(item, index) => index.toString()}
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={false}
-                            onMomentumScrollEnd={(event) => {
-                                const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                                setCurrentImageIndex(newIndex);
+                            onScroll={(e) => {
+                                const index = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                                setCurrentImageIndex(index);
                             }}
-                            keyExtractor={(item, index) => index.toString()}
                         />
                         {listing.images.length > 1 && (
-                            <View style={styles.imageIndicator}>
-                                <Text style={styles.imageIndicatorText}>
-                                    {currentImageIndex + 1} / {listing.images.length}
-                                </Text>
+                            <View style={styles.pagination}>
+                                {listing.images.map((_, index) => (
+                                    <View
+                                        key={index}
+                                        style={[
+                                            styles.paginationDot,
+                                            index === currentImageIndex && styles.paginationDotActive
+                                        ]}
+                                    />
+                                ))}
                             </View>
                         )}
-                        {/* Tap to view hint */}
-                        <View style={styles.tapHint}>
-                            <Ionicons name="expand" size={16} color="white" />
-                            <Text style={styles.tapHintText}>Tap image to view full size</Text>
-                        </View>
                     </View>
                 ) : (
                     <View style={[styles.imagePlaceholder, { backgroundColor: secondaryBg }]}>
                         <MaterialIcons name="image" size={80} color={placeholderColor} />
-                        <Text style={[styles.noImageText, { color: placeholderColor }]}>No image available</Text>
+                        <Text style={[styles.placeholderText, { color: placeholderColor }]}>No images</Text>
                     </View>
                 )}
 
-                {/* Main Content */}
-                <View style={styles.content}>
+                {/* Details Section */}
+                <View style={[styles.detailsContainer, { backgroundColor: cardBg }]}>
                     {/* Title and Price */}
-                    <View style={styles.titlePriceSection}>
+                    <View style={styles.titleSection}>
                         <Text style={[styles.title, { color: textColor }]}>{listing.title}</Text>
                         <Text style={[styles.price, { color: textColor }]}>
                             {listing.currency === 'SYP' ? 'SYP ' : '$'}
@@ -314,8 +348,8 @@ export default function ListingDetailScreen() {
             </ScrollView>
 
             {/* Contact Buttons - Fixed at bottom */}
-            {listing.status === 'active' && listing.phone_number && (
-                <View style={[styles.contactButtons, { backgroundColor, borderTopColor: borderColor }]}>
+            {listing.status !== 'sold' && listing.phone_number && (
+                <View style={[styles.contactBar, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
                     <Pressable
                         style={[styles.contactButton, styles.callButton]}
                         onPress={handleCall}
@@ -323,7 +357,6 @@ export default function ListingDetailScreen() {
                         <Ionicons name="call" size={20} color="white" />
                         <Text style={styles.contactButtonText}>Call</Text>
                     </Pressable>
-
                     <Pressable
                         style={[styles.contactButton, styles.whatsappButton]}
                         onPress={handleWhatsApp}
@@ -334,56 +367,33 @@ export default function ListingDetailScreen() {
                 </View>
             )}
 
-            {/* Full Screen Image Modal */}
+            {/* Image Modal */}
             <Modal
                 visible={modalVisible}
-                transparent={true}
+                transparent
                 animationType="fade"
                 onRequestClose={closeImageModal}
             >
                 <GestureHandlerRootView style={{ flex: 1 }}>
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
-                            {/* Close Button */}
-                            <Pressable style={styles.modalCloseButton} onPress={closeImageModal}>
-                                <Ionicons name="close-circle" size={36} color="white" />
+                            <Pressable style={styles.closeButton} onPress={closeImageModal}>
+                                <Ionicons name="close" size={28} color="white" />
                             </Pressable>
-
-                            {/* Image Counter */}
-                            {listing.images && listing.images.length > 1 && (
-                                <View style={styles.modalCounter}>
-                                    <Text style={styles.modalCounterText}>
-                                        {modalImageIndex + 1} / {listing.images.length}
-                                    </Text>
-                                </View>
-                            )}
-
-                            {/* Full Screen Images */}
-                            {listing.images && (
-                                <FlatList
-                                    data={listing.images}
-                                    renderItem={renderModalImage}
-                                    horizontal
-                                    pagingEnabled
-                                    showsHorizontalScrollIndicator={false}
-                                    initialScrollIndex={modalImageIndex}
-                                    onMomentumScrollEnd={(event) => {
-                                        const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                                        setModalImageIndex(newIndex);
-                                    }}
-                                    keyExtractor={(item, index) => index.toString()}
-                                    getItemLayout={(data, index) => ({
-                                        length: screenWidth,
-                                        offset: screenWidth * index,
-                                        index,
-                                    })}
-                                />
-                            )}
-
-                            {/* Instructions */}
-                            <View style={styles.modalInstructions}>
-                                <Text style={styles.modalInstructionsText}>Swipe down to close</Text>
-                            </View>
+                            <FlatList
+                                data={listing.images}
+                                renderItem={renderModalImage}
+                                keyExtractor={(item, index) => index.toString()}
+                                horizontal
+                                pagingEnabled
+                                showsHorizontalScrollIndicator={false}
+                                initialScrollIndex={modalImageIndex}
+                                getItemLayout={(data, index) => ({
+                                    length: screenWidth,
+                                    offset: screenWidth * index,
+                                    index,
+                                })}
+                            />
                         </Animated.View>
                     </GestureDetector>
                 </GestureHandlerRootView>
@@ -409,89 +419,74 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 18,
-        marginTop: 10,
+        marginTop: 16,
         marginBottom: 20,
-    },
-    backButton: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#007AFF',
-        borderRadius: 8,
-    },
-    backButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
+        paddingHorizontal: 8,
         paddingVertical: 12,
         borderBottomWidth: 1,
     },
+    headerSide: {
+        width: 80,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     headerButton: {
-        padding: 4,
+        padding: 8,
+    },
+    headerRightButtons: {
+        justifyContent: 'flex-end',
     },
     headerTitle: {
-        flex: 1,
         fontSize: 18,
         fontWeight: '600',
-        marginHorizontal: 16,
+        flex: 1,
         textAlign: 'center',
     },
     image: {
         width: screenWidth,
         height: 300,
-        resizeMode: 'cover',
-    },
-    imageIndicator: {
-        position: 'absolute',
-        bottom: 40,
-        right: 10,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-    },
-    imageIndicatorText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    tapHint: {
-        position: 'absolute',
-        bottom: 10,
-        left: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-        gap: 4,
-    },
-    tapHintText: {
-        color: 'white',
-        fontSize: 12,
     },
     imagePlaceholder: {
         width: screenWidth,
-        height: 300,
+        height: 250,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    noImageText: {
-        marginTop: 10,
-        fontSize: 16,
+    placeholderText: {
+        marginTop: 8,
+        fontSize: 14,
     },
-    content: {
+    pagination: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        position: 'absolute',
+        bottom: 10,
+        width: '100%',
+    },
+    paginationDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        marginHorizontal: 4,
+    },
+    paginationDotActive: {
+        backgroundColor: 'white',
+    },
+    detailsContainer: {
         padding: 16,
-        paddingBottom: 100, // Add padding for contact buttons
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        marginTop: -20,
     },
-    titlePriceSection: {
-        marginBottom: 16,
+    titleSection: {
+        marginBottom: 12,
     },
     title: {
         fontSize: 24,
@@ -501,26 +496,25 @@ const styles = StyleSheet.create({
     price: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#007AFF',
     },
     categoryBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 8,
-        marginBottom: 16,
         alignSelf: 'flex-start',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        marginBottom: 16,
     },
     categoryIcon: {
-        fontSize: 18,
-        marginRight: 8,
+        fontSize: 14,
+        marginRight: 6,
     },
     categoryText: {
         fontSize: 14,
     },
     metaInfo: {
-        paddingVertical: 12,
+        paddingVertical: 16,
         borderTopWidth: 1,
         borderBottomWidth: 1,
         marginBottom: 16,
@@ -528,48 +522,43 @@ const styles = StyleSheet.create({
     metaRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 4,
+        marginBottom: 8,
     },
     metaText: {
-        fontSize: 14,
         marginLeft: 8,
+        fontSize: 15,
     },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        paddingHorizontal: 12,
         paddingVertical: 6,
+        paddingHorizontal: 12,
         borderRadius: 16,
         marginBottom: 16,
     },
     statusText: {
         color: 'white',
-        fontSize: 14,
         fontWeight: '600',
-        marginLeft: 6,
+        marginLeft: 4,
     },
     descriptionSection: {
-        marginTop: 8,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: '600',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     description: {
         fontSize: 16,
         lineHeight: 24,
     },
-    contactButtons: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+    contactBar: {
         flexDirection: 'row',
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         borderTopWidth: 1,
-        gap: 12,
     },
     contactButton: {
         flex: 1,
@@ -577,8 +566,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 14,
-        borderRadius: 8,
-        gap: 8,
+        borderRadius: 10,
+        marginHorizontal: 6,
     },
     callButton: {
         backgroundColor: '#007AFF',
@@ -590,39 +579,26 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+        marginLeft: 8,
     },
-    // Modal Styles
-    modalContainer: {
-        flex: 1,
-        // backgroundColor removed to be controlled by Animated
-        justifyContent: 'center',
-        alignItems: 'center',
+    backButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
     },
-    modalCloseButton: {
-        position: 'absolute',
-        top: 50,
-        right: 20,
-        zIndex: 1000,
-        padding: 10,
-    },
-    modalCounter: {
-        position: 'absolute',
-        top: 60,
-        left: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        zIndex: 1000,
-    },
-    modalCounterText: {
+    backButtonText: {
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
     },
+    // Modal styles
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+    },
     modalImageContainer: {
         width: screenWidth,
-        height: screenHeight,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -630,16 +606,11 @@ const styles = StyleSheet.create({
         width: screenWidth,
         height: screenHeight * 0.8,
     },
-    modalInstructions: {
+    closeButton: {
         position: 'absolute',
-        bottom: 50,
-        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
-    },
-    modalInstructionsText: {
-        color: 'white',
-        fontSize: 14,
+        top: 50,
+        right: 20,
+        zIndex: 10,
+        padding: 8,
     },
 });

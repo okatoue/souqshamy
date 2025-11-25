@@ -1,6 +1,7 @@
 // app/category/[id].tsx
 import { Category, Subcategory } from '@/assets/categories';
 import categoriesData from '@/assets/categories.json';
+import { ListingCard } from '@/components/listings/listingCard';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
@@ -11,7 +12,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -33,9 +33,7 @@ export default function CategoryListingScreen() {
   // Theme colors
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
-  const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
   const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-  const placeholderBg = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
   const chipBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
   const chipActiveBg = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
 
@@ -89,27 +87,6 @@ export default function CategoryListingScreen() {
       ? null
       : subcategory.id.toString();
     setSelectedSubcategory(newSelection);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-    return date.toLocaleDateString();
-  };
-
-  const formatPrice = (price: number, currency: string) => {
-    if (currency === 'SYP') {
-      return `SYP ${price.toLocaleString()}`;
-    }
-    return `$${price.toLocaleString()}`;
   };
 
   const renderSubcategoryChips = () => {
@@ -170,43 +147,7 @@ export default function CategoryListingScreen() {
   };
 
   const renderItem = ({ item }: { item: Listing }) => (
-    <Pressable
-      style={({ pressed }) => [
-        styles.itemCard,
-        { backgroundColor: cardBg, borderColor },
-        pressed && styles.itemCardPressed,
-      ]}
-      onPress={() => handleItemPress(item)}
-    >
-      {/* Listing Image */}
-      {item.images && item.images.length > 0 ? (
-        <Image source={{ uri: item.images[0] }} style={styles.itemImage} resizeMode="cover" />
-      ) : (
-        <View style={[styles.itemImagePlaceholder, { backgroundColor: placeholderBg }]}>
-          <MaterialIcons name="image" size={40} color="#666" />
-        </View>
-      )}
-
-      {/* Listing Details */}
-      <View style={styles.itemDetails}>
-        <Text style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={styles.itemPrice}>{formatPrice(item.price, item.currency)}</Text>
-        <View style={styles.itemMeta}>
-          <Ionicons name="location-outline" size={14} color="#888" />
-          <Text style={styles.itemLocation} numberOfLines={1}>
-            {item.location}
-          </Text>
-        </View>
-        <Text style={styles.itemDate}>{formatDate(item.created_at)}</Text>
-      </View>
-
-      {/* Arrow indicator */}
-      <View style={styles.itemArrow}>
-        <Ionicons name="chevron-forward" size={20} color="#888" />
-      </View>
-    </Pressable>
+    <ListingCard item={item} onPress={handleItemPress} />
   );
 
   const renderEmptyList = () => (
@@ -302,7 +243,7 @@ export default function CategoryListingScreen() {
         <FlatList
           data={displayedListings}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyList}
           showsVerticalScrollIndicator={false}
@@ -379,69 +320,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
     flexGrow: 1,
-  },
-  itemCard: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    marginBottom: 12,
-    padding: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  itemCardPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
-  },
-  itemImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-  },
-  itemImagePlaceholder: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  itemDetails: {
-    flex: 1,
-    marginLeft: 12,
-    justifyContent: 'space-between',
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  itemPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  itemLocation: {
-    fontSize: 13,
-    color: '#888',
-    marginLeft: 4,
-    flex: 1,
-  },
-  itemDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-  itemArrow: {
-    justifyContent: 'center',
-    paddingLeft: 8,
   },
   emptyContainer: {
     flex: 1,
