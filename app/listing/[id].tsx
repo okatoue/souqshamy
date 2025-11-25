@@ -1,6 +1,7 @@
 // ... existing imports
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -56,8 +57,6 @@ export default function ListingDetailScreen() {
         }
     }, [modalVisible]);
 
-    // ... existing functions (fetchListingDetails, getCategoryInfo, formatDate, etc.)
-
     const fetchListingDetails = async () => {
         try {
             setLoading(true);
@@ -70,6 +69,10 @@ export default function ListingDetailScreen() {
             if (error) throw error;
 
             setListing(data);
+
+            if (data?.id) {
+                addToRecentlyViewed(data.id);
+            }
         } catch (error) {
             console.error('Error fetching listing:', error);
             Alert.alert('Error', 'Failed to load listing details');

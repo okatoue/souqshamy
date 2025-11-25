@@ -9,8 +9,8 @@ export function Location() {
 
     return (
         <Pressable onPress={() => Alert.alert('Location pressed!')} style={styles.locationBar}>
-            <ThemedText style={[styles.locationText, { color: textColor }]}>Mneen</ThemedText>
             <Entypo name="location-pin" size={28} color={iconColor} />
+            <ThemedText style={[styles.locationText, { color: textColor }]}>Mneen</ThemedText>
         </Pressable>
     )
 }
@@ -24,6 +24,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 20,
         marginTop: 2,
-        marginRight: 5,
+        marginLeft: 5,
     }
 })

@@ -40,6 +40,7 @@ function RootLayoutNav() {
       }} />
       <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="product-details" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
     </Stack>
@@ -49,7 +50,6 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* 2. Add the Provider wrapping your app */}
       <BottomSheetModalProvider>
         <AuthProvider>
           <RootLayoutNav />
