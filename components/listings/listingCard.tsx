@@ -53,9 +53,9 @@ export function ListingCard({ item, onPress }: ListingCardProps) {
 
     const formatPrice = (price: number, currency: string) => {
         if (currency === 'SYP') {
-            return `SYP ${price.toLocaleString()}`;
+            return `£${price.toLocaleString()}`;
         }
-        return `$${price.toLocaleString()}`;
+        return `USD ${price.toLocaleString()}`;
     };
 
     const handleToggleFavorite = async () => {

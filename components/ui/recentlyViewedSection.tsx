@@ -32,9 +32,9 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
 
     const formatPrice = (price: number, currency: string) => {
         if (currency === 'SYP') {
-            return `SYP ${price.toLocaleString()}`;
+            return `£${price.toLocaleString()}`;
         }
-        return `$${price.toLocaleString()}`;
+        return `USD ${price.toLocaleString()}`;
     };
 
     if (isLoading) {
@@ -110,6 +110,8 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
             </View>
         );
     }
+
+    return null;
 }
 
 const styles = StyleSheet.create({

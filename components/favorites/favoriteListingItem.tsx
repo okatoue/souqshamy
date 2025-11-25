@@ -86,7 +86,7 @@ export function FavoriteListingItem({
 
                     {/* Price */}
                     <Text style={[styles.price, { color: textColor }]}>
-                        {item.currency === 'SYP' ? 'SYP ' : '$'}
+                        {item.currency === 'SYP' ? '£' : 'USD '}
                         {item.price.toLocaleString()}
                     </Text>
 

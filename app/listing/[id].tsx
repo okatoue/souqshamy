@@ -302,7 +302,7 @@ export default function ListingDetailScreen() {
                     <View style={styles.titleSection}>
                         <Text style={[styles.title, { color: textColor }]}>{listing.title}</Text>
                         <Text style={[styles.price, { color: textColor }]}>
-                            {listing.currency === 'SYP' ? 'SYP ' : '$'}
+                            {listing.currency === 'SYP' ? '£' : 'USD '}
                             {listing.price.toLocaleString()}
                         </Text>
                     </View>

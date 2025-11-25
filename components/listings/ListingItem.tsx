@@ -112,7 +112,7 @@ export function ListingItem({
                         </Text>
 
                         <Text style={[styles.listingPrice, { color: textColor }]}>
-                            {item.currency === 'SYP' ? 'SYP ' : '$'}
+                            {item.currency === 'SYP' ? '£' : 'USD '}
                             {item.price.toLocaleString()}
                         </Text>
 
@@ -149,53 +149,66 @@ export function ListingItem({
                         <Pressable
                             style={[styles.actionButton, styles.deleteButton]}
                             onPress={(e) => {
-                                e.stopPropagation(); // Prevent triggering parent onPress
+                                e.stopPropagation();
                                 onSoftDelete(item.id);
                             }}
                         >
-                            <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
-                            <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Remove</Text>
+                            <MaterialIcons name="delete-outline" size={20} color="#F44336" />
+                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Remove</Text>
                         </Pressable>
                     </>
                 )}
 
                 {/* SOLD LISTING BUTTONS */}
                 {item.status === 'sold' && (
-                    <Pressable
-                        style={[styles.actionButton, styles.deleteButton, { flex: 1, justifyContent: 'center' }]}
-                        onPress={(e) => {
-                            e.stopPropagation(); // Prevent triggering parent onPress
-                            onSoftDelete(item.id);
-                        }}
-                    >
-                        <MaterialIcons name="remove-circle-outline" size={20} color="#f44336" />
-                        <Text style={[styles.actionButtonText, { color: '#f44336' }]}>Remove</Text>
-                    </Pressable>
+                    <>
+                        <Pressable
+                            style={[styles.actionButton, styles.editButton]}
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                onUpdateStatus(item, 'active');
+                            }}
+                        >
+                            <MaterialCommunityIcons name="replay" size={20} color="#4CAF50" />
+                            <Text style={styles.actionButtonText}>Reactivate</Text>
+                        </Pressable>
+
+                        <Pressable
+                            style={[styles.actionButton, styles.deleteButton]}
+                            onPress={(e) => {
+                                e.stopPropagation();
+                                onSoftDelete(item.id);
+                            }}
+                        >
+                            <MaterialIcons name="delete-outline" size={20} color="#F44336" />
+                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Remove</Text>
+                        </Pressable>
+                    </>
                 )}
 
-                {/* REMOVED LISTING BUTTONS */}
+                {/* REMOVED (INACTIVE) LISTING BUTTONS */}
                 {item.status === 'inactive' && (
                     <>
                         <Pressable
                             style={[styles.actionButton, styles.editButton]}
                             onPress={(e) => {
-                                e.stopPropagation(); // Prevent triggering parent onPress
+                                e.stopPropagation();
                                 onUpdateStatus(item, 'active');
                             }}
                         >
-                            <MaterialCommunityIcons name="restore" size={20} color="#4CAF50" />
+                            <MaterialCommunityIcons name="replay" size={20} color="#4CAF50" />
                             <Text style={styles.actionButtonText}>Restore</Text>
                         </Pressable>
 
                         <Pressable
-                            style={[styles.actionButton, { backgroundColor: 'rgba(244, 67, 54, 0.2)' }]}
+                            style={[styles.actionButton, styles.deleteButton]}
                             onPress={(e) => {
-                                e.stopPropagation(); // Prevent triggering parent onPress
+                                e.stopPropagation();
                                 onPermanentDelete(item.id);
                             }}
                         >
-                            <MaterialIcons name="delete-forever" size={20} color="#D32F2F" />
-                            <Text style={[styles.actionButtonText, { color: '#D32F2F' }]}>Delete Forever</Text>
+                            <MaterialIcons name="delete-forever" size={20} color="#F44336" />
+                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Delete Forever</Text>
                         </Pressable>
                     </>
                 )}
@@ -206,10 +219,11 @@ export function ListingItem({
 
 const styles = StyleSheet.create({
     listingCard: {
-        marginBottom: 12,
-        borderRadius: 12,
         borderWidth: 1,
+        borderRadius: 12,
+        marginBottom: 12,
         overflow: 'hidden',
+        backgroundColor: '#1a1a1a',
     },
     listingCardPressed: {
         opacity: 0.7,
@@ -230,13 +244,12 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     categoryIcon: {
-        fontSize: 16,
-        marginRight: 6,
+        fontSize: 14,
+        marginRight: 4,
     },
     categoryText: {
         fontSize: 12,
         opacity: 0.7,
-        flex: 1,
     },
     statusBadge: {
         paddingHorizontal: 8,
