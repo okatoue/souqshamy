@@ -54,33 +54,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
+        console.log('[Auth] Initializing auth context...');
 
-            // Create/update profile if user exists and NOT in password reset
-            if (session?.user) {
-                // Check password reset flag before creating profile
-                AsyncStorage.getItem(PASSWORD_RESET_FLAG).then((value) => {
-                    if (value !== 'true') {
-                        createOrUpdateProfile(
-                            session.user.id,
-                            session.user.email,
-                            session.user.user_metadata?.phone_number,
-                            session.user.user_metadata?.display_name
-                        );
+        // Initialize auth - check for existing session
+        const initializeAuth = async () => {
+            try {
+                console.log('[Auth] Calling getSession()...');
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    console.error('[Auth] getSession error:', error);
+                } else {
+                    console.log('[Auth] getSession result:', session ? `User: ${session.user.email}` : 'No session');
+                }
+
+                setSession(session);
+                setUser(session?.user ?? null);
+
+                // If we have a valid session on startup, clear any stuck password reset flag
+                // A valid session means the user is logged in and not mid-reset
+                if (session?.user) {
+                    const isResetting = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
+                    if (isResetting === 'true') {
+                        console.log('[Auth] Clearing stuck password reset flag - user has valid session');
+                        await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
+                        setIsPasswordResetInProgressState(false);
                     }
-                });
-            }
 
-            setLoading(false);
-        });
+                    // Create/update profile
+                    createOrUpdateProfile(
+                        session.user.id,
+                        session.user.email,
+                        session.user.user_metadata?.phone_number,
+                        session.user.user_metadata?.display_name
+                    );
+                }
+            } catch (error) {
+                console.error('[Auth] Error initializing auth:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
 
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (_event, session) => {
-                console.log('[Auth] Auth state changed:', _event);
+            async (event, session) => {
+                console.log('[Auth] Auth state changed:', event, session ? `User: ${session.user.email}` : 'No session');
 
                 setSession(session);
                 setUser(session?.user ?? null);
@@ -89,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const isResetting = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
 
                 // Only update profile on sign in if NOT resetting password
-                if (_event === 'SIGNED_IN' && session?.user && isResetting !== 'true') {
+                if (event === 'SIGNED_IN' && session?.user && isResetting !== 'true') {
                     await createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
@@ -164,29 +185,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
             if (emailOrPhone) {
                 // Sign up with email
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email: emailOrPhone,
                     password,
                     options: {
                         data: {
+                            phone_number: phoneNumber,
                             display_name: displayName,
-                        }
-                    }
+                        },
+                    },
                 });
                 if (error) throw error;
+
+                // Profile will be created in onAuthStateChange
             } else if (phoneNumber) {
-                // For phone-based signup, use a placeholder email
+                // For phone-based signup, create a placeholder email
                 const placeholderEmail = `${phoneNumber}@phone.local`;
 
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email: placeholderEmail,
                     password,
                     options: {
                         data: {
                             phone_number: phoneNumber,
                             display_name: displayName,
-                        }
-                    }
+                        },
+                    },
                 });
                 if (error) throw error;
             } else {
@@ -204,6 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber?: string
     ) => {
         try {
+            console.log('[Auth] Attempting sign in...');
+
             if (emailOrPhone) {
                 // Sign in with email
                 const { error } = await supabase.auth.signInWithPassword({
@@ -211,6 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     password
                 });
                 if (error) throw error;
+                console.log('[Auth] Sign in successful with email');
             } else if (phoneNumber) {
                 // For phone-based signin, use the placeholder email format
                 const placeholderEmail = `${phoneNumber}@phone.local`;
@@ -220,6 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     password
                 });
                 if (error) throw error;
+                console.log('[Auth] Sign in successful with phone');
             } else {
                 throw new Error('Email or phone number is required');
             }
@@ -231,12 +259,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         try {
+            console.log('[Auth] Signing out...');
+
             // Clear password reset flag on sign out
             await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             setIsPasswordResetInProgressState(false);
 
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
+
+            console.log('[Auth] Sign out successful');
         } catch (error: any) {
             Alert.alert('Sign Out Error', error.message);
             throw error;
