@@ -1,218 +1,187 @@
 import { FavoriteListingItem } from '@/components/favorites/favoriteListingItem';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/lib/auth_context';
 import { Listing } from '@/types/listing';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Pressable,
-    RefreshControl,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FavoritesScreen() {
-    const { user } = useAuth();
-    const router = useRouter();
-    const {
-        favorites,
-        isLoading,
-        isRefreshing,
-        fetchFavorites,
-        removeFavorite
-    } = useFavorites();
+  const { user } = useAuth();
+  const router = useRouter();
+  const {
+    favorites,
+    isLoading,
+    isRefreshing,
+    fetchFavorites,
+    removeFavorite,
+  } = useFavorites();
 
-    const backgroundColor = useThemeColor({}, 'background');
-    const textColor = useThemeColor({}, 'text');
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
 
-    // Refresh favorites when screen comes into focus
-    useFocusEffect(
-        useCallback(() => {
-            if (user) {
-                fetchFavorites(false); // or fetchUserListings(false)
-            }
-        }, [user, fetchFavorites])
-    );
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchFavorites(false);
+      }
+    }, [user, fetchFavorites])
+  );
 
-    // Handle refresh
-    const onRefresh = () => {
-        fetchFavorites(true);
-    };
+  const handleRefresh = useCallback(() => {
+    fetchFavorites(true);
+  }, [fetchFavorites]);
 
-    // Handle navigation to listing detail
-    const handleListingPress = (listing: Listing) => {
-        router.push(`/listing/${listing.id}`);
-    };
+  const handleListingPress = useCallback((listing: Listing) => {
+    router.push(`/listing/${listing.id}`);
+  }, [router]);
 
-    // Handle remove from favorites
-    const handleRemoveFavorite = (listingId: number) => {
-        removeFavorite(listingId);
-    };
+  const handleRemoveFavorite = useCallback((listingId: string) => {
+    removeFavorite(listingId);
+  }, [removeFavorite]);
 
-    // Render each favorite item
-    const renderItem = ({ item }: { item: Listing }) => (
-        <FavoriteListingItem
-            item={item}
-            onPress={handleListingPress}
-            onRemoveFavorite={handleRemoveFavorite}
-        />
-    );
+  const renderItem = useCallback(({ item }: { item: Listing }) => (
+    <FavoriteListingItem
+      item={item}
+      onPress={handleListingPress}
+      onRemoveFavorite={handleRemoveFavorite}
+    />
+  ), [handleListingPress, handleRemoveFavorite]);
 
-    // Empty state
-    const renderEmptyState = () => (
-        <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="heart-outline" size={80} color="#666" />
-            <ThemedText style={styles.emptyTitle}>No Favorites Yet</ThemedText>
-            <ThemedText style={styles.emptySubtext}>
-                Listings you save will appear here
-            </ThemedText>
-            <Pressable
-                style={styles.browseButton}
-                onPress={() => router.push('/(tabs)')}
-            >
-                <MaterialIcons name="search" size={20} color="white" />
-                <Text style={styles.browseButtonText}>Browse Listings</Text>
-            </Pressable>
-        </View>
-    );
+  const keyExtractor = useCallback((item: Listing) => item.id, []);
 
-    // Loading state
-    if (isLoading && !isRefreshing) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007AFF" />
-                    <ThemedText style={styles.loadingText}>Loading favorites...</ThemedText>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
-    // Not authenticated state
-    if (!user) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={styles.emptyContainer}>
-                    <MaterialCommunityIcons name="account-heart-outline" size={80} color="#666" />
-                    <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
-                    <ThemedText style={styles.emptySubtext}>
-                        Please sign in to save and view your favorites
-                    </ThemedText>
-                    <Pressable
-                        style={styles.browseButton}
-                        onPress={() => router.push('/(auth)')}
-                    >
-                        <Text style={styles.browseButtonText}>Sign In</Text>
-                    </Pressable>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
+  if (isLoading && !isRefreshing) {
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            {/* Header */}
-            <ThemedView style={styles.header}>
-                <ThemedText type="title" style={styles.headerTitle}>Favorites</ThemedText>
-                <Text style={[styles.countText, { color: textColor }]}>
-                    {favorites.length} {favorites.length === 1 ? 'item' : 'items'}
-                </Text>
-            </ThemedView>
-
-            {/* Favorites List */}
-            <FlatList
-                data={favorites}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={[
-                    styles.listContent,
-                    favorites.length === 0 && styles.emptyListContent
-                ]}
-                ListEmptyComponent={renderEmptyState}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={onRefresh}
-                        tintColor="#007AFF"
-                    />
-                }
-                showsVerticalScrollIndicator={false}
-            />
-        </SafeAreaView>
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <LoadingState />
+      </SafeAreaView>
     );
+  }
+
+  if (!user) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <EmptyState
+          icon="account-heart-outline"
+          title="Sign In Required"
+          subtitle="Please sign in to save and view your favorites"
+          action={{
+            label: 'Sign In',
+            onPress: () => router.push('/(auth)'),
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      <Header count={favorites.length} textColor={textColor} />
+      <FlatList
+        data={favorites}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        contentContainerStyle={[
+          styles.listContent,
+          favorites.length === 0 && styles.emptyListContent,
+        ]}
+        ListEmptyComponent={
+          <EmptyState
+            icon="heart-outline"
+            title="No Favorites Yet"
+            subtitle="Listings you save will appear here"
+            action={{
+              label: 'Browse Listings',
+              icon: 'search',
+              onPress: () => router.push('/(tabs)'),
+            }}
+          />
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={BRAND_COLOR}
+          />
+        }
+        showsVerticalScrollIndicator={false}
+      />
+    </SafeAreaView>
+  );
+}
+
+function LoadingState() {
+  return (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={BRAND_COLOR} />
+      <ThemedText style={styles.loadingText}>Loading favorites...</ThemedText>
+    </View>
+  );
+}
+
+interface HeaderProps {
+  count: number;
+  textColor: string;
+}
+
+function Header({ count, textColor }: HeaderProps) {
+  const itemLabel = count === 1 ? 'item' : 'items';
+
+  return (
+    <ThemedView style={styles.header}>
+      <ThemedText type="title" style={styles.headerTitle}>
+        Favorites
+      </ThemedText>
+      <Text style={[styles.countText, { color: textColor }]}>
+        {count} {itemLabel}
+      </Text>
+    </ThemedView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    header: {
-        paddingHorizontal: 20,
-        paddingTop: 10,
-        paddingBottom: 15,
-    },
-    headerTitle: {
-        marginBottom: 4,
-    },
-    countText: {
-        fontSize: 14,
-        opacity: 0.7,
-    },
-    listContent: {
-        paddingBottom: 20,
-    },
-    emptyListContent: {
-        flex: 1,
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        opacity: 0.7,
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 40,
-    },
-    emptyTitle: {
-        fontSize: 22,
-        fontWeight: 'bold',
-        marginTop: 20,
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    emptySubtext: {
-        fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 30,
-        opacity: 0.7,
-    },
-    browseButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#007AFF',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 10,
-    },
-    browseButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
-        marginLeft: 8,
-    },
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: SPACING.xl,
+    paddingTop: SPACING.md,
+    paddingBottom: 15,
+  },
+  headerTitle: {
+    marginBottom: SPACING.xs,
+  },
+  countText: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  listContent: {
+    paddingBottom: SPACING.xl,
+  },
+  emptyListContent: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: SPACING.md,
+    fontSize: 16,
+    opacity: 0.7,
+  },
 });
