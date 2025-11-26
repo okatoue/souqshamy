@@ -1,7 +1,7 @@
 import { useAuth } from '@/lib/auth_context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -35,6 +35,14 @@ export default function ListingsScreen() {
 
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchUserListings(false);
+      }
+    }, [user, fetchUserListings])
+  );
 
   // Handle refresh
   const onRefresh = () => {

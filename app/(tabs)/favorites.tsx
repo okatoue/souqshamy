@@ -37,7 +37,7 @@ export default function FavoritesScreen() {
     useFocusEffect(
         useCallback(() => {
             if (user) {
-                fetchFavorites(true);
+                fetchFavorites(false); // or fetchUserListings(false)
             }
         }, [user, fetchFavorites])
     );
