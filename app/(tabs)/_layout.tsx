@@ -1,104 +1,56 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+// app/_layout.tsx
+import { AuthProvider, useAuth } from '@/lib/auth_context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useConversations } from '@/hooks/useConversations';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Text, View } from 'react-native';
+function RootLayoutNav() {
+  const { user, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
 
-function ChatTabIcon({ color, focused }: { color: string; focused: boolean }) {
-  const { totalUnreadCount } = useConversations();
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      // Redirect to unified auth screen if not authenticated
+      router.replace('/(auth)');
+    } else if (user && inAuthGroup) {
+      // Redirect to main app if authenticated
+      router.replace('/(tabs)');
+    }
+  }, [user, segments, loading]);
 
   return (
-    <View style={{ position: 'relative' }}>
-      <Ionicons
-        name={focused ? "chatbubbles" : "chatbubbles-outline"}
-        size={24}
-        color={color}
-      />
-      {totalUnreadCount > 0 && (
-        <View style={{
-          position: 'absolute',
-          top: -4,
-          right: -8,
-          backgroundColor: '#FF3B30',
-          borderRadius: 10,
-          minWidth: 18,
-          height: 18,
-          justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: 4,
-        }}>
-          <Text style={{
-            color: 'white',
-            fontSize: 11,
-            fontWeight: '700',
-          }}>
-            {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
-          </Text>
-        </View>
-      )}
-    </View>
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+      <Stack.Screen name="(test)/test-supabase" options={{
+        title: 'Test',
+        headerShown: true
+      }} />
+      <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="search" options={{ headerShown: false }} />
+      <Stack.Screen name="product-details" options={{ headerShown: false }} />
+      <Stack.Screen name="user" options={{ headerShown: false }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }
 
-export default function TabLayout() {
-  const activeTintColor = useThemeColor({}, 'tint');
-  const inactiveTintColor = useThemeColor({}, 'tabIconDefault');
-  const backgroundColor = useThemeColor({}, 'background');
-
+export default function RootLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: activeTintColor,
-        tabBarInactiveTintColor: inactiveTintColor,
-        tabBarStyle: {
-          backgroundColor,
-          borderTopWidth: 0,
-          elevation: 0,
-        },
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Search',
-          tabBarIcon: ({ color }) => <FontAwesome name="search" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="chats"
-        options={{
-          title: 'Chats',
-          tabBarIcon: ({ color, focused }) => <ChatTabIcon color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="post"
-        options={{
-          title: 'Post',
-          tabBarIcon: ({ color }) => <MaterialIcons name="add" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="listings"
-        options={{
-          title: 'Listings',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="account-file-text" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="favorites"
-        options={{
-          title: 'Favorites',
-          tabBarIcon: ({ color }) => <MaterialIcons name="favorite-outline" size={24} color={color} />,
-        }}
-      />
-    </Tabs>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </BottomSheetModalProvider>
+    </GestureHandlerRootView>
   );
 }

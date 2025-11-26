@@ -96,7 +96,7 @@ export default function ListingsScreen() {
           </ThemedText>
           <Pressable
             style={styles.createButton}
-            onPress={() => router.push('/(auth)/sign-in')}
+            onPress={() => router.push('/(auth)/index')}
           >
             <Text style={styles.createButtonText}>Sign In</Text>
           </Pressable>

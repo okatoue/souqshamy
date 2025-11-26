@@ -16,7 +16,7 @@ function RootLayoutNav() {
 
     if (!user && !inAuthGroup) {
       // Redirect to sign-in if not authenticated
-      router.replace('/(auth)/sign-in');
+      router.replace('/(auth)/index');
     } else if (user && inAuthGroup) {
       // Redirect to main app if authenticated
       router.replace('/(tabs)');
@@ -26,14 +26,6 @@ function RootLayoutNav() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)/sign-in" options={{
-        title: 'Sign In',
-        headerShown: true
-      }} />
-      <Stack.Screen name="(auth)/sign-up" options={{
-        title: 'Sign Up',
-        headerShown: true
-      }} />
       <Stack.Screen name="(test)/test-supabase" options={{
         title: 'Test',
         headerShown: true

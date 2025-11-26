@@ -1,11 +1,16 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * Theme constants for 3ANTAR Marketplace
+ * Updated brand color: #18AEF2
  */
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
+// Brand Colors
+export const BRAND_COLOR = '#18AEF2';
+export const BRAND_COLOR_DARK = '#0d9fe0';
+export const BRAND_COLOR_LIGHT = '#5cc5f5';
+
+const tintColorLight = BRAND_COLOR;
 const tintColorDark = '#fff';
 
 export const Colors = {
@@ -16,6 +21,12 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Additional colors for consistency
+    primary: BRAND_COLOR,
+    primaryDark: BRAND_COLOR_DARK,
+    border: '#e2e8f0',
+    cardBackground: '#fff',
+    inputBackground: '#f8fafc',
   },
   dark: {
     text: '#ECEDEE',
@@ -24,6 +35,12 @@ export const Colors = {
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    // Additional colors for consistency
+    primary: BRAND_COLOR,
+    primaryDark: BRAND_COLOR_DARK,
+    border: '#333',
+    cardBackground: '#1e1e1e',
+    inputBackground: '#1a1a1a',
   },
 };
 

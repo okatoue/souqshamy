@@ -108,7 +108,7 @@ export default function UserScreen() {
                     onPress: async () => {
                         try {
                             await signOut();
-                            router.replace('/(auth)/sign-in');
+                            router.replace('/(auth)/index');
                         } catch (error) {
                             Alert.alert('Error', 'Failed to log out. Please try again.');
                         }
@@ -134,13 +134,13 @@ export default function UserScreen() {
                     </ThemedText>
                     <Pressable
                         style={styles.signInButton}
-                        onPress={() => router.push('/(auth)/sign-in')}
+                        onPress={() => router.push('/(auth)/index')}
                     >
                         <Text style={styles.signInButtonText}>Sign In</Text>
                     </Pressable>
                     <Pressable
                         style={styles.signUpLink}
-                        onPress={() => router.push('/(auth)/sign-up')}
+                        onPress={() => router.push('/(auth)/index')}
                     >
                         <Text style={styles.signUpLinkText}>Don't have an account? Sign Up</Text>
                     </Pressable>
