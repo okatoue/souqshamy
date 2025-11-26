@@ -1,42 +1,39 @@
 // app/_layout.tsx
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function RootLayoutNav() {
-  const { user, loading } = useAuth();
+  const { user, loading, isPasswordResetInProgress } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   // Handle auth state changes
   useEffect(() => {
+    // Don't run until auth loading is complete
     if (loading) return;
 
-    const checkAuthAndRedirect = async () => {
-      const inAuthGroup = segments[0] === '(auth)';
+    const inAuthGroup = segments[0] === '(auth)';
 
-      if (!user && !inAuthGroup) {
-        // Redirect to auth screen if not authenticated
-        router.replace('/(auth)');
-      } else if (user && inAuthGroup) {
-        // Check if we're in password reset flow
-        const isResettingPassword = await AsyncStorage.getItem('@password_reset_in_progress');
-
-        if (isResettingPassword === 'true') {
-          // Don't redirect - user is resetting password
-          return;
-        }
-
-        // Redirect to main app if authenticated and not resetting password
-        router.replace('/(tabs)');
+    if (!user && !inAuthGroup) {
+      // Redirect to auth screen if not authenticated
+      router.replace('/(auth)');
+    } else if (user && inAuthGroup) {
+      // CRITICAL: Check if we're in password reset flow BEFORE redirecting
+      // This is now a synchronous check from auth context state
+      if (isPasswordResetInProgress) {
+        // User is in password reset flow - DO NOT redirect to main app
+        // They need to complete the password reset process
+        console.log('[Auth] Password reset in progress, staying in auth group');
+        return;
       }
-    };
 
-    checkAuthAndRedirect();
-  }, [user, segments, loading]);
+      // Not in password reset flow, safe to redirect to main app
+      router.replace('/(tabs)');
+    }
+  }, [user, segments, loading, isPasswordResetInProgress]);
 
   return (
     <Stack>

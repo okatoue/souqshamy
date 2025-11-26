@@ -1,7 +1,7 @@
 // app/(auth)/forgot-password.tsx
+import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
@@ -35,12 +35,16 @@ export default function ForgotPasswordScreen() {
         isPhone: string;
     }>();
 
+    // Get the setPasswordResetInProgress function from auth context
+    const { setPasswordResetInProgress } = useAuth();
+
     const [step, setStep] = useState<Step>('email');
     const [email, setEmail] = useState(params.isPhone === 'true' ? '' : params.emailOrPhone || '');
-    const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
+    const [code, setCode] = useState(['', '', '', '', '', '', '', '']); // 8-digit code
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // Refs for OTP inputs
@@ -53,7 +57,7 @@ export default function ForgotPasswordScreen() {
         return emailRegex.test(input);
     };
 
-    // Step 1: Send verification code
+    // Step 1: Send verification code using proper password recovery
     const handleSendCode = async () => {
         const trimmedEmail = email.trim();
 
@@ -70,7 +74,12 @@ export default function ForgotPasswordScreen() {
         setLoading(true);
 
         try {
-            // Use Supabase OTP for password recovery
+            // Set the flag BEFORE sending the OTP to prevent any race conditions
+            // This updates both AsyncStorage and the in-memory state
+            await setPasswordResetInProgress(true);
+
+            // Use signInWithOtp for password recovery
+            // This sends a 6-digit OTP code to the email
             const { error } = await supabase.auth.signInWithOtp({
                 email: trimmedEmail,
                 options: {
@@ -79,8 +88,11 @@ export default function ForgotPasswordScreen() {
             });
 
             if (error) {
+                // Clear the flag on error
+                await setPasswordResetInProgress(false);
+
                 // Handle "User not found" gracefully
-                if (error.message.includes('User not found')) {
+                if (error.message.includes('User not found') || error.message.includes('No user found')) {
                     Alert.alert('Error', 'No account found with this email address');
                 } else {
                     Alert.alert('Error', error.message);
@@ -89,6 +101,7 @@ export default function ForgotPasswordScreen() {
                 setStep('code');
             }
         } catch (error: any) {
+            await setPasswordResetInProgress(false);
             Alert.alert('Error', 'Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -123,7 +136,20 @@ export default function ForgotPasswordScreen() {
         }
     };
 
-    // Step 2: Verify code
+    // Auto-focus to first empty box when any input is pressed
+    const handleCodeFocus = (index: number) => {
+        // Find the first empty box
+        const firstEmptyIndex = code.findIndex(digit => digit === '');
+
+        // If there's an empty box and user clicked on a later box, focus the first empty one
+        if (firstEmptyIndex !== -1 && firstEmptyIndex < index) {
+            codeInputRefs.current[firstEmptyIndex]?.focus();
+        }
+        // If all boxes are filled, focus the last one (for editing)
+        // If clicked box is before or at the first empty, allow it
+    };
+
+    // Step 2: Verify code - DON'T auto-login
     const handleVerifyCode = async () => {
         const fullCode = code.join('');
 
@@ -135,26 +161,30 @@ export default function ForgotPasswordScreen() {
         setLoading(true);
 
         try {
-            // Set flag to prevent auto-redirect to main app
-            await AsyncStorage.setItem('@password_reset_in_progress', 'true');
+            // Ensure flag is set (in case of any edge cases)
+            await setPasswordResetInProgress(true);
 
-            const { error } = await supabase.auth.verifyOtp({
+            // Use type: 'email' since we sent with signInWithOtp
+            // The key fix is handling the session properly after this
+            const { data, error } = await supabase.auth.verifyOtp({
                 email: email.trim(),
                 token: fullCode,
                 type: 'email',
             });
 
             if (error) {
-                await AsyncStorage.removeItem('@password_reset_in_progress');
                 Alert.alert('Error', 'Invalid or expired code. Please try again.');
                 setCode(['', '', '', '', '', '', '', '']);
                 codeInputRefs.current[0]?.focus();
             } else {
+                // OTP verified successfully, now move to password step
+                // The user is technically "logged in" now, but our flag prevents redirect
                 setStep('password');
             }
         } catch (error: any) {
-            await AsyncStorage.removeItem('@password_reset_in_progress');
             Alert.alert('Error', 'Something went wrong. Please try again.');
+            setCode(['', '', '', '', '', '', '', '']);
+            codeInputRefs.current[0]?.focus();
         } finally {
             setLoading(false);
         }
@@ -187,8 +217,9 @@ export default function ForgotPasswordScreen() {
             if (error) {
                 Alert.alert('Error', error.message);
             } else {
-                // Clear the flag
-                await AsyncStorage.removeItem('@password_reset_in_progress');
+                // Password reset successful
+                // Clear the flag and show success
+                await setPasswordResetInProgress(false);
                 setStep('success');
             }
         } catch (error: any) {
@@ -200,6 +231,8 @@ export default function ForgotPasswordScreen() {
 
     const handleBack = () => {
         if (step === 'email') {
+            // Clean up flag when leaving
+            setPasswordResetInProgress(false);
             router.back();
         } else if (step === 'code') {
             setStep('email');
@@ -215,7 +248,7 @@ export default function ForgotPasswordScreen() {
                         text: 'Cancel',
                         style: 'destructive',
                         onPress: async () => {
-                            await AsyncStorage.removeItem('@password_reset_in_progress');
+                            await setPasswordResetInProgress(false);
                             await supabase.auth.signOut();
                             router.replace('/(auth)');
                         }
@@ -226,7 +259,7 @@ export default function ForgotPasswordScreen() {
     };
 
     const handleBackToLogin = async () => {
-        await AsyncStorage.removeItem('@password_reset_in_progress');
+        await setPasswordResetInProgress(false);
         await supabase.auth.signOut();
         router.replace('/(auth)');
     };
@@ -283,6 +316,7 @@ export default function ForgotPasswordScreen() {
                     showsVerticalScrollIndicator={false}
                     bounces={false}
                 >
+
                     {/* Logo */}
                     <View style={styles.logoContainer}>
                         <LinearGradient
@@ -354,13 +388,13 @@ export default function ForgotPasswordScreen() {
                         </>
                     )}
 
-                    {/* Step 2: Code Input */}
+                    {/* Step 2: OTP Code Input */}
                     {step === 'code' && (
                         <>
                             <View style={styles.titleContainer}>
                                 <Text style={styles.title}>Enter Code</Text>
                                 <Text style={styles.subtitle}>
-                                    We sent an 8-digit code to{'\n'}
+                                    We've sent an 8-digit code to{'\n'}
                                     <Text style={styles.emailHighlight}>{email}</Text>
                                 </Text>
                             </View>
@@ -372,11 +406,14 @@ export default function ForgotPasswordScreen() {
                                         ref={(ref) => (codeInputRefs.current[index] = ref)}
                                         style={[
                                             styles.codeInput,
-                                            digit && styles.codeInputFilled,
+                                            digit !== '' && styles.codeInputFilled,
                                         ]}
                                         value={digit}
                                         onChangeText={(text) => handleCodeChange(text, index)}
-                                        onKeyPress={({ nativeEvent }) => handleCodeKeyPress(nativeEvent.key, index)}
+                                        onKeyPress={({ nativeEvent }) =>
+                                            handleCodeKeyPress(nativeEvent.key, index)
+                                        }
+                                        onFocus={() => handleCodeFocus(index)}
                                         keyboardType="number-pad"
                                         maxLength={1}
                                         selectTextOnFocus
@@ -436,7 +473,7 @@ export default function ForgotPasswordScreen() {
                                         >
                                             <Ionicons
                                                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                                                size={22}
+                                                size={20}
                                                 color="#64748b"
                                             />
                                         </Pressable>
@@ -452,9 +489,19 @@ export default function ForgotPasswordScreen() {
                                             placeholderTextColor="#94a3b8"
                                             value={confirmPassword}
                                             onChangeText={setConfirmPassword}
-                                            secureTextEntry={!showPassword}
+                                            secureTextEntry={!showConfirmPassword}
                                             editable={!loading}
                                         />
+                                        <Pressable
+                                            style={styles.eyeButton}
+                                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        >
+                                            <Ionicons
+                                                name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                                                size={20}
+                                                color="#64748b"
+                                            />
+                                        </Pressable>
                                     </View>
                                 </View>
                             </View>
@@ -474,41 +521,6 @@ export default function ForgotPasswordScreen() {
                                     <Text style={styles.primaryButtonText}>Reset Password</Text>
                                 )}
                             </Pressable>
-
-                            {/* Password Requirements */}
-                            <View style={styles.requirements}>
-                                <Text style={styles.requirementsTitle}>Password must:</Text>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={password.length >= 6 ? 'checkmark-circle' : 'ellipse-outline'}
-                                        size={16}
-                                        color={password.length >= 6 ? '#22c55e' : '#94a3b8'}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.requirementText,
-                                            password.length >= 6 && styles.requirementMet,
-                                        ]}
-                                    >
-                                        Be at least 6 characters
-                                    </Text>
-                                </View>
-                                <View style={styles.requirementItem}>
-                                    <Ionicons
-                                        name={password === confirmPassword && password.length > 0 ? 'checkmark-circle' : 'ellipse-outline'}
-                                        size={16}
-                                        color={password === confirmPassword && password.length > 0 ? '#22c55e' : '#94a3b8'}
-                                    />
-                                    <Text
-                                        style={[
-                                            styles.requirementText,
-                                            password === confirmPassword && password.length > 0 && styles.requirementMet,
-                                        ]}
-                                    >
-                                        Passwords match
-                                    </Text>
-                                </View>
-                            </View>
                         </>
                     )}
                 </ScrollView>
@@ -525,28 +537,16 @@ const styles = StyleSheet.create({
     keyboardView: {
         flex: 1,
     },
-    header: {
-        paddingHorizontal: 24,
-        paddingTop: 8,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: 'white',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
         paddingHorizontal: 24,
         paddingVertical: isSmallScreen ? 16 : 24,
+    },
+    backButtonHeader: {
+        alignSelf: 'flex-start',
+        padding: 8,
+        marginBottom: 8,
     },
     centerContent: {
         flex: 1,
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#1e293b',
     },
-    // OTP Code Input
+    // OTP Code Input - 8 digits
     codeContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
@@ -640,13 +640,13 @@ const styles = StyleSheet.create({
         marginBottom: isSmallScreen ? 24 : 32,
     },
     codeInput: {
-        width: isSmallScreen ? 38 : 42,
-        height: isSmallScreen ? 48 : 54,
+        width: isSmallScreen ? 36 : 40,
+        height: isSmallScreen ? 46 : 52,
         borderWidth: 2,
         borderColor: '#e2e8f0',
-        borderRadius: 10,
+        borderRadius: 8,
         backgroundColor: '#fff',
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         textAlign: 'center',
         color: '#1e293b',
@@ -678,21 +678,18 @@ const styles = StyleSheet.create({
         color: '#1e293b',
     },
     eyeButton: {
-        paddingHorizontal: 14,
-        height: isSmallScreen ? 46 : 50,
-        justifyContent: 'center',
+        padding: 12,
     },
     // Buttons
     primaryButton: {
-        height: isSmallScreen ? 46 : 50,
         backgroundColor: BRAND_COLOR,
+        paddingVertical: isSmallScreen ? 14 : 16,
         borderRadius: 12,
-        justifyContent: 'center',
         alignItems: 'center',
         shadowColor: BRAND_COLOR,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.25,
-        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
         elevation: 3,
     },
     primaryButtonPressed: {
@@ -704,78 +701,40 @@ const styles = StyleSheet.create({
     },
     primaryButtonText: {
         color: 'white',
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: '600',
     },
     resendButton: {
-        alignItems: 'center',
         marginTop: 16,
-        padding: 12,
+        alignItems: 'center',
     },
     resendButtonText: {
-        fontSize: 14,
         color: BRAND_COLOR,
+        fontSize: 14,
         fontWeight: '500',
     },
-    // Requirements
-    requirements: {
-        marginTop: isSmallScreen ? 16 : 20,
-        padding: 14,
-        backgroundColor: 'white',
-        borderRadius: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    requirementsTitle: {
-        fontSize: 12,
-        fontWeight: '500',
-        color: '#64748b',
-        marginBottom: 8,
-    },
-    requirementItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 4,
-    },
-    requirementText: {
-        fontSize: 12,
-        color: '#94a3b8',
-    },
-    requirementMet: {
-        color: '#22c55e',
-    },
-    // Success state
+    // Success screen
     successIconContainer: {
         marginBottom: 24,
     },
     statusIconGradient: {
         width: 80,
         height: 80,
-        borderRadius: 20,
+        borderRadius: 40,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#22c55e',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
     },
     statusTitle: {
         fontSize: 24,
         fontWeight: 'bold',
         color: '#1e293b',
-        marginBottom: 8,
+        marginBottom: 12,
     },
     statusSubtitle: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#64748b',
         textAlign: 'center',
+        lineHeight: 22,
         marginBottom: 32,
-        paddingHorizontal: 16,
-        lineHeight: 20,
     },
 });
