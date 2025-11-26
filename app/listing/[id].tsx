@@ -119,7 +119,7 @@ export default function ListingDetailScreen() {
                 'Please sign in to chat with the seller',
                 [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: 'Sign In', onPress: () => router.push('/(auth)/index') }
+                    { text: 'Sign In', onPress: () => router.push('/(auth)') }
                 ]
             );
             return;

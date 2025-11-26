@@ -108,7 +108,7 @@ export default function FavoritesScreen() {
                     </ThemedText>
                     <Pressable
                         style={styles.browseButton}
-                        onPress={() => router.push('/(auth)/index')}
+                        onPress={() => router.push('/(auth)')}
                     >
                         <Text style={styles.browseButtonText}>Sign In</Text>
                     </Pressable>

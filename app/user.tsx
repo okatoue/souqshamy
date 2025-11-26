@@ -108,7 +108,7 @@ export default function UserScreen() {
                     onPress: async () => {
                         try {
                             await signOut();
-                            router.replace('/(auth)/index');
+                            router.replace('/(auth)');
                         } catch (error) {
                             Alert.alert('Error', 'Failed to log out. Please try again.');
                         }
@@ -128,19 +128,18 @@ export default function UserScreen() {
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.notLoggedInContainer}>
                     <MaterialCommunityIcons name="account-circle-outline" size={100} color={iconColor} />
-                    <ThemedText style={styles.notLoggedInTitle}>Welcome to 3ANTAR</ThemedText>
                     <ThemedText style={styles.notLoggedInSubtitle}>
                         Sign in to access your account settings
                     </ThemedText>
                     <Pressable
                         style={styles.signInButton}
-                        onPress={() => router.push('/(auth)/index')}
+                        onPress={() => router.push('/(auth)')}
                     >
                         <Text style={styles.signInButtonText}>Sign In</Text>
                     </Pressable>
                     <Pressable
                         style={styles.signUpLink}
-                        onPress={() => router.push('/(auth)/index')}
+                        onPress={() => router.push('/(auth)')}
                     >
                         <Text style={styles.signUpLinkText}>Don't have an account? Sign Up</Text>
                     </Pressable>

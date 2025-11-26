@@ -67,7 +67,7 @@ export default function ProductDetailsScreen() {
     // Check if user is authenticated
     if (!user) {
       Alert.alert('Authentication Required', 'Please sign in to post a listing');
-      router.push('/(auth)/index');
+      router.push('/(auth)');
       return;
     }
 

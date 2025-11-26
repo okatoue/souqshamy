@@ -20,7 +20,12 @@ export default function AuthLayout() {
                 name="password"
                 options={{
                     title: 'Password',
-                    animation: 'slide_from_right',
+                }}
+            />
+            <Stack.Screen
+                name="forgot-password"
+                options={{
+                    title: 'Forgot Password',
                 }}
             />
         </Stack>

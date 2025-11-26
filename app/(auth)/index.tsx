@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Dimensions,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -22,6 +23,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const BRAND_COLOR = '#18AEF2';
 const BRAND_COLOR_DARK = '#0d9fe0';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const isSmallScreen = SCREEN_HEIGHT < 700;
+
 export default function AuthScreen() {
     const [inputValue, setInputValue] = useState('');
     const [isPhoneNumber, setIsPhoneNumber] = useState(false);
@@ -36,14 +40,12 @@ export default function AuthScreen() {
     }, [inputValue]);
 
     const handleInputChange = (value: string) => {
-        // If user starts typing a number and we don't have the prefix yet
         if (/^\d/.test(value) && !value.startsWith('+963')) {
             value = '+963 ' + value;
         }
         setInputValue(value);
     };
 
-    // Helper functions
     const isEmail = (input: string) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(input);
@@ -58,26 +60,20 @@ export default function AuthScreen() {
     const checkUserExists = async (emailOrPhone: string, isPhone: boolean): Promise<boolean> => {
         try {
             if (isPhone) {
-                // For phone, check with placeholder email format
                 const cleanedPhone = emailOrPhone.replace(/[\s\-\(\)]/g, '');
-                const placeholderEmail = `${cleanedPhone}@phone.local`;
-
-                // Try to sign in with a wrong password to check if user exists
-                const { error } = await supabase.auth.signInWithPassword({
-                    email: placeholderEmail,
-                    password: 'check_user_exists_dummy_password_12345',
-                });
-
-                // If error is "Invalid login credentials", user exists
-                return error?.message?.includes('Invalid login credentials') ?? false;
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('phone_number', cleanedPhone)
+                    .maybeSingle();
+                return !!data;
             } else {
-                // For email, same approach
-                const { error } = await supabase.auth.signInWithPassword({
-                    email: emailOrPhone,
-                    password: 'check_user_exists_dummy_password_12345',
-                });
-
-                return error?.message?.includes('Invalid login credentials') ?? false;
+                const { data } = await supabase
+                    .from('profiles')
+                    .select('id')
+                    .eq('email', emailOrPhone)
+                    .maybeSingle();
+                return !!data;
             }
         } catch (error) {
             console.error('Error checking user existence:', error);
@@ -106,7 +102,6 @@ export default function AuthScreen() {
         try {
             const userExists = await checkUserExists(trimmedInput, isValidPhone);
 
-            // Navigate to password screen with context
             router.push({
                 pathname: '/(auth)/password',
                 params: {
@@ -136,147 +131,141 @@ export default function AuthScreen() {
                     contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
+                    bounces={false}
                 >
-                    <View style={styles.card}>
-                        {/* Logo */}
-                        <View style={styles.logoContainer}>
-                            <LinearGradient
-                                colors={[BRAND_COLOR, BRAND_COLOR_DARK]}
-                                style={styles.logoGradient}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                            >
-                                <Ionicons name="cart-outline" size={40} color="white" />
-                            </LinearGradient>
-                        </View>
+                    {/* Logo */}
+                    <View style={styles.logoContainer}>
+                        <LinearGradient
+                            colors={[BRAND_COLOR, BRAND_COLOR_DARK]}
+                            style={styles.logoGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons name="cart-outline" size={isSmallScreen ? 28 : 36} color="white" />
+                        </LinearGradient>
+                    </View>
 
-                        {/* Title */}
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.title}>Log in or Sign up</Text>
-                            <Text style={styles.subtitle}>Welcome to 3ANTAR Marketplace</Text>
-                        </View>
+                    {/* Title */}
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>Log in or Sign up</Text>
+                    </View>
 
-                        {/* Input Section */}
-                        <View style={styles.inputSection}>
-                            <Text style={styles.inputLabel}>Email or Mobile Number</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your email or phone number"
-                                placeholderTextColor="#94a3b8"
-                                value={inputValue}
-                                onChangeText={handleInputChange}
-                                keyboardType={isPhoneNumber ? 'phone-pad' : 'email-address'}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                                editable={!loading}
-                            />
-                            {isPhoneNumber && (
-                                <View style={styles.countryHint}>
-                                    <View style={styles.syriaFlag}>
-                                        <View style={[styles.flagStripe, { backgroundColor: '#CE1126' }]} />
-                                        <View style={[styles.flagStripe, { backgroundColor: '#FFFFFF' }]} />
-                                        <View style={[styles.flagStripe, { backgroundColor: '#000000' }]} />
-                                    </View>
-                                    <Text style={styles.countryText}>Syria (+963)</Text>
+                    {/* Input Section */}
+                    <View style={styles.inputSection}>
+                        <Text style={styles.inputLabel}>Email or Mobile Number</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Enter your email or phone number"
+                            placeholderTextColor="#94a3b8"
+                            value={inputValue}
+                            onChangeText={handleInputChange}
+                            keyboardType={isPhoneNumber ? 'phone-pad' : 'email-address'}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            editable={!loading}
+                        />
+                        {isPhoneNumber && (
+                            <View style={styles.countryHint}>
+                                <View style={styles.syriaFlag}>
+                                    <View style={[styles.flagStripe, { backgroundColor: '#CE1126' }]} />
+                                    <View style={[styles.flagStripe, { backgroundColor: '#FFFFFF' }]} />
+                                    <View style={[styles.flagStripe, { backgroundColor: '#000000' }]} />
                                 </View>
-                            )}
-                        </View>
+                                <Text style={styles.countryText}>Syria (+963)</Text>
+                            </View>
+                        )}
+                    </View>
 
-                        {/* Continue Button */}
+                    {/* Continue Button */}
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.continueButton,
+                            pressed && styles.continueButtonPressed,
+                            loading && styles.continueButtonDisabled,
+                        ]}
+                        onPress={handleContinue}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <Text style={styles.continueButtonText}>Continue</Text>
+                        )}
+                    </Pressable>
+
+                    {/* Divider */}
+                    <View style={styles.divider}>
+                        <View style={styles.dividerLine} />
+                        <Text style={styles.dividerText}>or</Text>
+                        <View style={styles.dividerLine} />
+                    </View>
+
+                    {/* Social Auth Buttons */}
+                    <View style={styles.socialButtons}>
                         <Pressable
                             style={({ pressed }) => [
-                                styles.continueButton,
-                                pressed && styles.continueButtonPressed,
-                                loading && styles.continueButtonDisabled,
+                                styles.socialButton,
+                                pressed && styles.socialButtonPressed,
                             ]}
-                            onPress={handleContinue}
-                            disabled={loading}
+                            onPress={() => handleSocialAuth('Google')}
                         >
-                            {loading ? (
-                                <ActivityIndicator color="white" />
-                            ) : (
-                                <Text style={styles.continueButtonText}>Continue</Text>
-                            )}
+                            <GoogleIcon />
+                            <Text style={styles.socialButtonText}>Continue with Google</Text>
                         </Pressable>
 
-                        {/* Divider */}
-                        <View style={styles.divider}>
-                            <View style={styles.dividerLine} />
-                            <Text style={styles.dividerText}>or</Text>
-                            <View style={styles.dividerLine} />
-                        </View>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.socialButton,
+                                pressed && styles.socialButtonPressed,
+                            ]}
+                            onPress={() => handleSocialAuth('Facebook')}
+                        >
+                            <FacebookIcon />
+                            <Text style={styles.socialButtonText}>Continue with Facebook</Text>
+                        </Pressable>
 
-                        {/* Social Auth Buttons */}
-                        <View style={styles.socialButtons}>
-                            {/* Google */}
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.socialButton,
-                                    pressed && styles.socialButtonPressed,
-                                ]}
-                                onPress={() => handleSocialAuth('Google')}
-                            >
-                                <GoogleIcon />
-                                <Text style={styles.socialButtonText}>Continue with Google</Text>
-                            </Pressable>
-
-                            {/* Facebook */}
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.socialButton,
-                                    pressed && styles.socialButtonPressed,
-                                ]}
-                                onPress={() => handleSocialAuth('Facebook')}
-                            >
-                                <FacebookIcon />
-                                <Text style={styles.socialButtonText}>Continue with Facebook</Text>
-                            </Pressable>
-
-                            {/* Telegram */}
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.socialButton,
-                                    pressed && styles.socialButtonPressed,
-                                ]}
-                                onPress={() => handleSocialAuth('Telegram')}
-                            >
-                                <TelegramIcon />
-                                <Text style={styles.socialButtonText}>Log in with Telegram</Text>
-                            </Pressable>
-                        </View>
-
-                        {/* Footer */}
-                        <Text style={styles.footer}>
-                            By continuing, you agree to our{' '}
-                            <Text style={styles.footerLink}>Terms of Service</Text>
-                            {' '}and{' '}
-                            <Text style={styles.footerLink}>Privacy Policy</Text>
-                        </Text>
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.socialButton,
+                                pressed && styles.socialButtonPressed,
+                            ]}
+                            onPress={() => handleSocialAuth('Telegram')}
+                        >
+                            <TelegramIcon />
+                            <Text style={styles.socialButtonText}>Log in with Telegram</Text>
+                        </Pressable>
                     </View>
+
+                    {/* Footer */}
+                    <Text style={styles.footer}>
+                        By continuing, you agree to our{' '}
+                        <Text style={styles.footerLink}>Terms of Service</Text>
+                        {' '}and{' '}
+                        <Text style={styles.footerLink}>Privacy Policy</Text>
+                    </Text>
                 </ScrollView>
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
 
-// SVG Icons as components
 const GoogleIcon = () => (
     <View style={styles.iconContainer}>
         <View style={styles.googleIcon}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>G</Text>
+            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>G</Text>
         </View>
     </View>
 );
 
 const FacebookIcon = () => (
     <View style={[styles.iconContainer, { backgroundColor: '#1877F2', borderRadius: 4 }]}>
-        <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>f</Text>
+        <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>f</Text>
     </View>
 );
 
 const TelegramIcon = () => (
-    <View style={[styles.iconContainer, { backgroundColor: '#0088cc', borderRadius: 12 }]}>
-        <Ionicons name="paper-plane" size={14} color="white" />
+    <View style={[styles.iconContainer, { backgroundColor: '#0088cc', borderRadius: 10 }]}>
+        <Ionicons name="paper-plane" size={12} color="white" />
     </View>
 );
 
@@ -291,26 +280,17 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: 16,
-    },
-    card: {
-        backgroundColor: 'white',
-        borderRadius: 20,
-        padding: 28,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-        elevation: 5,
+        paddingHorizontal: 24,
+        paddingVertical: isSmallScreen ? 16 : 24,
     },
     logoContainer: {
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: isSmallScreen ? 16 : 20,
     },
     logoGradient: {
-        width: 72,
-        height: 72,
-        borderRadius: 18,
+        width: isSmallScreen ? 56 : 68,
+        height: isSmallScreen ? 56 : 68,
+        borderRadius: isSmallScreen ? 14 : 17,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: BRAND_COLOR,
@@ -321,46 +301,46 @@ const styles = StyleSheet.create({
     },
     titleContainer: {
         alignItems: 'center',
-        marginBottom: 28,
+        marginBottom: isSmallScreen ? 20 : 28,
     },
     title: {
-        fontSize: 24,
+        fontSize: isSmallScreen ? 22 : 26,
         fontWeight: 'bold',
         color: '#1e293b',
-        marginBottom: 6,
+        marginBottom: 4,
     },
     subtitle: {
-        fontSize: 14,
+        fontSize: isSmallScreen ? 13 : 14,
         color: '#64748b',
     },
     inputSection: {
-        marginBottom: 20,
+        marginBottom: isSmallScreen ? 14 : 18,
     },
     inputLabel: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '500',
         color: '#334155',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     input: {
-        height: 52,
+        height: isSmallScreen ? 46 : 50,
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        borderRadius: 14,
-        paddingHorizontal: 16,
-        fontSize: 16,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        fontSize: 15,
         color: '#1e293b',
         backgroundColor: '#fff',
     },
     countryHint: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 8,
+        marginTop: 6,
         gap: 6,
     },
     syriaFlag: {
-        width: 20,
-        height: 14,
+        width: 18,
+        height: 12,
         borderRadius: 2,
         overflow: 'hidden',
         borderWidth: 0.5,
@@ -370,20 +350,20 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     countryText: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#64748b',
     },
     continueButton: {
-        height: 52,
+        height: isSmallScreen ? 46 : 50,
         backgroundColor: BRAND_COLOR,
-        borderRadius: 14,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
         shadowColor: BRAND_COLOR,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        elevation: 3,
     },
     continueButtonPressed: {
         backgroundColor: BRAND_COLOR_DARK,
@@ -394,13 +374,13 @@ const styles = StyleSheet.create({
     },
     continueButtonText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
     },
     divider: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 24,
+        marginVertical: isSmallScreen ? 16 : 20,
     },
     dividerLine: {
         flex: 1,
@@ -408,43 +388,43 @@ const styles = StyleSheet.create({
         backgroundColor: '#e2e8f0',
     },
     dividerText: {
-        marginHorizontal: 16,
-        fontSize: 14,
+        marginHorizontal: 14,
+        fontSize: 13,
         fontWeight: '500',
         color: '#94a3b8',
     },
     socialButtons: {
-        gap: 12,
+        gap: isSmallScreen ? 8 : 10,
     },
     socialButton: {
-        height: 52,
+        height: isSmallScreen ? 44 : 48,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        borderRadius: 14,
+        borderRadius: 12,
         backgroundColor: 'white',
-        gap: 12,
+        gap: 10,
     },
     socialButtonPressed: {
         backgroundColor: '#f8fafc',
     },
     socialButtonText: {
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: '500',
         color: '#334155',
     },
     iconContainer: {
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         justifyContent: 'center',
         alignItems: 'center',
     },
     googleIcon: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
+        width: 18,
+        height: 18,
+        borderRadius: 9,
         backgroundColor: '#fff',
         borderWidth: 1,
         borderColor: '#e2e8f0',
@@ -453,10 +433,10 @@ const styles = StyleSheet.create({
     },
     footer: {
         textAlign: 'center',
-        fontSize: 12,
+        fontSize: 11,
         color: '#94a3b8',
-        marginTop: 24,
-        lineHeight: 18,
+        marginTop: isSmallScreen ? 16 : 20,
+        lineHeight: 16,
     },
     footerLink: {
         color: BRAND_COLOR,
