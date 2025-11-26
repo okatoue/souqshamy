@@ -1,56 +1,68 @@
-// app/_layout.tsx
-import { AuthProvider, useAuth } from '@/lib/auth_context';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
 
-function RootLayoutNav() {
-  const { user, loading } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (!user && !inAuthGroup) {
-      // Redirect to unified auth screen if not authenticated
-      router.replace('/(auth)');
-    } else if (user && inAuthGroup) {
-      // Redirect to main app if authenticated
-      router.replace('/(tabs)');
-    }
-  }, [user, segments, loading]);
+export default function TabLayout() {
+  const backgroundColor = useThemeColor({}, 'background');
+  const tintColor = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
+  const inactiveColor = useThemeColor({ light: '#8E8E93', dark: '#636366' }, 'tabIconDefault');
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(test)/test-supabase" options={{
-        title: 'Test',
-        headerShown: true
-      }} />
-      <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="search" options={{ headerShown: false }} />
-      <Stack.Screen name="product-details" options={{ headerShown: false }} />
-      <Stack.Screen name="user" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-    </Stack>
-  );
-}
-
-export default function RootLayout() {
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <AuthProvider>
-          <RootLayoutNav />
-        </AuthProvider>
-      </BottomSheetModalProvider>
-    </GestureHandlerRootView>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: tintColor,
+        tabBarInactiveTintColor: inactiveColor,
+        tabBarStyle: {
+          backgroundColor: backgroundColor,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="favorites"
+        options={{
+          title: 'Favorites',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="heart" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="post"
+        options={{
+          title: 'Post',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="add-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="chats"
+        options={{
+          title: 'Chats',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubbles" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="listings"
+        options={{
+          title: 'My Listings',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
