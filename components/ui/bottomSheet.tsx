@@ -84,8 +84,8 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             []
         );
 
-        const handleSheetChanges = useCallback((index: number) => {
-            console.log('Sheet changed to index:', index);
+        const handleSheetChanges = useCallback((_index: number) => {
+            // Sheet position changed
         }, []);
 
         const currentTitle = showCategories

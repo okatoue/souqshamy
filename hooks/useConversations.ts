@@ -1,4 +1,5 @@
 import { useAuth } from '@/lib/auth_context';
+import { getDisplayName } from '@/lib/formatters';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails } from '@/types/chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -112,28 +113,11 @@ export function useConversations() {
                 const otherUserId = isBuyer ? conv.seller_id : conv.buyer_id;
                 const otherUserProfile = profileMap.get(otherUserId);
 
-                // Get display name with fallback chain
-                let displayName = 'User';
-                if (otherUserProfile) {
-                    if (otherUserProfile.display_name) {
-                        displayName = otherUserProfile.display_name;
-                    } else if (otherUserProfile.email) {
-                        const emailName = otherUserProfile.email.split('@')[0];
-                        if (!emailName.match(/^\d+$/)) {
-                            displayName = emailName;
-                        } else if (otherUserProfile.phone_number) {
-                            displayName = otherUserProfile.phone_number;
-                        }
-                    } else if (otherUserProfile.phone_number) {
-                        displayName = otherUserProfile.phone_number;
-                    }
-                }
-
                 return {
                     ...conv,
                     other_user: {
                         id: otherUserId,
-                        display_name: displayName,
+                        display_name: getDisplayName(otherUserProfile),
                         avatar_url: otherUserProfile?.avatar_url || null
                     },
                     unread_count: isBuyer ? conv.buyer_unread_count : conv.seller_unread_count

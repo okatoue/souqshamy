@@ -42,13 +42,6 @@ export default function PostListingScreen() {
   };
 
   const handleCategorySelect = (category: Category, subcategory: Subcategory) => {
-    console.log('Selected:', {
-      category: category.name,
-      categoryId: category.id,
-      subcategory: subcategory.name,
-      subcategoryId: subcategory.id
-    });
-
     setSelectedCategory(category);
     setSelectedSubcategory(subcategory);
   };

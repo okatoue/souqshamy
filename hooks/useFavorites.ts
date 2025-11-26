@@ -1,17 +1,13 @@
 import { useAuth } from '@/lib/auth_context';
-import { supabase } from '@/lib/supabase';
+import { favoritesApi, listingsApi } from '@/lib/api';
+import { CACHE_KEYS, readCache, writeCache, clearCache } from '@/lib/cache';
+import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
 import { Listing } from '@/types/listing';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
-
-const FAVORITES_CACHE_KEY = '@favorites_cache';
-const FAVORITE_IDS_CACHE_KEY = '@favorite_ids_cache';
 
 interface CachedFavorites {
     listings: Listing[];
     ids: string[];
-    userId: string;
 }
 
 export function useFavorites() {
@@ -22,42 +18,21 @@ export function useFavorites() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const isInitialLoad = useRef(true);
 
-    // Load cached favorites from AsyncStorage
+    // Load cached favorites
     const loadCachedFavorites = useCallback(async (): Promise<CachedFavorites | null> => {
-        try {
-            const cachedData = await AsyncStorage.getItem(FAVORITES_CACHE_KEY);
-            if (cachedData) {
-                return JSON.parse(cachedData);
-            }
-        } catch (err) {
-            console.error('Error loading cached favorites:', err);
-        }
-        return null;
-    }, []);
+        if (!user) return null;
+        return readCache<CachedFavorites>(CACHE_KEYS.FAVORITES, { userId: user.id });
+    }, [user]);
 
     // Save favorites to cache
     const saveCachedFavorites = useCallback(async (listings: Listing[], ids: string[]) => {
         if (!user) return;
-        try {
-            const cacheData: CachedFavorites = {
-                listings,
-                ids,
-                userId: user.id
-            };
-            await AsyncStorage.setItem(FAVORITES_CACHE_KEY, JSON.stringify(cacheData));
-        } catch (err) {
-            console.error('Error saving cached favorites:', err);
-        }
+        await writeCache<CachedFavorites>(
+            CACHE_KEYS.FAVORITES,
+            { listings, ids },
+            user.id
+        );
     }, [user]);
-
-    // Clear cache (for logout or user change)
-    const clearCache = useCallback(async () => {
-        try {
-            await AsyncStorage.removeItem(FAVORITES_CACHE_KEY);
-        } catch (err) {
-            console.error('Error clearing favorites cache:', err);
-        }
-    }, []);
 
     // Fetch user's favorite listings
     const fetchFavorites = useCallback(async (refresh = false, showLoading = false) => {
@@ -65,7 +40,7 @@ export function useFavorites() {
             setFavorites([]);
             setFavoriteIds(new Set());
             setIsLoading(false);
-            await clearCache();
+            await clearCache(CACHE_KEYS.FAVORITES);
             return;
         }
 
@@ -77,49 +52,48 @@ export function useFavorites() {
             }
 
             // Get favorite listing IDs
-            const { data: favoriteData, error: favoriteError } = await supabase
-                .from('favorites')
-                .select('listing_id')
-                .eq('user_id', user.id);
+            const { data: listingIds, error: favoriteError } = await favoritesApi.getIds(user.id);
 
             if (favoriteError) throw favoriteError;
 
-            if (!favoriteData || favoriteData.length === 0) {
+            if (!listingIds || listingIds.length === 0) {
                 setFavorites([]);
                 setFavoriteIds(new Set());
                 await saveCachedFavorites([], []);
                 return;
             }
 
-            const listingIds = favoriteData.map(f => f.listing_id);
             setFavoriteIds(new Set(listingIds));
 
             // Fetch the actual listings
-            const { data: listingsData, error: listingsError } = await supabase
-                .from('listings')
-                .select('*')
-                .in('id', listingIds)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false });
+            const { data: listings, error: listingsError } = await listingsApi.getByIds(listingIds);
 
             if (listingsError) throw listingsError;
 
-            const listings = listingsData || [];
-            setFavorites(listings);
+            const listingData = listings || [];
+            setFavorites(listingData);
 
             // Update cache
-            await saveCachedFavorites(listings, listingIds);
+            await saveCachedFavorites(listingData, listingIds);
         } catch (error) {
-            console.error('Error fetching favorites:', error);
-            // Only show alert on manual refresh, not background updates
+            // Only show alert on manual refresh
             if (refresh) {
-                Alert.alert('Error', 'Failed to load favorites');
+                handleError(error, {
+                    context: 'useFavorites.fetchFavorites',
+                    alertTitle: 'Error',
+                    showAlert: true,
+                });
+            } else {
+                handleError(error, {
+                    context: 'useFavorites.fetchFavorites',
+                    showAlert: false,
+                });
             }
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [user, saveCachedFavorites, clearCache]);
+    }, [user, saveCachedFavorites]);
 
     // Initialize: load cache first, then refresh in background
     useEffect(() => {
@@ -134,7 +108,7 @@ export function useFavorites() {
             // Try to load from cache first
             const cached = await loadCachedFavorites();
 
-            if (cached && cached.userId === user.id && cached.listings.length > 0) {
+            if (cached && cached.listings.length > 0) {
                 // Show cached data immediately - no loading spinner
                 setFavorites(cached.listings);
                 setFavoriteIds(new Set(cached.ids));
@@ -161,25 +135,14 @@ export function useFavorites() {
     // Add a listing to favorites
     const addFavorite = useCallback(async (listingId: string) => {
         if (!user) {
-            Alert.alert('Sign In Required', 'Please sign in to save favorites');
+            showAuthRequiredAlert();
             return false;
         }
 
         try {
-            const { error } = await supabase
-                .from('favorites')
-                .insert({
-                    user_id: user.id,
-                    listing_id: listingId
-                });
+            const { error } = await favoritesApi.add(user.id, listingId);
 
-            if (error) {
-                // Handle duplicate error gracefully
-                if (error.code === '23505') {
-                    return true;
-                }
-                throw error;
-            }
+            if (error) throw error;
 
             // Update local state immediately (optimistic)
             setFavoriteIds(prev => new Set([...prev, listingId]));
@@ -189,8 +152,10 @@ export function useFavorites() {
 
             return true;
         } catch (error) {
-            console.error('Error adding favorite:', error);
-            Alert.alert('Error', 'Failed to add to favorites');
+            handleError(error, {
+                context: 'useFavorites.addFavorite',
+                alertTitle: 'Error',
+            });
             return false;
         }
     }, [user, fetchFavorites]);
@@ -202,11 +167,7 @@ export function useFavorites() {
         const id = String(listingId);
 
         try {
-            const { error } = await supabase
-                .from('favorites')
-                .delete()
-                .eq('user_id', user.id)
-                .eq('listing_id', id);
+            const { error } = await favoritesApi.remove(user.id, id);
 
             if (error) throw error;
 
@@ -227,8 +188,10 @@ export function useFavorites() {
 
             return true;
         } catch (error) {
-            console.error('Error removing favorite:', error);
-            Alert.alert('Error', 'Failed to remove from favorites');
+            handleError(error, {
+                context: 'useFavorites.removeFavorite',
+                alertTitle: 'Error',
+            });
             return false;
         }
     }, [user, favoriteIds, saveCachedFavorites]);

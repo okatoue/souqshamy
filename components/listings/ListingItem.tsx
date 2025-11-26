@@ -1,5 +1,5 @@
-import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -24,31 +24,6 @@ export function ListingItem({
     const textColor = useThemeColor({}, 'text');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
     const placeholderColor = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
-
-    const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
-        const category = categoriesData.categories.find(c => c.id === categoryId);
-        const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
-
-        return {
-            categoryName: category?.name,
-            categoryIcon: category?.icon,
-            subcategoryName: subcategory?.name
-        };
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-
-        if (diffInMinutes < 1) return 'Just now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-        if (diffInHours < 24) return `${diffInHours}h ago`;
-        if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-        return date.toLocaleDateString();
-    };
 
     const { categoryName, categoryIcon, subcategoryName } = getCategoryInfo(
         item.category_id,
@@ -113,8 +88,7 @@ export function ListingItem({
                         </Text>
 
                         <Text style={[styles.listingPrice, { color: textColor }]}>
-                            {item.currency === 'SYP' ? '£' : 'USD '}
-                            {item.price.toLocaleString()}
+                            {formatPrice(item.price, item.currency)}
                         </Text>
 
                         <View style={styles.listingMeta}>

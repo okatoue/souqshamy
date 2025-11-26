@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/lib/auth_context';
+import { formatPrice, getDisplayName } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails, Message } from '@/types/chat';
@@ -69,28 +70,11 @@ export default function ChatScreen() {
 
                     const isBuyer = conv.buyer_id === user.id;
 
-                    // Get display name with fallback chain
-                    let displayName = 'User';
-                    if (profile) {
-                        if (profile.display_name) {
-                            displayName = profile.display_name;
-                        } else if (profile.email) {
-                            const emailName = profile.email.split('@')[0];
-                            if (!emailName.match(/^\d+$/)) {
-                                displayName = emailName;
-                            } else if (profile.phone_number) {
-                                displayName = profile.phone_number;
-                            }
-                        } else if (profile.phone_number) {
-                            displayName = profile.phone_number;
-                        }
-                    }
-
                     setConversation({
                         ...conv,
                         other_user: {
                             id: otherUserId,
-                            display_name: displayName,
+                            display_name: getDisplayName(profile),
                             avatar_url: profile?.avatar_url || null
                         },
                         unread_count: isBuyer ? conv.buyer_unread_count : conv.seller_unread_count
@@ -274,8 +258,7 @@ export default function ChatScreen() {
                             {conversation.listing?.title}
                         </Text>
                         <Text style={[styles.previewPrice, { color: textColor }]}>
-                            {conversation.listing?.currency === 'SYP' ? '£' : 'USD '}
-                            {conversation.listing?.price.toLocaleString()}
+                            {conversation.listing ? formatPrice(conversation.listing.price, conversation.listing.currency) : ''}
                         </Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />

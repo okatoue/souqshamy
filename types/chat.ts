@@ -37,6 +37,12 @@ export interface Message {
     content: string;
     is_read: boolean;
     created_at: string;
+    /** URL for audio messages */
+    audio_url?: string | null;
+    /** Duration in seconds for audio messages */
+    audio_duration?: number | null;
+    /** Message type: 'text' or 'audio' */
+    message_type?: 'text' | 'audio';
 }
 
 export interface CreateConversationDTO {
