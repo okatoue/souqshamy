@@ -1,4 +1,5 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -29,13 +30,6 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
 
     const handleItemPress = (listing: Listing) => {
         router.push(`/listing/${listing.id}`);
-    };
-
-    const formatPrice = (price: number, currency: string) => {
-        if (currency === 'SYP') {
-            return `£${price.toLocaleString()}`;
-        }
-        return `USD ${price.toLocaleString()}`;
     };
 
     if (isLoading) {

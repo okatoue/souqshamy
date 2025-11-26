@@ -70,7 +70,6 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
     const fetchListings = useCallback(async (showLoading = false) => {
         // Validate categoryId before making the query
         if (!categoryId) {
-            console.log('useCategoryListings: No categoryId provided, skipping fetch');
             setIsLoading(false);
             return;
         }

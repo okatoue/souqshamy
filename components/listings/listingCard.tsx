@@ -1,6 +1,6 @@
-import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
+import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -27,37 +27,6 @@ export function ListingCard({ item, onPress }: ListingCardProps) {
     useEffect(() => {
         setLocalIsFavorite(isFavorite(item.id));
     }, [isFavorite, item.id]);
-
-    const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
-        const category = categoriesData.categories.find(c => c.id === categoryId);
-        const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
-        return {
-            categoryName: category?.name || 'Unknown',
-            categoryIcon: category?.icon || '📦',
-            subcategoryName: subcategory?.name || ''
-        };
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-
-        if (diffInMinutes < 1) return 'Just now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-        if (diffInHours < 24) return `${diffInHours}h ago`;
-        if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-        return date.toLocaleDateString();
-    };
-
-    const formatPrice = (price: number, currency: string) => {
-        if (currency === 'SYP') {
-            return `£${price.toLocaleString()}`;
-        }
-        return `USD ${price.toLocaleString()}`;
-    };
 
     const handleToggleFavorite = async () => {
         if (isTogglingFavorite) return;

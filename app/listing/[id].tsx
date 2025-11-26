@@ -1,8 +1,8 @@
-import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/lib/auth_context';
+import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
@@ -88,31 +88,6 @@ export default function ListingDetailScreen() {
 
         fetchListing();
     }, [params.id, isFavorite, user?.id]);
-
-    // Category lookup
-    const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
-        const category = categoriesData.categories.find(c => c.id === categoryId);
-        const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
-        return {
-            categoryName: category?.name,
-            categoryIcon: category?.icon,
-            subcategoryName: subcategory?.name
-        };
-    };
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-
-        if (diffInMinutes < 1) return 'Just now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-        if (diffInHours < 24) return `${diffInHours}h ago`;
-        if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-        return date.toLocaleDateString();
-    };
 
     const handleCall = () => {
         if (listing?.phone_number) {
@@ -349,8 +324,7 @@ export default function ListingDetailScreen() {
                     <View style={styles.titleSection}>
                         <Text style={[styles.title, { color: textColor }]}>{listing.title}</Text>
                         <Text style={[styles.price, { color: textColor }]}>
-                            {listing.currency === 'SYP' ? '£' : 'USD '}
-                            {listing.price.toLocaleString()}
+                            {formatPrice(listing.price, listing.currency)}
                         </Text>
                     </View>
 

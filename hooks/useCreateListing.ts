@@ -17,8 +17,6 @@ export function useCreateListing(): UseCreateListingResult {
         setError(null);
 
         try {
-            console.log('Submitting listing to Supabase:', listingData);
-
             const { data, error: supabaseError } = await supabase
                 .from('listings')
                 .insert([listingData])

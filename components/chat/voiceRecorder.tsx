@@ -48,21 +48,11 @@ export function VoiceRecorder({
         };
     }, []);
 
-    // Debug: Monitor audioRecorder state changes
-    useEffect(() => {
-        console.log('audioRecorder state changed:', {
-            isRecording: audioRecorder.isRecording,
-            uri: audioRecorder.uri,
-            recordingState: recordingState
-        });
-    }, [audioRecorder.isRecording, audioRecorder.uri]);
-
     // Watch for URI to become available after stopping (reactive approach)
     useEffect(() => {
         const handleUri = async () => {
             if (pendingSend && audioRecorder.uri && !audioRecorder.isRecording) {
                 const tempUri = audioRecorder.uri;
-                console.log('Recording URI available:', tempUri);
 
                 // Poll for file existence (it might take a moment to be written)
                 let fileExists = false;
@@ -72,25 +62,20 @@ export function VoiceRecorder({
                 while (!fileExists && attempts < maxAttempts) {
                     try {
                         const fileInfo = await FileSystem.getInfoAsync(tempUri);
-                        console.log(`Attempt ${attempts + 1}: File exists:`, fileInfo.exists, 'size:', (fileInfo as any).size);
 
                         if (fileInfo.exists && (fileInfo as any).size && (fileInfo as any).size > 0) {
                             fileExists = true;
-                            console.log('File ready, size:', (fileInfo as any).size);
                         } else {
                             await new Promise(resolve => setTimeout(resolve, 100));
                             attempts++;
                         }
-                    } catch (error) {
-                        console.log(`Attempt ${attempts + 1}: Error checking file:`, error);
+                    } catch {
                         await new Promise(resolve => setTimeout(resolve, 100));
                         attempts++;
                     }
                 }
 
                 if (!fileExists) {
-                    console.error('File never became available after', maxAttempts, 'attempts');
-                    console.error('Attempted URI was:', tempUri);
                     setPendingSend(false);
                     setRecordingState('paused');
                     return;
@@ -100,16 +85,13 @@ export function VoiceRecorder({
                     // Copy the file to a safe location
                     const safeUri = `${FileSystem.cacheDirectory}voice_${Date.now()}.m4a`;
 
-                    console.log('Copying from:', tempUri, 'to:', safeUri);
                     await FileSystem.copyAsync({
                         from: tempUri,
                         to: safeUri
                     });
 
-                    console.log('File copied successfully to:', safeUri);
                     handleSendWithUri(safeUri);
-                } catch (copyError) {
-                    console.error('Error copying file:', copyError);
+                } catch {
                     // Try to send with original URI as fallback
                     handleSendWithUri(tempUri);
                 }
@@ -201,21 +183,10 @@ export function VoiceRecorder({
                 playsInSilentMode: true,
             });
 
-            console.log('Starting recording...');
-            console.log('audioRecorder state before record:', {
-                isRecording: audioRecorder.isRecording,
-                uri: audioRecorder.uri
-            });
-
-            // FIX: Must call prepareToRecordAsync() before record()!
+            // Must call prepareToRecordAsync() before record()
             await audioRecorder.prepareToRecordAsync();
             audioRecorder.record();
             setRecordingState('recording');
-
-            console.log('Recording started, state:', {
-                isRecording: audioRecorder.isRecording,
-                uri: audioRecorder.uri
-            });
 
             durationInterval.current = setInterval(() => {
                 setDuration(prev => prev + 1);
@@ -290,22 +261,11 @@ export function VoiceRecorder({
             // Save duration before stopping
             savedDuration.current = duration;
 
-            console.log('Stopping recording...');
-            console.log('audioRecorder state before stop:', {
-                isRecording: audioRecorder.isRecording,
-                uri: audioRecorder.uri
-            });
-
             // Set flag to indicate we want to send when URI is ready
             setPendingSend(true);
 
             // Stop recording - this will trigger the useEffect when uri updates
             audioRecorder.stop();
-
-            console.log('Stop called, audioRecorder state:', {
-                isRecording: audioRecorder.isRecording,
-                uri: audioRecorder.uri
-            });
 
         } catch (error) {
             console.error('Error stopping recording:', error);
