@@ -10,7 +10,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { AUTH_COLORS, AUTH_SIZING } from './constants';
+import { AUTH_COLORS, AUTH_SIZING, AUTH_TYPOGRAPHY } from './constants';
 import { authStyles } from './styles';
 
 interface AuthInputProps extends TextInputProps {
@@ -45,7 +45,7 @@ export function AuthInput({
         )}
         <TextInput
           style={[
-            hasIcon ? styles.inputWithIcon : authStyles.input,
+            hasIcon ? styles.inputWithIcon : styles.input,
             !editable && styles.inputDisabled,
             style,
           ]}
@@ -73,11 +73,24 @@ const styles = StyleSheet.create({
   inputIcon: {
     paddingLeft: 14,
   },
+  // Input field without icon - has its own border and takes full width
+  input: {
+    flex: 1,
+    height: AUTH_SIZING.inputHeight,
+    borderWidth: 1,
+    borderColor: AUTH_COLORS.border,
+    borderRadius: AUTH_SIZING.borderRadius,
+    paddingHorizontal: 14,
+    fontSize: AUTH_TYPOGRAPHY.body.fontSize,
+    color: AUTH_COLORS.textPrimary,
+    backgroundColor: AUTH_COLORS.cardBackground,
+  },
+  // Input field with icon - no border (container has it), takes remaining space
   inputWithIcon: {
     flex: 1,
     height: AUTH_SIZING.inputHeight,
     paddingHorizontal: 10,
-    fontSize: 15,
+    fontSize: AUTH_TYPOGRAPHY.body.fontSize,
     color: AUTH_COLORS.textPrimary,
   },
   inputDisabled: {
