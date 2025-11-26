@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AudioModule, RecordingPresets, useAudioRecorder } from 'expo-audio';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
@@ -67,16 +67,22 @@ export function VoiceRecorder({
                 // Poll for file existence (it might take a moment to be written)
                 let fileExists = false;
                 let attempts = 0;
-                const maxAttempts = 20; // 2 seconds max
+                const maxAttempts = 30; // 3 seconds max (increased from 20)
 
                 while (!fileExists && attempts < maxAttempts) {
-                    const fileInfo = await FileSystem.getInfoAsync(tempUri);
-                    console.log(`Attempt ${attempts + 1}: File exists:`, fileInfo.exists);
+                    try {
+                        const fileInfo = await FileSystem.getInfoAsync(tempUri);
+                        console.log(`Attempt ${attempts + 1}: File exists:`, fileInfo.exists, 'size:', (fileInfo as any).size);
 
-                    if (fileInfo.exists && fileInfo.size && fileInfo.size > 0) {
-                        fileExists = true;
-                        console.log('File ready, size:', fileInfo.size);
-                    } else {
+                        if (fileInfo.exists && (fileInfo as any).size && (fileInfo as any).size > 0) {
+                            fileExists = true;
+                            console.log('File ready, size:', (fileInfo as any).size);
+                        } else {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            attempts++;
+                        }
+                    } catch (error) {
+                        console.log(`Attempt ${attempts + 1}: Error checking file:`, error);
                         await new Promise(resolve => setTimeout(resolve, 100));
                         attempts++;
                     }
@@ -84,6 +90,7 @@ export function VoiceRecorder({
 
                 if (!fileExists) {
                     console.error('File never became available after', maxAttempts, 'attempts');
+                    console.error('Attempted URI was:', tempUri);
                     setPendingSend(false);
                     setRecordingState('paused');
                     return;
@@ -200,6 +207,8 @@ export function VoiceRecorder({
                 uri: audioRecorder.uri
             });
 
+            // FIX: Must call prepareToRecordAsync() before record()!
+            await audioRecorder.prepareToRecordAsync();
             audioRecorder.record();
             setRecordingState('recording');
 

@@ -2,13 +2,14 @@ import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails } from '@/types/chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 const CONVERSATIONS_CACHE_KEY = '@conversations_cache';
 
 interface CachedConversations {
     conversations: ConversationWithDetails[];
     userId: string;
+    timestamp: number;
 }
 
 export function useConversations() {
@@ -17,53 +18,44 @@ export function useConversations() {
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [totalUnreadCount, setTotalUnreadCount] = useState(0);
-    const isInitialLoad = useRef(true);
 
     // Load cached conversations
-    const loadCachedConversations = useCallback(async (): Promise<CachedConversations | null> => {
+    const loadCachedConversations = useCallback(async (): Promise<ConversationWithDetails[] | null> => {
+        if (!user) return null;
         try {
-            const cachedData = await AsyncStorage.getItem(CONVERSATIONS_CACHE_KEY);
-            if (cachedData) {
-                const parsed: CachedConversations = JSON.parse(cachedData);
-                if (user && parsed.userId === user.id) {
-                    return parsed;
+            const cached = await AsyncStorage.getItem(`${CONVERSATIONS_CACHE_KEY}_${user.id}`);
+            if (cached) {
+                const parsed: CachedConversations = JSON.parse(cached);
+                if (parsed.userId === user.id) {
+                    return parsed.conversations;
                 }
             }
-        } catch (err) {
-            console.error('Error loading cached conversations:', err);
+        } catch (error) {
+            console.error('Error loading cached conversations:', error);
         }
         return null;
     }, [user]);
 
     // Save conversations to cache
-    const saveCachedConversations = useCallback(async (convos: ConversationWithDetails[]) => {
+    const saveCachedConversations = useCallback(async (convs: ConversationWithDetails[]) => {
         if (!user) return;
         try {
             const cacheData: CachedConversations = {
-                conversations: convos,
-                userId: user.id
+                conversations: convs,
+                userId: user.id,
+                timestamp: Date.now()
             };
-            await AsyncStorage.setItem(CONVERSATIONS_CACHE_KEY, JSON.stringify(cacheData));
-        } catch (err) {
-            console.error('Error saving cached conversations:', err);
+            await AsyncStorage.setItem(`${CONVERSATIONS_CACHE_KEY}_${user.id}`, JSON.stringify(cacheData));
+        } catch (error) {
+            console.error('Error saving cached conversations:', error);
         }
     }, [user]);
 
-    // Clear cache
-    const clearCache = useCallback(async () => {
-        try {
-            await AsyncStorage.removeItem(CONVERSATIONS_CACHE_KEY);
-        } catch (err) {
-            console.error('Error clearing conversations cache:', err);
-        }
-    }, []);
-
-    // Fetch conversations
+    // Fetch conversations from Supabase
     const fetchConversations = useCallback(async (refresh = false) => {
         if (!user) {
             setConversations([]);
             setIsLoading(false);
-            await clearCache();
             return;
         }
 
@@ -73,7 +65,7 @@ export function useConversations() {
             }
 
             // Fetch conversations where user is buyer or seller
-            const { data: convos, error } = await supabase
+            const { data: convData, error: convError } = await supabase
                 .from('conversations')
                 .select(`
                     *,
@@ -82,83 +74,88 @@ export function useConversations() {
                 .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
                 .order('last_message_at', { ascending: false });
 
-            if (error) throw error;
+            if (convError) {
+                console.error('Error fetching conversations:', convError);
+                throw convError;
+            }
 
-            if (!convos || convos.length === 0) {
+            if (!convData || convData.length === 0) {
                 setConversations([]);
                 setTotalUnreadCount(0);
-                await saveCachedConversations([]);
+                setIsLoading(false);
+                setIsRefreshing(false);
                 return;
             }
 
-            // Get all other user IDs
-            const otherUserIds = convos.map(c =>
-                c.buyer_id === user.id ? c.seller_id : c.buyer_id
+            // Get unique other user IDs
+            const otherUserIds = convData.map(conv =>
+                conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id
             );
+            const uniqueUserIds = [...new Set(otherUserIds)];
 
-            // Fetch other users' profiles
-            // Fetch other users' profiles
+            // Fetch profiles for other users
             const { data: profiles, error: profilesError } = await supabase
                 .from('profiles')
-                .select('id, display_name, email, avatar_url')
-                .in('id', otherUserIds);
+                .select('id, email, phone_number, display_name, avatar_url')
+                .in('id', uniqueUserIds);
 
             if (profilesError) {
                 console.error('Error fetching profiles:', profilesError);
             }
 
-            // Create a map for quick profile lookup
-            const profileMap = new Map(
-                (profiles || []).map(p => [p.id, p])
-            );
+            // Create a map of profiles
+            const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-            // Transform conversations with details
-            const conversationsWithDetails: ConversationWithDetails[] = convos.map(conv => {
+            // Build conversation with details
+            const conversationsWithDetails: ConversationWithDetails[] = convData.map(conv => {
                 const isBuyer = conv.buyer_id === user.id;
                 const otherUserId = isBuyer ? conv.seller_id : conv.buyer_id;
                 const otherUserProfile = profileMap.get(otherUserId);
 
-                // Get display name with fallback
-                const getDisplayName = () => {
-                    if (otherUserProfile?.display_name) return otherUserProfile.display_name;
-                    if (otherUserProfile?.email) {
+                // Get display name with fallback chain
+                let displayName = 'User';
+                if (otherUserProfile) {
+                    if (otherUserProfile.display_name) {
+                        displayName = otherUserProfile.display_name;
+                    } else if (otherUserProfile.email) {
                         const emailName = otherUserProfile.email.split('@')[0];
-                        // Check if it's a phone placeholder email
-                        if (emailName.match(/^\d+$/)) return 'User';
-                        return emailName;
+                        if (!emailName.match(/^\d+$/)) {
+                            displayName = emailName;
+                        } else if (otherUserProfile.phone_number) {
+                            displayName = otherUserProfile.phone_number;
+                        }
+                    } else if (otherUserProfile.phone_number) {
+                        displayName = otherUserProfile.phone_number;
                     }
-                    return 'User';
-                };
+                }
 
                 return {
                     ...conv,
                     other_user: {
                         id: otherUserId,
-                        display_name: getDisplayName(),
+                        display_name: displayName,
                         avatar_url: otherUserProfile?.avatar_url || null
                     },
                     unread_count: isBuyer ? conv.buyer_unread_count : conv.seller_unread_count
                 };
             });
 
-            // Calculate total unread
-            const totalUnread = conversationsWithDetails.reduce(
-                (sum, c) => sum + c.unread_count, 0
-            );
-
             setConversations(conversationsWithDetails);
-            setTotalUnreadCount(totalUnread);
             await saveCachedConversations(conversationsWithDetails);
 
+            // Calculate total unread
+            const unread = conversationsWithDetails.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
+            setTotalUnreadCount(unread);
+
         } catch (error) {
-            console.error('Error fetching conversations:', error);
+            console.error('Error in fetchConversations:', error);
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [user, saveCachedConversations, clearCache]);
+    }, [user, saveCachedConversations]);
 
-    // Get or create conversation for a listing
+    // Get or create a conversation
     const getOrCreateConversation = useCallback(async (
         listingId: string,
         sellerId: string
@@ -179,8 +176,13 @@ export function useConversations() {
                 return existing.id;
             }
 
+            if (findError && findError.code !== 'PGRST116') {
+                // PGRST116 = not found, which is expected
+                console.error('Error finding conversation:', findError);
+            }
+
             // Create new conversation
-            const { data: newConvo, error: createError } = await supabase
+            const { data: newConv, error: createError } = await supabase
                 .from('conversations')
                 .insert({
                     listing_id: listingId,
@@ -190,22 +192,25 @@ export function useConversations() {
                 .select('id')
                 .single();
 
-            if (createError) throw createError;
+            if (createError) {
+                console.error('Error creating conversation:', createError);
+                throw createError;
+            }
 
             // Refresh conversations list
             fetchConversations(false);
 
-            return newConvo?.id || null;
+            return newConv?.id || null;
 
         } catch (error) {
-            console.error('Error getting/creating conversation:', error);
+            console.error('Error in getOrCreateConversation:', error);
             return null;
         }
     }, [user, fetchConversations]);
 
-    // Initial load with cache
+    // Initialize with cache, then fetch fresh data
     useEffect(() => {
-        const initializeConversations = async () => {
+        const initialize = async () => {
             if (!user) {
                 setConversations([]);
                 setIsLoading(false);
@@ -214,25 +219,20 @@ export function useConversations() {
 
             // Load from cache first
             const cached = await loadCachedConversations();
-            if (cached && cached.conversations.length > 0) {
-                setConversations(cached.conversations);
-                const totalUnread = cached.conversations.reduce(
-                    (sum, c) => sum + c.unread_count, 0
-                );
-                setTotalUnreadCount(totalUnread);
+            if (cached && cached.length > 0) {
+                setConversations(cached);
+                const unread = cached.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
+                setTotalUnreadCount(unread);
                 setIsLoading(false);
-
-                // Then fetch fresh data in background
+                // Fetch fresh data in background
                 fetchConversations(false);
             } else {
-                // No cache, fetch fresh
+                // No cache, show loading
                 await fetchConversations(false);
             }
-
-            isInitialLoad.current = false;
         };
 
-        initializeConversations();
+        initialize();
     }, [user, loadCachedConversations, fetchConversations]);
 
     // Subscribe to real-time updates
@@ -249,7 +249,9 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
                 },
-                () => fetchConversations(false)
+                () => {
+                    fetchConversations(false);
+                }
             )
             .on(
                 'postgres_changes',
@@ -259,7 +261,9 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
                 },
-                () => fetchConversations(false)
+                () => {
+                    fetchConversations(false);
+                }
             )
             .subscribe();
 

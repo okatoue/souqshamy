@@ -1,5 +1,3 @@
-import { VoiceMessage } from '@/components/chat/voiceMessage';
-import { VoiceRecorder } from '@/components/chat/voiceRecorder';
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
@@ -31,9 +29,8 @@ export default function ChatScreen() {
     const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
     const [conversationLoading, setConversationLoading] = useState(true);
     const [messageText, setMessageText] = useState('');
-    const [isRecording, setIsRecording] = useState(false);
 
-    const { messages, isLoading, isSending, sendMessage, sendVoiceMessage } = useMessages(conversationId);
+    const { messages, isLoading, isSending, sendMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
 
     const backgroundColor = useThemeColor({}, 'background');
@@ -45,7 +42,6 @@ export default function ChatScreen() {
     const myMessageBg = '#007AFF';
     const otherMessageBg = useThemeColor({ light: '#e5e5ea', dark: '#3a3a3c' }, 'background');
 
-    // Fetch conversation details
     useEffect(() => {
         const fetchConversation = async () => {
             if (!conversationId || !user) return;
@@ -66,18 +62,35 @@ export default function ChatScreen() {
                     const otherUserId = conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id;
                     const { data: profile } = await supabase
                         .from('profiles')
-                        .select('id, email')
+                        .select('id, email, phone_number, display_name, avatar_url')
                         .eq('id', otherUserId)
                         .single();
 
                     const isBuyer = conv.buyer_id === user.id;
 
+                    // Get display name with fallback chain
+                    let displayName = 'User';
+                    if (profile) {
+                        if (profile.display_name) {
+                            displayName = profile.display_name;
+                        } else if (profile.email) {
+                            const emailName = profile.email.split('@')[0];
+                            if (!emailName.match(/^\d+$/)) {
+                                displayName = emailName;
+                            } else if (profile.phone_number) {
+                                displayName = profile.phone_number;
+                            }
+                        } else if (profile.phone_number) {
+                            displayName = profile.phone_number;
+                        }
+                    }
+
                     setConversation({
                         ...conv,
                         other_user: {
                             id: otherUserId,
-                            display_name: profile?.email?.split('@')[0] || 'User',
-                            avatar_url: null
+                            display_name: displayName,
+                            avatar_url: profile?.avatar_url || null
                         },
                         unread_count: isBuyer ? conv.buyer_unread_count : conv.seller_unread_count
                     });
@@ -92,7 +105,6 @@ export default function ChatScreen() {
         fetchConversation();
     }, [conversationId, user]);
 
-    // Scroll to bottom when new messages arrive
     useEffect(() => {
         if (messages.length > 0) {
             setTimeout(() => {
@@ -107,16 +119,10 @@ export default function ChatScreen() {
         const text = messageText.trim();
         setMessageText('');
 
-        await sendMessage(text);
-    };
-
-    const handleSendVoice = async (uri: string, duration: number): Promise<boolean> => {
-        setIsRecording(false);
-        return await sendVoiceMessage(uri, duration);
-    };
-
-    const handleCancelVoice = () => {
-        setIsRecording(false);
+        const success = await sendMessage(text);
+        if (!success) {
+            setMessageText(text);
+        }
     };
 
     const handleListingPress = () => {
@@ -155,8 +161,6 @@ export default function ChatScreen() {
             new Date(item.created_at).toDateString() !==
             new Date(messages[index - 1].created_at).toDateString();
 
-        const isVoiceMessage = item.message_type === 'voice' && item.audio_url;
-
         return (
             <View>
                 {showDateHeader && (
@@ -170,53 +174,30 @@ export default function ChatScreen() {
                     styles.messageContainer,
                     isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer
                 ]}>
-                    {isVoiceMessage ? (
-                        <View>
-                            <VoiceMessage
-                                audioUrl={item.audio_url!}
-                                duration={item.audio_duration || 0}
-                                isOwnMessage={isMyMessage}
-                                bubbleColor={isMyMessage ? myMessageBg : otherMessageBg}
-                                textColor={isMyMessage ? 'white' : textColor}
-                            />
-                            <Text style={[
-                                styles.messageTime,
-                                {
-                                    color: secondaryTextColor,
-                                    alignSelf: isMyMessage ? 'flex-end' : 'flex-start',
-                                    marginTop: 4
-                                }
-                            ]}>
-                                {formatTime(item.created_at)}
-                            </Text>
-                        </View>
-                    ) : (
-                        <View style={[
-                            styles.messageBubble,
-                            isMyMessage
-                                ? { backgroundColor: myMessageBg }
-                                : { backgroundColor: otherMessageBg }
+                    <View style={[
+                        styles.messageBubble,
+                        isMyMessage
+                            ? { backgroundColor: myMessageBg }
+                            : { backgroundColor: otherMessageBg }
+                    ]}>
+                        <Text style={[
+                            styles.messageText,
+                            { color: isMyMessage ? 'white' : textColor }
                         ]}>
-                            <Text style={[
-                                styles.messageText,
-                                { color: isMyMessage ? 'white' : textColor }
-                            ]}>
-                                {item.content}
-                            </Text>
-                            <Text style={[
-                                styles.messageTime,
-                                { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
-                            ]}>
-                                {formatTime(item.created_at)}
-                            </Text>
-                        </View>
-                    )}
+                            {item.content}
+                        </Text>
+                        <Text style={[
+                            styles.messageTime,
+                            { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
+                        ]}>
+                            {formatTime(item.created_at)}
+                        </Text>
+                    </View>
                 </View>
             </View>
         );
     };
 
-    // Loading state
     if (conversationLoading || isLoading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
@@ -316,54 +297,27 @@ export default function ChatScreen() {
                     }
                 />
 
-                {/* Input Area */}
+                {/* Input */}
                 <View style={[styles.inputContainer, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
-                    {isRecording ? (
-                        <VoiceRecorder
-                            onSend={handleSendVoice}
-                            onCancel={handleCancelVoice}
-                            accentColor="#007AFF"
-                            backgroundColor={inputBg}
-                            textColor={textColor}
-                        />
-                    ) : (
-                        <>
-                            <TextInput
-                                style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
-                                placeholder="Type a message..."
-                                placeholderTextColor={secondaryTextColor}
-                                value={messageText}
-                                onChangeText={setMessageText}
-                                multiline
-                                maxLength={1000}
-                            />
-
-                            {/* Show mic button when no text, send button when there's text */}
-                            {messageText.trim() ? (
-                                <Pressable
-                                    style={[
-                                        styles.sendButton,
-                                        isSending && styles.sendButtonDisabled
-                                    ]}
-                                    onPress={handleSend}
-                                    disabled={isSending}
-                                >
-                                    {isSending ? (
-                                        <ActivityIndicator size="small" color="white" />
-                                    ) : (
-                                        <Ionicons name="send" size={20} color="white" />
-                                    )}
-                                </Pressable>
-                            ) : (
-                                <Pressable
-                                    style={styles.micButton}
-                                    onPress={() => setIsRecording(true)}
-                                >
-                                    <Ionicons name="mic" size={22} color="white" />
-                                </Pressable>
-                            )}
-                        </>
-                    )}
+                    <TextInput
+                        style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
+                        placeholder="Type a message..."
+                        placeholderTextColor={secondaryTextColor}
+                        value={messageText}
+                        onChangeText={setMessageText}
+                        multiline
+                        maxLength={1000}
+                    />
+                    <Pressable
+                        style={[
+                            styles.sendButton,
+                            !messageText.trim() && styles.sendButtonDisabled
+                        ]}
+                        onPress={handleSend}
+                        disabled={!messageText.trim() || isSending}
+                    >
+                        <Ionicons name="send" size={20} color="white" />
+                    </Pressable>
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -537,14 +491,5 @@ const styles = StyleSheet.create({
     },
     sendButtonDisabled: {
         backgroundColor: '#ccc',
-    },
-    micButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#007AFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 8,
     },
 });

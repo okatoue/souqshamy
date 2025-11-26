@@ -1,3 +1,4 @@
+import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -7,16 +8,27 @@ const RECENTLY_VIEWED_KEY = '@recently_viewed_listings';
 const RECENTLY_VIEWED_CACHE_KEY = '@recently_viewed_cache';
 const MAX_RECENTLY_VIEWED = 20;
 
+// Helper to get user-specific storage keys
+const getStorageKeys = (userId: string | undefined) => ({
+    idsKey: userId ? `${RECENTLY_VIEWED_KEY}_${userId}` : RECENTLY_VIEWED_KEY,
+    cacheKey: userId ? `${RECENTLY_VIEWED_CACHE_KEY}_${userId}` : RECENTLY_VIEWED_CACHE_KEY,
+});
+
 export function useRecentlyViewed() {
+    const { user } = useAuth();
     const [listings, setListings] = useState<Listing[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
     const isInitialLoad = useRef(true);
+    const previousUserId = useRef<string | undefined>(undefined);
+
+    // Get current user's storage keys
+    const storageKeys = getStorageKeys(user?.id);
 
     // Load cached listings from AsyncStorage (instant, no network)
     const loadCachedListings = useCallback(async (): Promise<Listing[]> => {
         try {
-            const cachedData = await AsyncStorage.getItem(RECENTLY_VIEWED_CACHE_KEY);
+            const cachedData = await AsyncStorage.getItem(storageKeys.cacheKey);
             if (cachedData) {
                 return JSON.parse(cachedData);
             }
@@ -24,16 +36,16 @@ export function useRecentlyViewed() {
             console.error('Error loading cached listings:', err);
         }
         return [];
-    }, []);
+    }, [storageKeys.cacheKey]);
 
     // Save listings to cache
     const saveCachedListings = useCallback(async (listingsToCache: Listing[]) => {
         try {
-            await AsyncStorage.setItem(RECENTLY_VIEWED_CACHE_KEY, JSON.stringify(listingsToCache));
+            await AsyncStorage.setItem(storageKeys.cacheKey, JSON.stringify(listingsToCache));
         } catch (err) {
             console.error('Error saving cached listings:', err);
         }
-    }, []);
+    }, [storageKeys.cacheKey]);
 
     // Load recently viewed listings (with background refresh)
     const loadRecentlyViewed = useCallback(async (showLoading = false) => {
@@ -45,7 +57,7 @@ export function useRecentlyViewed() {
             setError(null);
 
             // Get stored listing IDs
-            const storedIds = await AsyncStorage.getItem(RECENTLY_VIEWED_KEY);
+            const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
             if (!storedIds) {
                 setListings([]);
                 await saveCachedListings([]);
@@ -86,12 +98,12 @@ export function useRecentlyViewed() {
         } finally {
             setIsLoading(false);
         }
-    }, [saveCachedListings]);
+    }, [storageKeys.idsKey, saveCachedListings]);
 
     // Add a listing to recently viewed
     const addToRecentlyViewed = useCallback(async (listingId: number) => {
         try {
-            const storedIds = await AsyncStorage.getItem(RECENTLY_VIEWED_KEY);
+            const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
             let ids: number[] = storedIds ? JSON.parse(storedIds) : [];
 
             // Remove if already exists (to move to front)
@@ -104,30 +116,44 @@ export function useRecentlyViewed() {
             ids = ids.slice(0, MAX_RECENTLY_VIEWED);
 
             // Save back to storage
-            await AsyncStorage.setItem(RECENTLY_VIEWED_KEY, JSON.stringify(ids));
+            await AsyncStorage.setItem(storageKeys.idsKey, JSON.stringify(ids));
 
             // Reload listings in background (no loading spinner)
             await loadRecentlyViewed(false);
         } catch (err) {
             console.error('Error adding to recently viewed:', err);
         }
-    }, [loadRecentlyViewed]);
+    }, [storageKeys.idsKey, loadRecentlyViewed]);
 
     // Clear recently viewed
     const clearRecentlyViewed = useCallback(async () => {
         try {
-            await AsyncStorage.removeItem(RECENTLY_VIEWED_KEY);
-            await AsyncStorage.removeItem(RECENTLY_VIEWED_CACHE_KEY);
+            await AsyncStorage.removeItem(storageKeys.idsKey);
+            await AsyncStorage.removeItem(storageKeys.cacheKey);
             setListings([]);
         } catch (err) {
             console.error('Error clearing recently viewed:', err);
         }
-    }, []);
+    }, [storageKeys.idsKey, storageKeys.cacheKey]);
 
     // Background refresh - updates data without showing loading state
     const refresh = useCallback(async () => {
         await loadRecentlyViewed(false);
     }, [loadRecentlyViewed]);
+
+    // Clear data when user changes (logout/login with different account)
+    useEffect(() => {
+        const currentUserId = user?.id;
+
+        // If user changed (including logout), clear current state
+        if (previousUserId.current !== currentUserId) {
+            // Clear state immediately when user changes
+            setListings([]);
+            setIsLoading(true);
+            isInitialLoad.current = true;
+            previousUserId.current = currentUserId;
+        }
+    }, [user?.id]);
 
     // Initial load: show cached data immediately, then refresh in background
     useEffect(() => {
@@ -151,7 +177,7 @@ export function useRecentlyViewed() {
         };
 
         initialize();
-    }, [loadCachedListings, loadRecentlyViewed]);
+    }, [loadCachedListings, loadRecentlyViewed, user?.id]);
 
     return {
         listings,

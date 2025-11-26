@@ -1,6 +1,8 @@
+// Chat system types for 3ANTAR marketplace
+
 export interface Conversation {
     id: string;
-    listing_id: number;
+    listing_id: string;
     buyer_id: string;
     seller_id: string;
     last_message: string | null;
@@ -13,16 +15,16 @@ export interface Conversation {
 
 export interface ConversationWithDetails extends Conversation {
     listing: {
-        id: number;
+        id: string;
         title: string;
         price: number;
         currency: string;
         images: string[] | null;
-        status: 'active' | 'sold' | 'inactive';
-    };
+        status: string;
+    } | null;
     other_user: {
         id: string;
-        display_name: string | null;
+        display_name: string;
         avatar_url: string | null;
     };
     unread_count: number;
@@ -33,15 +35,12 @@ export interface Message {
     conversation_id: string;
     sender_id: string;
     content: string;
-    message_type: 'text' | 'voice';
-    audio_url: string | null;
-    audio_duration: number | null;
     is_read: boolean;
     created_at: string;
 }
 
 export interface CreateConversationDTO {
-    listing_id: number;
+    listing_id: string;
     buyer_id: string;
     seller_id: string;
 }
@@ -50,7 +49,4 @@ export interface CreateMessageDTO {
     conversation_id: string;
     sender_id: string;
     content: string;
-    message_type?: 'text' | 'voice';
-    audio_url?: string | null;
-    audio_duration?: number | null;
 }
