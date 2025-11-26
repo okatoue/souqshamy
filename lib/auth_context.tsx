@@ -6,7 +6,7 @@ import { Alert } from 'react-native';
 type AuthContextType = {
     user: User | null;
     session: Session | null;
-    signUp: (emailOrPhone: string | undefined, password: string, phoneNumber?: string) => Promise<void>;
+    signUp: (emailOrPhone: string | undefined, password: string, phoneNumber?: string, displayName?: string) => Promise<void>;
     signIn: (emailOrPhone: string | undefined, password: string, phoneNumber?: string) => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
@@ -24,12 +24,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         supabase.auth.getSession().then(({ data: { session } }) => {
             setSession(session);
             setUser(session?.user ?? null);
-            
+
             // Create/update profile if user exists
             if (session?.user) {
-                createOrUpdateProfile(session.user.id, session.user.email);
+                createOrUpdateProfile(
+                    session.user.id,
+                    session.user.email,
+                    session.user.user_metadata?.phone_number,
+                    session.user.user_metadata?.display_name
+                );
             }
-            
+
             setLoading(false);
         });
 
@@ -44,7 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     await createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
-                        session.user.user_metadata?.phone_number
+                        session.user.user_metadata?.phone_number,
+                        session.user.user_metadata?.display_name
                     );
                 }
             }
@@ -53,31 +59,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => subscription.unsubscribe();
     }, []);
 
-    const createOrUpdateProfile = async (userId: string, email?: string, phoneNumber?: string) => {
+    const createOrUpdateProfile = async (
+        userId: string,
+        email?: string,
+        phoneNumber?: string,
+        displayName?: string
+    ) => {
         try {
             // First check if profile exists
             const { data: existingProfile } = await supabase
                 .from('profiles')
-                .select('id')
+                .select('id, display_name')
                 .eq('id', userId)
                 .single();
 
             if (!existingProfile) {
-                // Create new profile with email and phone
+                // Create new profile
                 const { error } = await supabase
                     .from('profiles')
                     .insert({
                         id: userId,
                         email: email,
                         phone_number: phoneNumber,
+                        display_name: displayName,
                     });
 
                 if (error) console.error('Profile creation error:', error);
             } else {
-                // Update existing profile with email if not already set
+                // Update existing profile - only update display_name if provided and not already set
                 const updates: any = {};
                 if (email) updates.email = email;
                 if (phoneNumber) updates.phone_number = phoneNumber;
+                if (displayName && !existingProfile.display_name) {
+                    updates.display_name = displayName;
+                }
 
                 if (Object.keys(updates).length > 0) {
                     const { error } = await supabase
@@ -93,7 +108,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    const signUp = async (emailOrPhone: string | undefined, password: string, phoneNumber?: string) => {
+    const signUp = async (
+        emailOrPhone: string | undefined,
+        password: string,
+        phoneNumber?: string,
+        displayName?: string
+    ) => {
         try {
             if (emailOrPhone) {
                 // Sign up with email
@@ -103,6 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     options: {
                         data: {
                             phone_number: phoneNumber,
+                            display_name: displayName,
                         }
                     }
                 });
@@ -110,9 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (error) throw error;
             } else if (phoneNumber) {
                 // For phone-based signup, we'll use phone as a unique identifier
-                // Note: Supabase requires email for auth, so we generate a placeholder email
                 const placeholderEmail = `${phoneNumber}@phone.local`;
-                
+
                 const { data, error } = await supabase.auth.signUp({
                     email: placeholderEmail,
                     password,
@@ -120,6 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         data: {
                             phone_number: phoneNumber,
                             is_phone_user: true,
+                            display_name: displayName,
                         }
                     }
                 });
@@ -146,7 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else if (phoneNumber) {
                 // For phone-based signin, use the placeholder email format
                 const placeholderEmail = `${phoneNumber}@phone.local`;
-                
+
                 const { error } = await supabase.auth.signInWithPassword({
                     email: placeholderEmail,
                     password

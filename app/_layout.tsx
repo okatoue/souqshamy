@@ -40,6 +40,7 @@ function RootLayoutNav() {
       }} />
       <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen name="product-details" options={{ headerShown: false }} />
       <Stack.Screen name="user" options={{ headerShown: false }} />

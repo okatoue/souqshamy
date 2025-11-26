@@ -1,6 +1,8 @@
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useConversations } from '@/hooks/useConversations';
 import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/lib/auth_context';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
@@ -29,6 +31,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
     const params = useLocalSearchParams<{ id: string }>();
+    const { user } = useAuth();
     const [listing, setListing] = useState<Listing | null>(null);
     const [loading, setLoading] = useState(true);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -40,55 +43,52 @@ export default function ListingDetailScreen() {
     const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
     const [localIsFavorite, setLocalIsFavorite] = useState(false);
 
-    // Animation values
+    // Chat
+    const { getOrCreateConversation } = useConversations();
+    const [isStartingChat, setIsStartingChat] = useState(false);
+
+    // Animated value for modal swipe
     const translateY = useSharedValue(0);
 
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
+    const secondaryBg = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
+    const cardBg = useThemeColor({ light: '#fff', dark: '#1e1e1e' }, 'background');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
-    const secondaryBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
     const placeholderColor = useThemeColor({ light: '#999', dark: '#666' }, 'text');
 
+    // Fetch listing data
     useEffect(() => {
-        fetchListing();
-    }, [params.id]);
+        const fetchListing = async () => {
+            if (!params.id) return;
 
-    // Sync favorite state when listing loads
-    useEffect(() => {
-        if (listing) {
-            setLocalIsFavorite(isFavorite(listing.id));
-        }
-    }, [listing, isFavorite]);
+            try {
+                const { data, error } = await supabase
+                    .from('listings')
+                    .select('*')
+                    .eq('id', params.id)
+                    .single();
 
-    const fetchListing = async () => {
-        if (!params.id) return;
+                if (error) throw error;
 
-        try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('listings')
-                .select('*')
-                .eq('id', params.id)
-                .single();
+                setListing(data);
+                setLocalIsFavorite(isFavorite(data.id));
 
-            if (error) throw error;
-
-            setListing(data);
-
-            // Track this listing as recently viewed
-            if (data?.id) {
+                // Add to recently viewed
                 addToRecentlyViewed(data.id);
+            } catch (error) {
+                console.error('Error fetching listing:', error);
+                Alert.alert('Error', 'Failed to load listing');
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Error fetching listing:', error);
-            Alert.alert('Error', 'Failed to load listing');
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
 
+        fetchListing();
+    }, [params.id, isFavorite]);
+
+    // Category lookup
     const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
         const category = categoriesData.categories.find(c => c.id === categoryId);
         const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
@@ -130,6 +130,49 @@ export default function ListingDetailScreen() {
             Linking.openURL(whatsappUrl).catch(err =>
                 Alert.alert('Error', 'WhatsApp is not installed')
             );
+        }
+    };
+
+    const handleChat = async () => {
+        if (!listing) return;
+
+        // Check if user is logged in
+        if (!user) {
+            Alert.alert(
+                'Sign In Required',
+                'Please sign in to chat with the seller',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Sign In', onPress: () => router.push('/(auth)/sign-in') }
+                ]
+            );
+            return;
+        }
+
+        // Check if user is trying to chat with themselves
+        if (user.id === listing.user_id) {
+            Alert.alert('Info', "You can't chat with yourself on your own listing");
+            return;
+        }
+
+        setIsStartingChat(true);
+
+        try {
+            const conversationId = await getOrCreateConversation(listing.id, listing.user_id);
+
+            if (conversationId) {
+                router.push({
+                    pathname: '/chat/[id]',
+                    params: { id: conversationId }
+                });
+            } else {
+                Alert.alert('Error', 'Failed to start conversation');
+            }
+        } catch (error) {
+            console.error('Error starting chat:', error);
+            Alert.alert('Error', 'Failed to start conversation');
+        } finally {
+            setIsStartingChat(false);
         }
     };
 
@@ -184,6 +227,27 @@ export default function ListingDetailScreen() {
         };
     });
 
+    const renderImageItem = ({ item, index }: { item: string; index: number }) => (
+        <Pressable onPress={() => openImageModal(index)}>
+            <Image
+                source={{ uri: item }}
+                style={styles.listingImage}
+                resizeMode="cover"
+            />
+        </Pressable>
+    );
+
+    const renderModalImageItem = ({ item }: { item: string }) => (
+        <View style={styles.modalImageContainer}>
+            <Image
+                source={{ uri: item }}
+                style={styles.modalImage}
+                resizeMode="contain"
+            />
+        </View>
+    );
+
+    // Loading state
     if (loading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
@@ -194,11 +258,12 @@ export default function ListingDetailScreen() {
         );
     }
 
+    // Not found state
     if (!listing) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.errorContainer}>
-                    <MaterialIcons name="error-outline" size={64} color={placeholderColor} />
+                    <MaterialCommunityIcons name="alert-circle-outline" size={80} color="#666" />
                     <Text style={[styles.errorText, { color: textColor }]}>Listing not found</Text>
                     <Pressable style={styles.backButton} onPress={() => router.back()}>
                         <Text style={styles.backButtonText}>Go Back</Text>
@@ -213,37 +278,18 @@ export default function ListingDetailScreen() {
         listing.subcategory_id
     );
 
-    const renderImageItem = ({ item, index }: { item: string; index: number }) => (
-        <Pressable onPress={() => openImageModal(index)}>
-            <Image source={{ uri: item }} style={styles.image} />
-        </Pressable>
-    );
-
-    const renderModalImage = ({ item }: { item: string }) => (
-        <View style={styles.modalImageContainer}>
-            <Image
-                source={{ uri: item }}
-                style={styles.modalImage}
-                resizeMode="contain"
-            />
-        </View>
-    );
+    const isOwnListing = user?.id === listing.user_id;
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <View style={styles.headerSide}>
-                        <Pressable onPress={() => router.back()} style={styles.headerButton}>
-                            <Ionicons name="arrow-back" size={24} color={textColor} />
-                        </Pressable>
-                    </View>
-                    <Text style={[styles.headerTitle, { color: textColor }]} numberOfLines={1}>
-                        {listing.title}
-                    </Text>
-                    <View style={[styles.headerSide, styles.headerRightButtons]}>
-                        <Pressable onPress={handleToggleFavorite} style={styles.headerButton} disabled={isTogglingFavorite}>
+                <View style={[styles.header, { backgroundColor }]}>
+                    <Pressable onPress={() => router.back()} style={styles.headerButton}>
+                        <Ionicons name="chevron-back" size={28} color={textColor} />
+                    </Pressable>
+                    <View style={styles.headerRight}>
+                        <Pressable onPress={handleToggleFavorite} style={styles.headerButton}>
                             {isTogglingFavorite ? (
                                 <ActivityIndicator size="small" color="#FF3B30" />
                             ) : (
@@ -307,33 +353,44 @@ export default function ListingDetailScreen() {
                         </Text>
                     </View>
 
-                    {/* Category Badge */}
-                    <View style={[styles.categoryBadge, { backgroundColor: secondaryBg }]}>
+                    {/* Category */}
+                    <View style={styles.categoryRow}>
                         <Text style={styles.categoryIcon}>{categoryIcon}</Text>
-                        <Text style={[styles.categoryText, { color: textColor }]}>
+                        <Text style={[styles.categoryText, { color: placeholderColor }]}>
                             {categoryName} › {subcategoryName}
                         </Text>
                     </View>
 
                     {/* Location and Date */}
-                    <View style={[styles.metaInfo, { borderTopColor: borderColor, borderBottomColor: borderColor }]}>
-                        <View style={styles.metaRow}>
-                            <Ionicons name="location-outline" size={18} color={placeholderColor} />
-                            <Text style={[styles.metaText, { color: textColor }]}>{listing.location}</Text>
-                        </View>
-                        <View style={styles.metaRow}>
-                            <Ionicons name="time-outline" size={18} color={placeholderColor} />
+                    <View style={styles.metaRow}>
+                        <View style={styles.metaItem}>
+                            <Ionicons name="location-outline" size={16} color={placeholderColor} />
                             <Text style={[styles.metaText, { color: placeholderColor }]}>
-                                Posted {formatDate(listing.created_at)}
+                                {listing.location}
+                            </Text>
+                        </View>
+                        <View style={styles.metaItem}>
+                            <Ionicons name="time-outline" size={16} color={placeholderColor} />
+                            <Text style={[styles.metaText, { color: placeholderColor }]}>
+                                {formatDate(listing.created_at)}
                             </Text>
                         </View>
                     </View>
 
                     {/* Status Badge */}
-                    {listing.status === 'sold' && (
-                        <View style={[styles.statusBadge, { backgroundColor: '#FF9800' }]}>
-                            <MaterialCommunityIcons name="check-circle" size={16} color="white" />
-                            <Text style={styles.statusText}>SOLD</Text>
+                    {listing.status !== 'active' && (
+                        <View style={[
+                            styles.statusBadge,
+                            { backgroundColor: listing.status === 'sold' ? '#FF9800' : '#D32F2F' }
+                        ]}>
+                            <MaterialIcons
+                                name={listing.status === 'sold' ? 'check-circle' : 'remove-circle'}
+                                size={16}
+                                color="white"
+                            />
+                            <Text style={styles.statusText}>
+                                {listing.status === 'sold' ? 'Sold' : 'Unavailable'}
+                            </Text>
                         </View>
                     )}
 
@@ -348,22 +405,45 @@ export default function ListingDetailScreen() {
             </ScrollView>
 
             {/* Contact Buttons - Fixed at bottom */}
-            {listing.status !== 'sold' && listing.phone_number && (
+            {listing.status !== 'sold' && !isOwnListing && (
                 <View style={[styles.contactBar, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
+                    {/* Chat Button */}
                     <Pressable
-                        style={[styles.contactButton, styles.callButton]}
-                        onPress={handleCall}
+                        style={[styles.contactButton, styles.chatButton]}
+                        onPress={handleChat}
+                        disabled={isStartingChat}
                     >
-                        <Ionicons name="call" size={20} color="white" />
-                        <Text style={styles.contactButtonText}>Call</Text>
+                        {isStartingChat ? (
+                            <ActivityIndicator size="small" color="white" />
+                        ) : (
+                            <>
+                                <Ionicons name="chatbubble" size={20} color="white" />
+                                <Text style={styles.contactButtonText}>Chat</Text>
+                            </>
+                        )}
                     </Pressable>
-                    <Pressable
-                        style={[styles.contactButton, styles.whatsappButton]}
-                        onPress={handleWhatsApp}
-                    >
-                        <Ionicons name="logo-whatsapp" size={20} color="white" />
-                        <Text style={styles.contactButtonText}>WhatsApp</Text>
-                    </Pressable>
+
+                    {/* Call Button */}
+                    {listing.phone_number && (
+                        <Pressable
+                            style={[styles.contactButton, styles.callButton]}
+                            onPress={handleCall}
+                        >
+                            <Ionicons name="call" size={20} color="white" />
+                            <Text style={styles.contactButtonText}>Call</Text>
+                        </Pressable>
+                    )}
+
+                    {/* WhatsApp Button */}
+                    {listing.phone_number && (
+                        <Pressable
+                            style={[styles.contactButton, styles.whatsappButton]}
+                            onPress={handleWhatsApp}
+                        >
+                            <Ionicons name="logo-whatsapp" size={20} color="white" />
+                            <Text style={styles.contactButtonText}>WhatsApp</Text>
+                        </Pressable>
+                    )}
                 </View>
             )}
 
@@ -378,15 +458,14 @@ export default function ListingDetailScreen() {
                     <GestureDetector gesture={panGesture}>
                         <Animated.View style={[styles.modalContainer, animatedModalStyle]}>
                             <Pressable style={styles.closeButton} onPress={closeImageModal}>
-                                <Ionicons name="close" size={28} color="white" />
+                                <Ionicons name="close" size={30} color="white" />
                             </Pressable>
                             <FlatList
-                                data={listing.images}
-                                renderItem={renderModalImage}
+                                data={listing.images || []}
+                                renderItem={renderModalImageItem}
                                 keyExtractor={(item, index) => index.toString()}
                                 horizontal
                                 pagingEnabled
-                                showsHorizontalScrollIndicator={false}
                                 initialScrollIndex={modalImageIndex}
                                 getItemLayout={(data, index) => ({
                                     length: screenWidth,
@@ -424,36 +503,25 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-    },
-    headerSide: {
-        width: 80,
-        flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
     },
     headerButton: {
         padding: 8,
     },
-    headerRightButtons: {
-        justifyContent: 'flex-end',
+    headerRight: {
+        flexDirection: 'row',
+        gap: 4,
     },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        flex: 1,
-        textAlign: 'center',
-    },
-    image: {
+    listingImage: {
         width: screenWidth,
         height: 300,
     },
     imagePlaceholder: {
         width: screenWidth,
-        height: 250,
+        height: 300,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -464,20 +532,21 @@ const styles = StyleSheet.create({
     pagination: {
         flexDirection: 'row',
         justifyContent: 'center',
-        paddingVertical: 10,
-        position: 'absolute',
-        bottom: 10,
-        width: '100%',
+        alignItems: 'center',
+        paddingVertical: 12,
     },
     paginationDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: '#ccc',
         marginHorizontal: 4,
     },
     paginationDotActive: {
-        backgroundColor: 'white',
+        backgroundColor: '#007AFF',
+        width: 10,
+        height: 10,
+        borderRadius: 5,
     },
     detailsContainer: {
         padding: 16,
@@ -490,43 +559,37 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 24,
-        fontWeight: 'bold',
+        fontWeight: '700',
         marginBottom: 8,
     },
     price: {
-        fontSize: 28,
-        fontWeight: 'bold',
+        fontSize: 22,
+        fontWeight: '700',
     },
-    categoryBadge: {
+    categoryRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        alignSelf: 'flex-start',
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        marginBottom: 16,
+        marginBottom: 12,
     },
     categoryIcon: {
-        fontSize: 14,
-        marginRight: 6,
+        fontSize: 18,
+        marginRight: 8,
     },
     categoryText: {
         fontSize: 14,
     },
-    metaInfo: {
-        paddingVertical: 16,
-        borderTopWidth: 1,
-        borderBottomWidth: 1,
-        marginBottom: 16,
-    },
     metaRow: {
         flexDirection: 'row',
+        gap: 20,
+        marginBottom: 15,
+    },
+    metaItem: {
+        flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 8,
+        gap: 4,
     },
     metaText: {
-        marginLeft: 8,
-        fontSize: 15,
+        fontSize: 14,
     },
     statusBadge: {
         flexDirection: 'row',
@@ -536,11 +599,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 16,
         marginBottom: 16,
+        gap: 4,
     },
     statusText: {
         color: 'white',
         fontWeight: '600',
-        marginLeft: 4,
     },
     descriptionSection: {
         marginBottom: 20,
@@ -556,9 +619,10 @@ const styles = StyleSheet.create({
     },
     contactBar: {
         flexDirection: 'row',
-        paddingHorizontal: 16,
+        paddingHorizontal: 12,
         paddingVertical: 12,
         borderTopWidth: 1,
+        gap: 8,
     },
     contactButton: {
         flex: 1,
@@ -567,7 +631,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 14,
         borderRadius: 10,
-        marginHorizontal: 6,
+        gap: 6,
+    },
+    chatButton: {
+        backgroundColor: '#FF6B35',
     },
     callButton: {
         backgroundColor: '#007AFF',
@@ -577,9 +644,8 @@ const styles = StyleSheet.create({
     },
     contactButtonText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        marginLeft: 8,
     },
     backButton: {
         backgroundColor: '#007AFF',

@@ -1,236 +1,376 @@
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth_context';
-import { supabase } from '@/lib/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    Feather,
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons
+} from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import {
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const PROFILE_CACHE_KEY = '@user_profile_cache';
+type MenuItemProps = {
+    icon: React.ReactNode;
+    title: string;
+    subtitle?: string;
+    onPress: () => void;
+    showChevron?: boolean;
+    danger?: boolean;
+};
 
-export interface Profile {
-    id: string;
-    email: string | null;
-    phone_number: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-    created_at: string;
-    updated_at: string;
+function MenuItem({ icon, title, subtitle, onPress, showChevron = true, danger = false }: MenuItemProps) {
+    const textColor = useThemeColor({}, 'text');
+    const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
+    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
+    const pressedBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
+    const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
+
+    return (
+        <Pressable
+            style={({ pressed }) => [
+                styles.menuItem,
+                { borderBottomColor: borderColor },
+                pressed && { backgroundColor: pressedBg },
+            ]}
+            onPress={onPress}
+        >
+            <View style={styles.menuItemLeft}>
+                <View style={styles.iconContainer}>
+                    {icon}
+                </View>
+                <View style={styles.menuItemText}>
+                    <Text style={[styles.menuItemTitle, { color: danger ? '#FF3B30' : textColor }]}>
+                        {title}
+                    </Text>
+                    {subtitle && (
+                        <Text style={[styles.menuItemSubtitle, { color: subtitleColor }]}>
+                            {subtitle}
+                        </Text>
+                    )}
+                </View>
+            </View>
+            {showChevron && (
+                <Ionicons name="chevron-forward" size={20} color={chevronColor} />
+            )}
+        </Pressable>
+    );
 }
 
-interface CachedProfile {
-    profile: Profile;
-    userId: string;
+type SectionProps = {
+    title?: string;
+    children: React.ReactNode;
+};
+
+function Section({ title, children }: SectionProps) {
+    const sectionBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
+    const titleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
+
+    return (
+        <View style={styles.section}>
+            {title && (
+                <Text style={[styles.sectionTitle, { color: titleColor }]}>{title}</Text>
+            )}
+            <View style={[styles.sectionContent, { backgroundColor: sectionBg }]}>
+                {children}
+            </View>
+        </View>
+    );
 }
 
-export function useProfile() {
-    const { user } = useAuth();
-    const [profile, setProfile] = useState<Profile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const isInitialLoad = useRef(true);
+export default function UserScreen() {
+    const { user, signOut } = useAuth();
+    const router = useRouter();
+    const backgroundColor = useThemeColor({}, 'background');
+    const iconColor = useThemeColor({}, 'icon');
+    const textColor = useThemeColor({}, 'text');
+    const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
 
-    // Load cached profile from AsyncStorage
-    const loadCachedProfile = useCallback(async (): Promise<Profile | null> => {
-        try {
-            const cachedData = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
-            if (cachedData) {
-                const parsed: CachedProfile = JSON.parse(cachedData);
-                // Only use cache if it belongs to current user
-                if (user && parsed.userId === user.id) {
-                    return parsed.profile;
-                }
-            }
-        } catch (err) {
-            console.error('Error loading cached profile:', err);
-        }
-        return null;
-    }, [user]);
-
-    // Save profile to cache
-    const saveCachedProfile = useCallback(async (profileToCache: Profile) => {
-        if (!user) return;
-        try {
-            const cacheData: CachedProfile = {
-                profile: profileToCache,
-                userId: user.id
-            };
-            await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
-        } catch (err) {
-            console.error('Error saving cached profile:', err);
-        }
-    }, [user]);
-
-    // Clear cache (for logout)
-    const clearCache = useCallback(async () => {
-        try {
-            await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
-        } catch (err) {
-            console.error('Error clearing profile cache:', err);
-        }
-    }, []);
-
-    // Fetch profile from Supabase
-    const fetchProfile = useCallback(async (refresh = false, showLoading = false) => {
-        if (!user) {
-            setProfile(null);
-            setIsLoading(false);
-            await clearCache();
-            return;
-        }
-
-        try {
-            if (refresh) {
-                setIsRefreshing(true);
-            } else if (showLoading) {
-                setIsLoading(true);
-            }
-
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (error) {
-                // Profile might not exist yet - create default from user object
-                if (error.code === 'PGRST116') {
-                    const defaultProfile: Profile = {
-                        id: user.id,
-                        email: user.email || null,
-                        phone_number: user.user_metadata?.phone_number || null,
-                        display_name: null,
-                        avatar_url: null,
-                        created_at: user.created_at || new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                    };
-                    setProfile(defaultProfile);
-                    return;
-                }
-                throw error;
-            }
-
-            const fetchedProfile: Profile = {
-                id: data.id,
-                email: data.email || user.email || null,
-                phone_number: data.phone_number || null,
-                display_name: data.display_name || null,
-                avatar_url: data.avatar_url || null,
-                created_at: data.created_at || user.created_at || new Date().toISOString(),
-                updated_at: data.updated_at || new Date().toISOString()
-            };
-
-            setProfile(fetchedProfile);
-            await saveCachedProfile(fetchedProfile);
-        } catch (error) {
-            console.error('Error fetching profile:', error);
-            // On error, try to use cached or create from user object
-            if (!profile && user) {
-                setProfile({
-                    id: user.id,
-                    email: user.email || null,
-                    phone_number: user.user_metadata?.phone_number || null,
-                    display_name: null,
-                    avatar_url: null,
-                    created_at: user.created_at || new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                });
-            }
-        } finally {
-            setIsLoading(false);
-            setIsRefreshing(false);
-        }
-    }, [user, saveCachedProfile, clearCache, profile]);
-
-    // Initialize: load cache first, then refresh in background
-    useEffect(() => {
-        const initialize = async () => {
-            if (!user) {
-                setProfile(null);
-                setIsLoading(false);
-                return;
-            }
-
-            // Try to load from cache first
-            const cachedProfile = await loadCachedProfile();
-
-            if (cachedProfile) {
-                // Show cached data immediately - no loading spinner
-                setProfile(cachedProfile);
-                setIsLoading(false);
-
-                // Then refresh in background
-                fetchProfile(false, false);
-            } else {
-                // No valid cache - show loading and fetch
-                await fetchProfile(false, true);
-            }
-
-            isInitialLoad.current = false;
-        };
-
-        initialize();
-    }, [user, loadCachedProfile, fetchProfile]);
-
-    // Update profile
-    const updateProfile = useCallback(async (updates: Partial<Profile>) => {
-        if (!user) return false;
-
-        try {
-            const { error } = await supabase
-                .from('profiles')
-                .update({
-                    ...updates,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', user.id);
-
-            if (error) throw error;
-
-            // Update local state immediately (optimistic)
-            setProfile(prev => {
-                if (!prev) return prev;
-                const updated = { ...prev, ...updates, updated_at: new Date().toISOString() };
-                // Update cache
-                saveCachedProfile(updated);
-                return updated;
-            });
-
-            return true;
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            return false;
-        }
-    }, [user, saveCachedProfile]);
-
-    // Get display name (fallback chain)
-    const getDisplayName = useCallback(() => {
-        if (profile?.display_name) return profile.display_name;
-        if (profile?.email) {
-            // Extract name from email (before @)
-            const emailName = profile.email.split('@')[0];
-            // Check if it's a phone placeholder email
-            if (emailName.match(/^\d+$/)) {
-                return profile.phone_number || 'User';
-            }
-            return emailName;
-        }
-        if (profile?.phone_number) return profile.phone_number;
-        return 'User';
-    }, [profile]);
-
-    // Get member since date
-    const getMemberSince = useCallback(() => {
-        const dateStr = profile?.created_at || user?.created_at;
-        if (!dateStr) return 'Unknown';
-        return new Date(dateStr).toLocaleDateString();
-    }, [profile, user]);
-
-    return {
-        profile,
-        isLoading,
-        isRefreshing,
-        fetchProfile,
-        updateProfile,
-        getDisplayName,
-        getMemberSince,
-        clearCache
+    const handleLogout = () => {
+        Alert.alert(
+            'Log Out',
+            'Are you sure you want to log out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await signOut();
+                            router.replace('/(auth)/sign-in');
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to log out. Please try again.');
+                        }
+                    },
+                },
+            ]
+        );
     };
+
+    const handleComingSoon = (feature: string) => {
+        Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
+    };
+
+    // If not logged in, show sign in prompt
+    if (!user) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor }]}>
+                <View style={styles.notLoggedInContainer}>
+                    <MaterialCommunityIcons name="account-circle-outline" size={100} color={iconColor} />
+                    <ThemedText style={styles.notLoggedInTitle}>Welcome to 3ANTAR</ThemedText>
+                    <ThemedText style={styles.notLoggedInSubtitle}>
+                        Sign in to access your account settings
+                    </ThemedText>
+                    <Pressable
+                        style={styles.signInButton}
+                        onPress={() => router.push('/(auth)/sign-in')}
+                    >
+                        <Text style={styles.signInButtonText}>Sign In</Text>
+                    </Pressable>
+                    <Pressable
+                        style={styles.signUpLink}
+                        onPress={() => router.push('/(auth)/sign-up')}
+                    >
+                        <Text style={styles.signUpLinkText}>Don't have an account? Sign Up</Text>
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    return (
+        <SafeAreaView style={[styles.container, { backgroundColor }]}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {/* Header */}
+                <ThemedView style={styles.header}>
+                    <ThemedText type="title">Account</ThemedText>
+                </ThemedView>
+
+                {/* User Info Card */}
+                <View style={styles.userCard}>
+                    <View style={styles.avatarContainer}>
+                        <MaterialCommunityIcons name="account-circle" size={70} color={iconColor} />
+                    </View>
+                    <View style={styles.userInfo}>
+                        <Text style={[styles.userEmail, { color: textColor }]}>
+                            {user.email || 'User'}
+                        </Text>
+                        <Text style={[styles.userSince, { color: subtitleColor }]}>
+                            Member since {new Date(user.created_at || Date.now()).toLocaleDateString()}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* Account Settings Section */}
+                <Section title="ACCOUNT SETTINGS">
+                    <MenuItem
+                        icon={<Ionicons name="person-outline" size={22} color={iconColor} />}
+                        title="Personal Details"
+                        subtitle="Name, email, phone number"
+                        onPress={() => handleComingSoon('Personal Details')}
+                    />
+                    <MenuItem
+                        icon={<MaterialIcons name="manage-accounts" size={22} color={iconColor} />}
+                        title="Manage Account"
+                        subtitle="Password, security settings"
+                        onPress={() => handleComingSoon('Manage Account')}
+                    />
+                    <MenuItem
+                        icon={<Ionicons name="notifications-outline" size={22} color={iconColor} />}
+                        title="Notification Preferences"
+                        subtitle="Push notifications, email alerts"
+                        onPress={() => handleComingSoon('Notification Preferences')}
+                    />
+                </Section>
+
+                {/* App Settings Section */}
+                <Section title="APP SETTINGS">
+                    <MenuItem
+                        icon={<Ionicons name="color-palette-outline" size={22} color={iconColor} />}
+                        title="App Theme"
+                        subtitle="Light, dark, or system"
+                        onPress={() => handleComingSoon('App Theme')}
+                    />
+                </Section>
+
+                {/* Support & Legal Section */}
+                <Section title="SUPPORT & LEGAL">
+                    <MenuItem
+                        icon={<Feather name="help-circle" size={22} color={iconColor} />}
+                        title="Help"
+                        subtitle="FAQs and support"
+                        onPress={() => handleComingSoon('Help')}
+                    />
+                    <MenuItem
+                        icon={<Ionicons name="document-text-outline" size={22} color={iconColor} />}
+                        title="Privacy Policy"
+                        onPress={() => handleComingSoon('Privacy Policy')}
+                    />
+                    <MenuItem
+                        icon={<Ionicons name="document-outline" size={22} color={iconColor} />}
+                        title="Terms of Use"
+                        onPress={() => handleComingSoon('Terms of Use')}
+                    />
+                </Section>
+
+                {/* Logout Section */}
+                <Section>
+                    <MenuItem
+                        icon={<MaterialIcons name="logout" size={22} color="#FF3B30" />}
+                        title="Log Out"
+                        onPress={handleLogout}
+                        showChevron={false}
+                        danger
+                    />
+                </Section>
+
+                {/* App Version */}
+                <View style={styles.versionContainer}>
+                    <Text style={[styles.versionText, { color: subtitleColor }]}>
+                        Katoo v1.0.0
+                    </Text>
+                </View>
+            </ScrollView>
+        </SafeAreaView>
+    );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingBottom: 30,
+    },
+    header: {
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 20,
+    },
+    userCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        marginBottom: 20,
+    },
+    avatarContainer: {
+        marginRight: 15,
+    },
+    userInfo: {
+        flex: 1,
+    },
+    userEmail: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 4,
+    },
+    userSince: {
+        fontSize: 14,
+    },
+    section: {
+        marginBottom: 25,
+    },
+    sectionTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        marginLeft: 20,
+        marginBottom: 8,
+        letterSpacing: 0.5,
+    },
+    sectionContent: {
+        marginHorizontal: 15,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    menuItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+    },
+    menuItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconContainer: {
+        width: 32,
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    menuItemText: {
+        flex: 1,
+    },
+    menuItemTitle: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    menuItemSubtitle: {
+        fontSize: 13,
+        marginTop: 2,
+    },
+    versionContainer: {
+        alignItems: 'center',
+        marginTop: 10,
+        paddingBottom: 20,
+    },
+    versionText: {
+        fontSize: 13,
+    },
+    // Not logged in styles
+    notLoggedInContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 40,
+    },
+    notLoggedInTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginTop: 20,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    notLoggedInSubtitle: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 30,
+        opacity: 0.7,
+    },
+    signInButton: {
+        backgroundColor: '#007AFF',
+        paddingVertical: 14,
+        paddingHorizontal: 50,
+        borderRadius: 10,
+        marginBottom: 15,
+    },
+    signInButtonText: {
+        color: 'white',
+        fontSize: 17,
+        fontWeight: '600',
+    },
+    signUpLink: {
+        padding: 10,
+    },
+    signUpLinkText: {
+        color: '#007AFF',
+        fontSize: 15,
+    },
+});

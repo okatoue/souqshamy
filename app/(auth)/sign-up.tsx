@@ -2,18 +2,19 @@ import { useAuth } from '@/lib/auth_context';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    ActivityIndicator,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 export default function SignUp() {
+  const [displayName, setDisplayName] = useState('');
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,11 @@ export default function SignUp() {
   };
 
   const handleSignUp = async () => {
+    if (!displayName.trim()) {
+      alert('Please enter your name');
+      return;
+    }
+
     if (!emailOrPhone || !password) {
       alert('Please fill in all fields');
       return;
@@ -49,17 +55,22 @@ export default function SignUp() {
       return;
     }
 
+    if (password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
     try {
       if (isValidEmail) {
         // Sign up with email
-        await signUp(trimmedInput, password, undefined);
+        await signUp(trimmedInput, password, undefined, displayName.trim());
       } else {
         // Sign up with phone number
         const cleanedPhone = trimmedInput.replace(/[\s\-\(\)]/g, '');
-        await signUp(undefined, password, cleanedPhone);
+        await signUp(undefined, password, cleanedPhone, displayName.trim());
       }
-      
+
       if (isValidEmail) {
         alert('Sign up successful! Please check your email for verification.');
       } else {
@@ -74,7 +85,7 @@ export default function SignUp() {
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -82,6 +93,16 @@ export default function SignUp() {
         <View style={styles.form}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join Syria's Marketplace</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Your Name"
+            value={displayName}
+            onChangeText={setDisplayName}
+            autoCapitalize="words"
+            autoCorrect={false}
+            editable={!loading}
+          />
 
           <TextInput
             style={styles.input}
@@ -107,8 +128,8 @@ export default function SignUp() {
             You can sign up with either your email address or phone number
           </Text>
 
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSignUp}
             disabled={loading}
           >
@@ -119,7 +140,7 @@ export default function SignUp() {
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push('/(auth)/sign-in')}
             disabled={loading}
           >
