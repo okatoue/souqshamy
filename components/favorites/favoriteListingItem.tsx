@@ -1,5 +1,6 @@
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
@@ -62,7 +63,7 @@ export function FavoriteListingItem({
             >
                 {/* Image */}
                 {item.images && item.images.length > 0 ? (
-                    <Image source={{ uri: item.images[0] }} style={styles.image} />
+                    <Image source={{ uri: getThumbnailUrl(item.images[0]) }} style={styles.image} />
                 ) : (
                     <View style={[styles.imagePlaceholder, { backgroundColor: placeholderColor }]}>
                         <MaterialIcons name="image" size={30} color="#666" />

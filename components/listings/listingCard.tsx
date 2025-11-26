@@ -1,6 +1,7 @@
 import categoriesData from '@/assets/categories.json';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
+import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
@@ -91,7 +92,7 @@ export function ListingCard({ item, onPress }: ListingCardProps) {
                 <View style={styles.imageContainer}>
                     {item.images && item.images.length > 0 ? (
                         <Image
-                            source={{ uri: item.images[0] }}
+                            source={{ uri: getThumbnailUrl(item.images[0]) }}
                             style={styles.image}
                             resizeMode="cover"
                         />

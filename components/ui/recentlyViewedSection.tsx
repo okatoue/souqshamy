@@ -1,4 +1,5 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -82,7 +83,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                             {/* Image */}
                             {listing.images && listing.images.length > 0 ? (
                                 <Image
-                                    source={{ uri: listing.images[0] }}
+                                    source={{ uri: getThumbnailUrl(listing.images[0], 150, 100) }}
                                     style={styles.image}
                                     resizeMode="cover"
                                 />

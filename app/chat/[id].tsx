@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/lib/auth_context';
+import { getThumbnailUrl } from '@/lib/imageUtils';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails, Message } from '@/types/chat';
 import { Ionicons } from '@expo/vector-icons';
@@ -237,9 +238,10 @@ export default function ChatScreen() {
                     <Pressable style={styles.headerContent} onPress={handleListingPress}>
                         {conversation.listing?.images?.[0] ? (
                             <Image
-                                source={{ uri: conversation.listing.images[0] }}
+                                source={{ uri: getThumbnailUrl(conversation.listing.images[0], 80, 80) }}
                                 style={styles.headerImage}
                             />
+
                         ) : (
                             <View style={[styles.headerImagePlaceholder, { backgroundColor: borderColor }]}>
                                 <Ionicons name="image-outline" size={20} color={secondaryTextColor} />
@@ -263,7 +265,7 @@ export default function ChatScreen() {
                 >
                     {conversation.listing?.images?.[0] && (
                         <Image
-                            source={{ uri: conversation.listing.images[0] }}
+                            source={{ uri: getThumbnailUrl(conversation.listing.images[0], 120, 120) }}
                             style={styles.previewImage}
                         />
                     )}

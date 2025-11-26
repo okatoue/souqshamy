@@ -75,8 +75,9 @@ export default function ListingDetailScreen() {
                 setListing(data);
                 setLocalIsFavorite(isFavorite(data.id));
 
-                // Add to recently viewed
-                addToRecentlyViewed(data.id);
+                if (data.user_id !== user?.id) {
+                    addToRecentlyViewed(data.id, user?.id);
+                }
             } catch (error) {
                 console.error('Error fetching listing:', error);
                 Alert.alert('Error', 'Failed to load listing');
@@ -86,7 +87,7 @@ export default function ListingDetailScreen() {
         };
 
         fetchListing();
-    }, [params.id, isFavorite]);
+    }, [params.id, isFavorite, user?.id]);
 
     // Category lookup
     const getCategoryInfo = (categoryId: number, subcategoryId: number) => {
