@@ -144,30 +144,45 @@ export function useConversations() {
         if (!user) return false;
 
         try {
+            // First verify the user owns this conversation
+            const { data: conv } = await supabase
+                .from('conversations')
+                .select('id, buyer_id, seller_id')
+                .eq('id', conversationId)
+                .single();
+
+            if (!conv || (conv.buyer_id !== user.id && conv.seller_id !== user.id)) {
+                console.error('User does not own this conversation');
+                return false;
+            }
+
+            // Delete the conversation
             const { error } = await supabase
                 .from('conversations')
                 .delete()
-                .eq('id', conversationId)
-                .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+                .eq('id', conversationId);
 
             if (error) {
                 console.error('Error deleting conversation:', error);
                 return false;
             }
 
-            // Update local state
+            // Update local state immediately
             setConversations(prev => prev.filter(c => c.id !== conversationId));
 
-            // Update cache
-            const updatedConversations = conversations.filter(c => c.id !== conversationId);
-            await saveCachedConversations(updatedConversations);
+            // Update cache with current state
+            setConversations(currentConvs => {
+                const updated = currentConvs.filter(c => c.id !== conversationId);
+                saveCachedConversations(updated);
+                return updated;
+            });
 
             return true;
         } catch (error) {
             console.error('Error in deleteConversation:', error);
             return false;
         }
-    }, [user, conversations, saveCachedConversations]);
+    }, [user, saveCachedConversations]);
 
     // Get or create a conversation
     const getOrCreateConversation = useCallback(async (

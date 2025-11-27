@@ -10,6 +10,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     Image,
     Pressable,
@@ -67,21 +68,42 @@ export default function ChatsScreen() {
         });
     };
 
-    const handleDeleteSelected = async () => {
+    const handleDeleteSelected = () => {
         if (selectedIds.size === 0) {
             // No selections, just exit edit mode
             setIsEditMode(false);
             return;
         }
 
-        // Delete all selected conversations
-        for (const id of selectedIds) {
-            await deleteConversation(id);
-        }
+        const count = selectedIds.size;
+        const message = count === 1
+            ? 'Are you sure you want to delete this conversation?'
+            : `Are you sure you want to delete ${count} conversations?`;
 
-        // Reset state
-        setSelectedIds(new Set());
-        setIsEditMode(false);
+        Alert.alert(
+            'Delete Conversations',
+            message,
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        // Delete all selected conversations
+                        for (const id of selectedIds) {
+                            await deleteConversation(id);
+                        }
+
+                        // Reset state
+                        setSelectedIds(new Set());
+                        setIsEditMode(false);
+                    },
+                },
+            ]
+        );
     };
 
     const toggleEditMode = () => {
@@ -281,6 +303,7 @@ export default function ChatsScreen() {
                 data={conversations}
                 renderItem={renderConversationItem}
                 keyExtractor={(item) => item.id}
+                extraData={{ isEditMode, selectedIds: Array.from(selectedIds) }}
                 contentContainerStyle={conversations.length === 0 ? styles.emptyList : undefined}
                 ListEmptyComponent={renderEmptyState}
                 refreshControl={
