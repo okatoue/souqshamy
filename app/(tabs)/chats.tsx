@@ -32,6 +32,7 @@ export default function ChatsScreen() {
     } = useConversations();
 
     const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
@@ -54,20 +55,52 @@ export default function ChatsScreen() {
         fetchConversations(true);
     };
 
-    const handleDeleteConversation = async (conversationId: string) => {
-        await deleteConversation(conversationId);
+    const toggleSelection = (conversationId: string) => {
+        setSelectedIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(conversationId)) {
+                newSet.delete(conversationId);
+            } else {
+                newSet.add(conversationId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleDeleteSelected = async () => {
+        if (selectedIds.size === 0) {
+            // No selections, just exit edit mode
+            setIsEditMode(false);
+            return;
+        }
+
+        // Delete all selected conversations
+        for (const id of selectedIds) {
+            await deleteConversation(id);
+        }
+
+        // Reset state
+        setSelectedIds(new Set());
+        setIsEditMode(false);
     };
 
     const toggleEditMode = () => {
+        if (isEditMode) {
+            // Exiting edit mode without confirming - clear selections
+            setSelectedIds(new Set());
+        }
         setIsEditMode(prev => !prev);
     };
 
     const EditButton = (
-        <Pressable onPress={toggleEditMode} style={styles.editButton}>
+        <Pressable
+            onPress={isEditMode ? handleDeleteSelected : toggleEditMode}
+            style={styles.editButton}
+        >
             <Ionicons
                 name={isEditMode ? 'checkmark-circle' : 'remove-circle-outline'}
                 size={26}
-                color={isEditMode ? BRAND_COLOR : secondaryTextColor}
+                color={isEditMode ? (selectedIds.size > 0 ? COLORS.error : BRAND_COLOR) : secondaryTextColor}
             />
         </Pressable>
     );
@@ -94,26 +127,31 @@ export default function ChatsScreen() {
         return date.toLocaleDateString();
     };
 
-    const renderConversationItem = ({ item }: { item: ConversationWithDetails }) => (
-        <Pressable
-            style={({ pressed }) => [
-                styles.conversationItem,
-                { backgroundColor: cardBg, borderBottomColor: borderColor },
-                pressed && styles.conversationItemPressed
-            ]}
-            onPress={() => !isEditMode && handleConversationPress(item)}
-        >
-            {/* Delete button in edit mode */}
-            {isEditMode && (
-                <Pressable
-                    style={styles.deleteButton}
-                    onPress={() => handleDeleteConversation(item.id)}
-                >
-                    <Ionicons name="remove-circle" size={24} color={COLORS.error} />
-                </Pressable>
-            )}
+    const renderConversationItem = ({ item }: { item: ConversationWithDetails }) => {
+        const isSelected = selectedIds.has(item.id);
 
-            {/* Listing Image */}
+        return (
+            <Pressable
+                style={({ pressed }) => [
+                    styles.conversationItem,
+                    { backgroundColor: cardBg, borderBottomColor: borderColor },
+                    pressed && styles.conversationItemPressed,
+                    isEditMode && isSelected && styles.selectedItem
+                ]}
+                onPress={() => isEditMode ? toggleSelection(item.id) : handleConversationPress(item)}
+            >
+                {/* Selection checkbox in edit mode */}
+                {isEditMode && (
+                    <View style={styles.checkboxContainer}>
+                        <Ionicons
+                            name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                            size={24}
+                            color={isSelected ? COLORS.error : secondaryTextColor}
+                        />
+                    </View>
+                )}
+
+                {/* Listing Image */}
             <View style={styles.imageContainer}>
                 {item.listing?.images && item.listing.images.length > 0 ? (
                     <Image
@@ -176,9 +214,10 @@ export default function ChatsScreen() {
                 </Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
-        </Pressable>
-    );
+                <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
+            </Pressable>
+        );
+    };
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
@@ -263,8 +302,11 @@ const styles = StyleSheet.create({
     editButton: {
         padding: SPACING.xs,
     },
-    deleteButton: {
+    checkboxContainer: {
         marginRight: SPACING.sm,
+    },
+    selectedItem: {
+        backgroundColor: 'rgba(255, 59, 48, 0.08)',
     },
     loadingContainer: {
         flex: 1,
