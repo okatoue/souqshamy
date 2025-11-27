@@ -8,7 +8,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { UserIcon } from '@/components/ui/userIcon';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useAppData } from '@/lib/app_data_context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -23,13 +23,13 @@ export default function HomeScreen() {
   const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
   const dividerColor = useThemeColor({}, 'border');
 
-  // Recently viewed listings
+  // Recently viewed listings from global context
   const {
-    listings: recentlyViewed,
-    isLoading: isLoadingRecent,
+    recentlyViewed,
+    isRecentlyViewedLoading: isLoadingRecent,
     clearRecentlyViewed,
-    refresh: refreshRecentlyViewed
-  } = useRecentlyViewed();
+    refreshRecentlyViewed
+  } = useAppData();
 
   // Reload recently viewed whenever this screen comes into focus
   useFocusEffect(

@@ -1,6 +1,7 @@
 // app/_layout.tsx
 import { AuthLogo } from '@/components/auth/AuthLogo';
 import { Colors, BRAND_COLOR } from '@/constants/theme';
+import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
@@ -10,17 +11,35 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-function RootLayoutNav() {
-  const { user, loading, isPasswordResetInProgress } = useAuth();
-  const segments = useSegments();
-  const router = useRouter();
+function LoadingScreen() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <AuthLogo size="large" containerStyle={{ marginBottom: 24 }} />
+      <ActivityIndicator size="large" color={BRAND_COLOR} />
+    </View>
+  );
+}
+
+function RootLayoutNav() {
+  const { user, loading: authLoading, isPasswordResetInProgress } = useAuth();
+  const { isDataLoading } = useAppData();
+  const segments = useSegments();
+  const router = useRouter();
 
   // Handle auth state changes
   useEffect(() => {
     // Don't run until auth loading is complete
-    if (loading) return;
+    if (authLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -40,23 +59,11 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, loading, isPasswordResetInProgress]);
+  }, [user, segments, authLoading, isPasswordResetInProgress]);
 
-  // Show loading screen while auth state is being determined
-  if (loading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <AuthLogo size="large" containerStyle={{ marginBottom: 24 }} />
-        <ActivityIndicator size="large" color={BRAND_COLOR} />
-      </View>
-    );
+  // Show loading screen while auth is loading OR while data is loading for authenticated users
+  if (authLoading || (user && isDataLoading)) {
+    return <LoadingScreen />;
   }
 
   return (
@@ -85,9 +92,11 @@ export default function RootLayout() {
       <ThemeProvider>
         <BottomSheetModalProvider>
           <AuthProvider>
-            <FavoritesProvider>
-              <RootLayoutNav />
-            </FavoritesProvider>
+            <AppDataProvider>
+              <FavoritesProvider>
+                <RootLayoutNav />
+              </FavoritesProvider>
+            </AppDataProvider>
           </AuthProvider>
         </BottomSheetModalProvider>
       </ThemeProvider>
