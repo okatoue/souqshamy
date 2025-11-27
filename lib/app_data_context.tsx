@@ -602,41 +602,45 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Load from cache first for instant UI, then fetch fresh data in parallel
-            const [cachedConversations, cachedUserListings, cachedRecentlyViewed] = await Promise.all([
-                loadCachedConversations(),
-                loadCachedUserListings(),
-                loadCachedRecentlyViewed()
-            ]);
+            try {
+                // Load from cache first for instant UI, then fetch fresh data in parallel
+                const [cachedConversations, cachedUserListings, cachedRecentlyViewed] = await Promise.all([
+                    loadCachedConversations(),
+                    loadCachedUserListings(),
+                    loadCachedRecentlyViewed()
+                ]);
 
-            // Apply cached data immediately
-            if (cachedConversations && cachedConversations.length > 0) {
-                setConversations(cachedConversations);
-                const unread = cachedConversations.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
-                setTotalUnreadCount(unread);
-                setIsConversationsLoading(false);
+                // Apply cached data immediately
+                if (cachedConversations && cachedConversations.length > 0) {
+                    setConversations(cachedConversations);
+                    const unread = cachedConversations.reduce((sum, conv) => sum + (conv.unread_count || 0), 0);
+                    setTotalUnreadCount(unread);
+                    setIsConversationsLoading(false);
+                }
+
+                if (cachedUserListings && cachedUserListings.userId === user.id && cachedUserListings.listings.length > 0) {
+                    setUserListings(cachedUserListings.listings);
+                    setIsUserListingsLoading(false);
+                }
+
+                if (cachedRecentlyViewed.length > 0) {
+                    setRecentlyViewed(cachedRecentlyViewed);
+                    setIsRecentlyViewedLoading(false);
+                }
+
+                // Fetch fresh data in parallel - use allSettled to not block on failures
+                await Promise.allSettled([
+                    fetchConversations(false),
+                    fetchUserListings(false),
+                    loadRecentlyViewed(!cachedRecentlyViewed.length)
+                ]);
+            } catch (error) {
+                console.error('[AppData] Error during initialization:', error);
+            } finally {
+                // ALWAYS mark initialization complete, even on error
+                // This prevents infinite loading - the app can still work with partial/empty data
+                setInitializedForUserId(user.id);
             }
-
-            if (cachedUserListings && cachedUserListings.userId === user.id && cachedUserListings.listings.length > 0) {
-                setUserListings(cachedUserListings.listings);
-                setIsUserListingsLoading(false);
-            }
-
-            if (cachedRecentlyViewed.length > 0) {
-                setRecentlyViewed(cachedRecentlyViewed);
-                setIsRecentlyViewedLoading(false);
-            }
-
-            // Fetch fresh data in parallel (this will update state when complete)
-            await Promise.all([
-                fetchConversations(false),
-                fetchUserListings(false),
-                loadRecentlyViewed(!cachedRecentlyViewed.length)
-            ]);
-
-            // Mark initialization complete for this user
-            // This is what allows isDataLoading to become false
-            setInitializedForUserId(user.id);
         };
 
         initializeAllData();
