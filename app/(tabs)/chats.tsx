@@ -2,13 +2,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAppData } from '@/lib/app_data_context';
+import { useConversations } from '@/hooks/useConversations';
 import { useAuth } from '@/lib/auth_context';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
+    ActivityIndicator,
     Alert,
     FlatList,
     Image,
@@ -25,10 +26,11 @@ export default function ChatsScreen() {
     const router = useRouter();
     const {
         conversations,
-        isConversationsRefreshing: isRefreshing,
+        isLoading,
+        isRefreshing,
         fetchConversations,
         deleteConversation
-    } = useAppData();
+    } = useConversations();
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -256,6 +258,21 @@ export default function ChatsScreen() {
         </View>
     );
 
+    // Loading state
+    if (isLoading && !isRefreshing) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+                <ScreenHeader title="Messages" rightAction={EditButton} />
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={BRAND_COLOR} />
+                    <ThemedText style={[styles.loadingText, { color: secondaryTextColor }]}>
+                        Loading conversations...
+                    </ThemedText>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     // Not authenticated
     if (!user) {
         return (
@@ -313,6 +330,15 @@ const styles = StyleSheet.create({
     },
     selectedItem: {
         backgroundColor: 'rgba(255, 59, 48, 0.08)',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: SPACING.md,
+        fontSize: 16,
     },
     emptyList: {
         flex: 1,

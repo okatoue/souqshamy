@@ -1,9 +1,9 @@
-import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -18,19 +18,21 @@ import { ThemedText } from '@/components/themed-text';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useUserListings } from '@/hooks/useUserListings';
 import { Listing } from '@/types/listing';
 
 export default function ListingsScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const {
-    userListings: listings,
-    isUserListingsRefreshing: isRefreshing,
+    listings,
+    isLoading,
+    isRefreshing,
     fetchUserListings,
     handleSoftDelete,
     handlePermanentDelete,
     handleUpdateStatus
-  } = useAppData();
+  } = useUserListings();
 
   const backgroundColor = useThemeColor({}, 'background');
   const iconMutedColor = useThemeColor({}, 'iconMuted');
@@ -70,6 +72,18 @@ export default function ListingsScreen() {
       </Pressable>
     </View>
   );
+
+  // Loading state
+  if (isLoading && !isRefreshing) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={BRAND_COLOR} />
+          <ThemedText style={styles.loadingText}>Loading your listings...</ThemedText>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   // Not authenticated state
   if (!user) {
@@ -144,6 +158,16 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    opacity: 0.7,
   },
   listContent: {
     padding: 16,
