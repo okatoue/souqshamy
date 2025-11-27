@@ -49,7 +49,9 @@ export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetPro
 
         useImperativeHandle(ref, () => ({
             open: () => {
+                // Snap to the first (and only) snap point index
                 bottomSheetRef.current?.present();
+                bottomSheetRef.current?.snapToIndex(0);
             },
             close: () => {
                 bottomSheetRef.current?.dismiss();
