@@ -1,16 +1,21 @@
 // app/_layout.tsx
+import { AuthLogo } from '@/components/auth/AuthLogo';
+import { Colors, BRAND_COLOR } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider } from '@/lib/favorites_context';
-import { ThemeProvider } from '@/lib/theme_context';
+import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function RootLayoutNav() {
   const { user, loading, isPasswordResetInProgress } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const colorScheme = useAppColorScheme();
+  const colors = Colors[colorScheme];
 
   // Handle auth state changes
   useEffect(() => {
@@ -36,6 +41,23 @@ function RootLayoutNav() {
       router.replace('/(tabs)');
     }
   }, [user, segments, loading, isPasswordResetInProgress]);
+
+  // Show loading screen while auth state is being determined
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <AuthLogo size="large" containerStyle={{ marginBottom: 24 }} />
+        <ActivityIndicator size="large" color={BRAND_COLOR} />
+      </View>
+    );
+  }
 
   return (
     <Stack>
