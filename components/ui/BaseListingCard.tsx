@@ -14,7 +14,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // =============================================================================
 
 /** Fixed image dimensions for pixel-perfect alignment across screens */
-export const CARD_IMAGE_SIZE = 100;
+export const CARD_IMAGE_SIZE = 80;
 
 /** Typography standards */
 const TITLE_FONT_SIZE = 16;
@@ -160,14 +160,14 @@ export function BaseListingCard({
 
 const styles = StyleSheet.create({
   cardContainer: {
-    marginHorizontal: SPACING.lg,
+    marginHorizontal: SPACING.sm,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     overflow: 'hidden',
   },
   mainContent: {
-    padding: SPACING.md,
+    padding: SPACING.sm,
   },
   pressed: {
     opacity: 0.7,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   categoryContainer: {
     flex: 1,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   details: {
     flex: 1,
-    marginLeft: SPACING.md,
+    marginLeft: SPACING.sm,
     justifyContent: 'center',
   },
   title: {
