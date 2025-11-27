@@ -1,7 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth_context';
+import { ThemePreference, useThemeContext } from '@/lib/theme_context';
 import {
     Feather,
     Ionicons,
@@ -9,16 +12,24 @@ import {
     MaterialIcons
 } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import {
     Alert,
     Pressable,
     ScrollView,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// Theme option configuration
+const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { value: 'light', label: 'Light', icon: 'sunny-outline' },
+    { value: 'dark', label: 'Dark', icon: 'moon-outline' },
+    { value: 'system', label: 'System Settings', icon: 'phone-portrait-outline' },
+];
 
 type MenuItemProps = {
     icon: React.ReactNode;
@@ -96,6 +107,45 @@ export default function UserScreen() {
     const textColor = useThemeColor({}, 'text');
     const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
 
+    // Theme context and bottom sheet
+    const { themePreference, setThemePreference } = useThemeContext();
+    const themeSheetRef = useRef<BottomSheetRefProps>(null);
+    const initialThemeRef = useRef<ThemePreference>(themePreference);
+    const savedRef = useRef<boolean>(false);
+
+    // Get current theme subtitle
+    const getThemeSubtitle = () => {
+        const option = THEME_OPTIONS.find(o => o.value === themePreference);
+        return option?.label || 'System Settings';
+    };
+
+    // Open theme bottom sheet
+    const handleOpenThemeSheet = useCallback(() => {
+        // Store the initial theme before opening
+        initialThemeRef.current = themePreference;
+        savedRef.current = false;
+        themeSheetRef.current?.open();
+    }, [themePreference]);
+
+    // Handle theme option selection (live preview)
+    const handleThemeSelect = useCallback((theme: ThemePreference) => {
+        setThemePreference(theme);
+    }, [setThemePreference]);
+
+    // Handle save button
+    const handleSaveTheme = useCallback(() => {
+        savedRef.current = true;
+        themeSheetRef.current?.close();
+    }, []);
+
+    // Handle sheet dismiss (revert if not saved)
+    const handleThemeSheetDismiss = useCallback(() => {
+        if (!savedRef.current) {
+            // Revert to initial theme
+            setThemePreference(initialThemeRef.current);
+        }
+    }, [setThemePreference]);
+
     const handleLogout = () => {
         Alert.alert(
             'Log Out',
@@ -121,6 +171,10 @@ export default function UserScreen() {
     const handleComingSoon = (feature: string) => {
         Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
     };
+
+    // Theme option item colors
+    const itemBackground = useThemeColor({}, 'sheetItemBackground');
+    const checkmarkColor = BRAND_COLOR;
 
     // If not logged in, show sign in prompt
     if (!user) {
@@ -201,8 +255,8 @@ export default function UserScreen() {
                     <MenuItem
                         icon={<Ionicons name="color-palette-outline" size={22} color={iconColor} />}
                         title="App Theme"
-                        subtitle="Light, dark, or system"
-                        onPress={() => handleComingSoon('App Theme')}
+                        subtitle={getThemeSubtitle()}
+                        onPress={handleOpenThemeSheet}
                     />
                 </Section>
 
@@ -244,6 +298,49 @@ export default function UserScreen() {
                     </Text>
                 </View>
             </ScrollView>
+
+            {/* Theme Selection Bottom Sheet */}
+            <BottomSheet
+                ref={themeSheetRef}
+                title="App Theme"
+                snapPoints={['40%']}
+                onDismiss={handleThemeSheetDismiss}
+            >
+                <View style={styles.themeSheetContent}>
+                    {THEME_OPTIONS.map((option) => (
+                        <TouchableOpacity
+                            key={option.value}
+                            style={[styles.themeOption, { backgroundColor: itemBackground }]}
+                            onPress={() => handleThemeSelect(option.value)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.themeOptionLeft}>
+                                <Ionicons
+                                    name={option.icon}
+                                    size={22}
+                                    color={iconColor}
+                                    style={styles.themeOptionIcon}
+                                />
+                                <Text style={[styles.themeOptionText, { color: textColor }]}>
+                                    {option.label}
+                                </Text>
+                            </View>
+                            {themePreference === option.value && (
+                                <Ionicons name="checkmark" size={24} color={checkmarkColor} />
+                            )}
+                        </TouchableOpacity>
+                    ))}
+
+                    {/* Save Button */}
+                    <TouchableOpacity
+                        style={styles.saveButton}
+                        onPress={handleSaveTheme}
+                        activeOpacity={0.8}
+                    >
+                        <Text style={styles.saveButtonText}>Save</Text>
+                    </TouchableOpacity>
+                </View>
+            </BottomSheet>
         </SafeAreaView>
     );
 }
@@ -371,5 +468,42 @@ const styles = StyleSheet.create({
     signUpLinkText: {
         color: '#007AFF',
         fontSize: 15,
+    },
+    // Theme sheet styles
+    themeSheetContent: {
+        paddingHorizontal: SPACING.sm,
+    },
+    themeOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: SPACING.lg,
+        paddingHorizontal: SPACING.xl,
+        marginVertical: SPACING.xs,
+        borderRadius: BORDER_RADIUS.lg,
+    },
+    themeOptionLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    themeOptionIcon: {
+        marginRight: SPACING.md,
+    },
+    themeOptionText: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    saveButton: {
+        backgroundColor: BRAND_COLOR,
+        paddingVertical: SPACING.lg,
+        borderRadius: BORDER_RADIUS.lg,
+        alignItems: 'center',
+        marginTop: SPACING.lg,
+        marginHorizontal: SPACING.sm,
+    },
+    saveButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
