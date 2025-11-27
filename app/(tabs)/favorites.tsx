@@ -142,7 +142,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingBottom: SPACING.xl,
+    padding: SPACING.lg,
+    paddingBottom: 100,
   },
   emptyListContent: {
     flex: 1,
