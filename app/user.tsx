@@ -284,7 +284,7 @@ export default function UserScreen() {
             <BottomSheet
                 ref={themeSheetRef}
                 title="App Theme"
-                snapPoints={['50%']}
+                snapPoints={['40%']}
             >
                 <View style={styles.themeSheetContent}>
                     {THEME_OPTIONS.map((option) => (
