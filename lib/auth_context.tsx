@@ -57,39 +57,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[Auth] Initializing auth context...');
 
         // Helper to create a timeout promise
-        const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number): Promise<{ result: T | null; timedOut: boolean }> => {
+        const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
             return Promise.race([
-                promise.then((result) => ({ result, timedOut: false })),
-                new Promise<{ result: T | null; timedOut: boolean }>((resolve) => {
+                promise,
+                new Promise<T>((resolve) => {
                     setTimeout(() => {
                         console.warn(`[Auth] Operation timed out after ${timeoutMs}ms`);
-                        resolve({ result: null, timedOut: true });
+                        resolve(fallback);
                     }, timeoutMs);
                 }),
             ]);
-        };
-
-        // Try to restore session from AsyncStorage cache when server is unreachable
-        const tryRestoreFromCache = async (): Promise<Session | null> => {
-            try {
-                // Supabase stores session with this key pattern
-                const keys = await AsyncStorage.getAllKeys();
-                const authKey = keys.find(key => key.includes('-auth-token'));
-                if (!authKey) return null;
-
-                const cachedData = await AsyncStorage.getItem(authKey);
-                if (!cachedData) return null;
-
-                const parsed = JSON.parse(cachedData);
-                if (parsed?.access_token && parsed?.user) {
-                    console.log('[Auth] Restored session from cache');
-                    return parsed as Session;
-                }
-                return null;
-            } catch (error) {
-                console.error('[Auth] Failed to restore from cache:', error);
-                return null;
-            }
         };
 
         // Initialize auth - check for existing session
@@ -98,28 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 console.log('[Auth] Calling getSession()...');
 
                 // Add 10 second timeout to prevent infinite loading
-                const { result, timedOut } = await withTimeout(
+                const result = await withTimeout(
                     supabase.auth.getSession(),
-                    10000
+                    10000,
+                    { data: { session: null }, error: new Error('Session fetch timed out') }
                 );
 
-                let session: Session | null = null;
-                let error: Error | null = null;
-
-                if (timedOut) {
-                    console.warn('[Auth] Server unreachable, trying to restore from cache...');
-                    // Try to restore from local cache when server times out
-                    session = await tryRestoreFromCache();
-                    if (!session) {
-                        error = new Error('Session fetch timed out and no cached session available');
-                    }
-                } else if (result) {
-                    session = result.data.session;
-                    error = result.error ? new Error(result.error.message) : null;
-                }
+                const { data: { session }, error } = result;
 
                 if (error) {
-                    console.error('[Auth] getSession error:', error.message);
+                    console.error('[Auth] getSession error:', error);
                 } else {
                     console.log('[Auth] getSession result:', session ? `User: ${session.user.email}` : 'No session');
                 }
