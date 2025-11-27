@@ -56,32 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         console.log('[Auth] Initializing auth context...');
 
-        // Helper to create a timeout promise
-        const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> => {
-            return Promise.race([
-                promise,
-                new Promise<T>((resolve) => {
-                    setTimeout(() => {
-                        console.warn(`[Auth] Operation timed out after ${timeoutMs}ms`);
-                        resolve(fallback);
-                    }, timeoutMs);
-                }),
-            ]);
-        };
-
         // Initialize auth - check for existing session
         const initializeAuth = async () => {
             try {
                 console.log('[Auth] Calling getSession()...');
-
-                // Add 10 second timeout to prevent infinite loading
-                const result = await withTimeout(
-                    supabase.auth.getSession(),
-                    10000,
-                    { data: { session: null }, error: new Error('Session fetch timed out') }
-                );
-
-                const { data: { session }, error } = result;
+                const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) {
                     console.error('[Auth] getSession error:', error);
@@ -102,7 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         setIsPasswordResetInProgressState(false);
                     }
 
-                    // Create/update profile (don't await - run in background)
+                    // Create/update profile
                     createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
