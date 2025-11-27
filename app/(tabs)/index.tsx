@@ -58,7 +58,7 @@ export default function HomeScreen() {
       <ScrollView keyboardShouldPersistTaps="handled">
         <ScreenHeader
           leftAction={<UserIcon />}
-          customTitle={<Location />}
+          rightAction={<Location />}
         />
 
         <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>

@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth_context';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -27,8 +27,11 @@ export default function ChatsScreen() {
         conversations,
         isLoading,
         isRefreshing,
-        fetchConversations
+        fetchConversations,
+        deleteConversation
     } = useConversations();
+
+    const [isEditMode, setIsEditMode] = useState(false);
 
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
@@ -50,6 +53,24 @@ export default function ChatsScreen() {
     const onRefresh = () => {
         fetchConversations(true);
     };
+
+    const handleDeleteConversation = async (conversationId: string) => {
+        await deleteConversation(conversationId);
+    };
+
+    const toggleEditMode = () => {
+        setIsEditMode(prev => !prev);
+    };
+
+    const EditButton = (
+        <Pressable onPress={toggleEditMode} style={styles.editButton}>
+            <Ionicons
+                name={isEditMode ? 'checkmark-circle' : 'remove-circle-outline'}
+                size={26}
+                color={isEditMode ? BRAND_COLOR : secondaryTextColor}
+            />
+        </Pressable>
+    );
 
     const handleConversationPress = (conversation: ConversationWithDetails) => {
         router.push({
@@ -80,8 +101,18 @@ export default function ChatsScreen() {
                 { backgroundColor: cardBg, borderBottomColor: borderColor },
                 pressed && styles.conversationItemPressed
             ]}
-            onPress={() => handleConversationPress(item)}
+            onPress={() => !isEditMode && handleConversationPress(item)}
         >
+            {/* Delete button in edit mode */}
+            {isEditMode && (
+                <Pressable
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteConversation(item.id)}
+                >
+                    <Ionicons name="remove-circle" size={24} color={COLORS.error} />
+                </Pressable>
+            )}
+
             {/* Listing Image */}
             <View style={styles.imageContainer}>
                 {item.listing?.images && item.listing.images.length > 0 ? (
@@ -170,7 +201,7 @@ export default function ChatsScreen() {
     if (isLoading && !isRefreshing) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-                <ScreenHeader title="Messages" />
+                <ScreenHeader title="Messages" rightAction={EditButton} />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={BRAND_COLOR} />
                     <ThemedText style={[styles.loadingText, { color: secondaryTextColor }]}>
@@ -185,7 +216,7 @@ export default function ChatsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-                <ScreenHeader title="Messages" />
+                <ScreenHeader title="Messages" rightAction={EditButton} />
                 <View style={styles.emptyContainer}>
                     <MaterialCommunityIcons name="account-lock" size={80} color={mutedColor} />
                     <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
@@ -205,7 +236,7 @@ export default function ChatsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-            <ScreenHeader title="Messages" />
+            <ScreenHeader title="Messages" rightAction={EditButton} />
 
             <FlatList
                 data={conversations}
@@ -228,6 +259,12 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    editButton: {
+        padding: SPACING.xs,
+    },
+    deleteButton: {
+        marginRight: SPACING.sm,
     },
     loadingContainer: {
         flex: 1,
