@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ListingItem } from '@/components/listings/ListingItem';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BRAND_COLOR } from '@/constants/theme';
+import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useUserListings } from '@/hooks/useUserListings';
 import { Listing } from '@/types/listing';
@@ -110,20 +110,20 @@ export default function ListingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
-        <View style={styles.headerTop}>
-          <ThemedText type="title" style={styles.headerTitle}>My Listings</ThemedText>
-          <Pressable
-            style={[styles.addButton, { backgroundColor: BRAND_COLOR }]}
-            onPress={() => router.push('/(tabs)/post')}
-          >
-            <MaterialIcons name="add" size={24} color="white" />
-          </Pressable>
+      <View style={[styles.header, { borderBottomColor: borderColor }]}>
+        <View style={styles.headerLeft}>
+          <ThemedText type="title">My Listings</ThemedText>
+          <Text style={[styles.listingCount, { color: textColor }]}>
+            {listings.length} {listings.length === 1 ? 'item' : 'items'}
+          </Text>
         </View>
-        <Text style={[styles.listingCount, { color: textColor }]}>
-          {listings.length} {listings.length === 1 ? 'item' : 'items'}
-        </Text>
-      </ThemedView>
+        <Pressable
+          style={[styles.addButton, { backgroundColor: BRAND_COLOR }]}
+          onPress={() => router.push('/(tabs)/post')}
+        >
+          <MaterialIcons name="add" size={24} color="white" />
+        </Pressable>
+      </View>
 
       <FlatList
         data={listings}
@@ -153,18 +153,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+  headerLeft: {
+    flex: 1,
   },
   addButton: {
     width: 40,
@@ -175,7 +173,7 @@ const styles = StyleSheet.create({
   },
   listingCount: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: SPACING.xs,
     opacity: 0.7,
   },
   loadingContainer: {
