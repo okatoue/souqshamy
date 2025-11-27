@@ -42,6 +42,9 @@ export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetPro
             [customSnapPoints]
         );
 
+        // Calculate the index of the highest snap point (last in array)
+        const initialSnapIndex = snapPoints.length - 1;
+
         // Theme colors
         const backgroundColor = useThemeColor({}, 'background');
         const textColor = useThemeColor({}, 'text');
@@ -49,9 +52,7 @@ export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetPro
 
         useImperativeHandle(ref, () => ({
             open: () => {
-                // Snap to the first (and only) snap point index
                 bottomSheetRef.current?.present();
-                bottomSheetRef.current?.snapToIndex(0);
             },
             close: () => {
                 bottomSheetRef.current?.dismiss();
@@ -79,7 +80,9 @@ export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetPro
         return (
             <BottomSheetModal
                 ref={bottomSheetRef}
+                index={initialSnapIndex}
                 snapPoints={snapPoints}
+                enableDynamicSizing={false}
                 enablePanDownToClose={enablePanDownToClose}
                 backgroundStyle={[styles.bottomSheetBackground, { backgroundColor }]}
                 handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: handleColor }]}
