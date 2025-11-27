@@ -1,8 +1,8 @@
-// 1. Change import from BottomSheet to BottomSheetModal
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
@@ -21,21 +21,25 @@ interface CategoryBottomSheetProps {
 
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBottomSheetProps>(
     ({ onCategorySelect, showCategories = true, children, title }, ref) => {
-        // 2. Change ref type to BottomSheetModal
         const bottomSheetRef = useRef<BottomSheetModal>(null);
-
         const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
         const snapPoints = useMemo(() => ['50%', '75%', '90%'], []);
 
+        // Theme colors
+        const backgroundColor = useThemeColor({}, 'background');
+        const textColor = useThemeColor({}, 'text');
+        const iconColor = useThemeColor({}, 'icon');
+        const itemBackground = useThemeColor({}, 'sheetItemBackground');
+        const handleColor = useThemeColor({}, 'handleIndicator');
+        const chevronColor = useThemeColor({}, 'iconMuted');
+
         useImperativeHandle(ref, () => ({
             open: () => {
                 setSelectedCategory(null);
-                // 3. Use present() instead of snapToIndex for Modals
                 bottomSheetRef.current?.present();
             },
             close: () => {
-                // 4. Use dismiss() for Modals
                 bottomSheetRef.current?.dismiss();
                 setTimeout(() => setSelectedCategory(null), 300);
             },
@@ -43,7 +47,6 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
 
         const handleCategoryPress = useCallback((category: Category) => {
             setSelectedCategory(category);
-            // You can still use snapToIndex on the modal ref if needed
             if (category.subcategories.length > 10) {
                 bottomSheetRef.current?.snapToIndex(1);
             }
@@ -53,7 +56,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             (subcategory: Subcategory) => {
                 if (selectedCategory) {
                     onCategorySelect?.(selectedCategory, subcategory);
-                    bottomSheetRef.current?.dismiss(); // Changed to dismiss
+                    bottomSheetRef.current?.dismiss();
                     setTimeout(() => setSelectedCategory(null), 300);
                 }
             },
@@ -64,13 +67,6 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             setSelectedCategory(null);
             bottomSheetRef.current?.snapToIndex(0);
         }, []);
-
-        const backgroundColor = useThemeColor({}, 'background');
-        const textColor = useThemeColor({}, 'text');
-        const iconColor = useThemeColor({}, 'icon');
-        const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
-        const handleColor = useThemeColor({ light: '#DDDDDD', dark: '#444' }, 'icon');
-        const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
 
         const renderBackdrop = useCallback(
             (props: any) => (
@@ -92,7 +88,6 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
             ? (selectedCategory ? selectedCategory.name : 'Select Category')
             : (title || 'Options');
 
-        // 5. Replace BottomSheet with BottomSheetModal and remove index={-1}
         return (
             <BottomSheetModal
                 ref={bottomSheetRef}
@@ -111,7 +106,9 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                 onPress={handleBackPress}
                                 activeOpacity={0.7}
                             >
-                                <Text style={styles.backButtonText}>‹ Back</Text>
+                                <Text style={[styles.backButtonText, { color: BRAND_COLOR }]}>
+                                    {'‹ Back'}
+                                </Text>
                             </TouchableOpacity>
                         )}
                         <Text style={[
@@ -136,7 +133,9 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                         onPress={() => handleSubcategoryPress(subcategory)}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={[styles.categoryText, { color: textColor }]}>{subcategory.name}</Text>
+                                        <Text style={[styles.categoryText, { color: textColor }]}>
+                                            {subcategory.name}
+                                        </Text>
                                     </TouchableOpacity>
                                 ))
                                 : categoriesData.categories.map((category) => (
@@ -147,10 +146,14 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.categoryContent}>
-                                            <Text style={[styles.categoryIcon, { color: iconColor }]}>{category.icon}</Text>
-                                            <Text style={[styles.categoryText, { color: textColor }]}>{category.name}</Text>
+                                            <Text style={[styles.categoryIcon, { color: iconColor }]}>
+                                                {category.icon}
+                                            </Text>
+                                            <Text style={[styles.categoryText, { color: textColor }]}>
+                                                {category.name}
+                                            </Text>
                                         </View>
-                                        <Text style={[styles.chevron, { color: chevronColor }]}>›</Text>
+                                        <Text style={[styles.chevron, { color: chevronColor }]}>{'›'}</Text>
                                     </TouchableOpacity>
                                 ))
                         ) : (
@@ -166,47 +169,38 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
 CategoryBottomSheet.displayName = 'CategoryBottomSheet';
 
 const styles = StyleSheet.create({
-    // ... existing styles remain the same
     bottomSheetBackground: {
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: -3,
-        },
-        shadowOpacity: 0.1,
-        shadowRadius: 5,
-        elevation: 10,
+        borderTopLeftRadius: BORDER_RADIUS.xxl,
+        borderTopRightRadius: BORDER_RADIUS.xxl,
+        ...SHADOWS.bottomSheet,
     },
     handleIndicator: {
         width: 40,
         height: 4,
-        marginTop: 8,
+        marginTop: SPACING.sm,
     },
     contentContainer: {
         flex: 1,
-        paddingHorizontal: 16,
+        paddingHorizontal: SPACING.lg,
     },
     scrollViewContent: {
-        paddingBottom: 20,
+        paddingBottom: SPACING.xl,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
-        marginTop: 8,
+        marginBottom: SPACING.lg,
+        marginTop: SPACING.sm,
         minHeight: 32,
     },
     backButton: {
         position: 'absolute',
         left: 0,
         zIndex: 1,
-        padding: 8,
+        padding: SPACING.sm,
     },
     backButtonText: {
         fontSize: 16,
-        color: '#007AFF',
         fontWeight: '500',
     },
     title: {
@@ -215,16 +209,15 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         flex: 1,
     },
-    titleWithBack: {
-    },
+    titleWithBack: {},
     categoryItem: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        marginVertical: 4,
-        borderRadius: 12,
+        paddingVertical: SPACING.lg,
+        paddingHorizontal: SPACING.xl,
+        marginVertical: SPACING.xs,
+        borderRadius: BORDER_RADIUS.lg,
     },
     categoryContent: {
         flexDirection: 'row',
@@ -233,7 +226,7 @@ const styles = StyleSheet.create({
     },
     categoryIcon: {
         fontSize: 20,
-        marginRight: 12,
+        marginRight: SPACING.md,
     },
     categoryText: {
         fontSize: 16,
@@ -242,7 +235,7 @@ const styles = StyleSheet.create({
     },
     chevron: {
         fontSize: 24,
-        marginLeft: 8,
+        marginLeft: SPACING.sm,
     },
 });
 

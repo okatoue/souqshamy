@@ -1,4 +1,5 @@
 import { ThemedView } from '@/components/themed-view';
+import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
@@ -13,28 +14,29 @@ export default function ContactSection({
   phoneNumber,
   setPhoneNumber,
 }: ContactSectionProps) {
+  // Theme colors
   const textColor = useThemeColor({}, 'text');
   const iconColor = useThemeColor({}, 'icon');
-  const inputBackground = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
-  const placeholderColor = useThemeColor({ light: '#999', dark: '#888' }, 'icon');
+  const inputBg = useThemeColor({}, 'inputBackground');
+  const borderColor = useThemeColor({}, 'border');
+  const mutedColor = useThemeColor({}, 'textMuted');
 
   return (
-    <ThemedView style={[styles.section, { borderColor }]}>
+    <ThemedView variant="card" style={[styles.section, { borderColor }]}>
       <Text style={[styles.sectionTitle, { color: textColor }]}>Contact Information</Text>
-      <Text style={[styles.sectionSubtitle, { color: placeholderColor }]}>
+      <Text style={[styles.sectionSubtitle, { color: mutedColor }]}>
         Add at least one way for buyers to contact you
       </Text>
 
       {/* Phone Number Input */}
-      <View style={[styles.inputWrapper, { backgroundColor: inputBackground, borderColor }]}>
+      <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
         <View style={[styles.iconContainer, { borderColor }]}>
           <Ionicons name="call-outline" size={20} color={iconColor} />
         </View>
         <TextInput
           style={[styles.input, { color: textColor }]}
           placeholder="Phone Number"
-          placeholderTextColor={placeholderColor}
+          placeholderTextColor={COLORS.placeholder}
           value={phoneNumber}
           onChangeText={setPhoneNumber}
           keyboardType="phone-pad"
@@ -49,36 +51,36 @@ export default function ContactSection({
 
 const styles = StyleSheet.create({
   section: {
-    marginHorizontal: 20,
-    marginBottom: 25,
-    padding: 15,
-    borderRadius: 12,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 5,
+    marginBottom: SPACING.xs,
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 15,
+    marginBottom: SPACING.lg,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   iconContainer: {
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 14,
     borderRightWidth: 1,
   },
   input: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 14,
     fontSize: 16,
   },

@@ -1,6 +1,6 @@
+import { BORDER_RADIUS } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getThumbnailUrl } from '@/lib/imageUtils';
-import { BORDER_RADIUS, COLORS } from '@/constants/theme';
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, StyleSheet, View, ViewStyle } from 'react-native';
@@ -16,10 +16,8 @@ interface ListingImageProps {
  * Handles loading states and missing images gracefully.
  */
 export function ListingImage({ images, size = 80, style }: ListingImageProps) {
-  const placeholderBg = useThemeColor(
-    { light: '#f0f0f0', dark: '#2a2a2a' },
-    'background'
-  );
+  const placeholderBg = useThemeColor({}, 'placeholder');
+  const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
 
   const imageStyle = {
     width: size,
@@ -42,7 +40,7 @@ export function ListingImage({ images, size = 80, style }: ListingImageProps) {
       <MaterialIcons
         name="image"
         size={size * 0.4}
-        color={COLORS.mutedLight}
+        color={placeholderIconColor}
       />
     </View>
   );

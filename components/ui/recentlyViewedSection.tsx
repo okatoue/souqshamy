@@ -1,3 +1,4 @@
+import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
@@ -22,11 +23,13 @@ interface RecentlyViewedSectionProps {
 }
 
 export function RecentlyViewedSection({ listings, isLoading, onClear }: RecentlyViewedSectionProps) {
+    // Theme colors
     const textColor = useThemeColor({}, 'text');
-    const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const placeholderBg = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
-    const secondaryText = useThemeColor({ light: '#666', dark: '#999' }, 'text');
+    const cardBg = useThemeColor({}, 'cardBackgroundSecondary');
+    const borderColor = useThemeColor({}, 'border');
+    const placeholderBg = useThemeColor({}, 'placeholder');
+    const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
+    const secondaryText = useThemeColor({}, 'textSecondary');
 
     const handleItemPress = (listing: Listing) => {
         router.push(`/listing/${listing.id}`);
@@ -39,7 +42,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                     <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color="#007AFF" />
+                    <ActivityIndicator size="small" color={BRAND_COLOR} />
                 </View>
             </View>
         );
@@ -53,7 +56,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                     <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
                     {onClear && listings.length > 0 && (
                         <Pressable onPress={onClear} style={styles.clearButton}>
-                            <Text style={styles.clearButtonText}>Clear</Text>
+                            <Text style={[styles.clearButtonText, { color: BRAND_COLOR }]}>Clear</Text>
                         </Pressable>
                     )}
                 </View>
@@ -83,7 +86,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                                 />
                             ) : (
                                 <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
-                                    <MaterialIcons name="image" size={30} color="#666" />
+                                    <MaterialIcons name="image" size={30} color={placeholderIconColor} />
                                 </View>
                             )}
 
@@ -92,7 +95,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                                 <Text style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
                                     {listing.title}
                                 </Text>
-                                <Text style={styles.price}>
+                                <Text style={[styles.price, { color: BRAND_COLOR }]}>
                                     {formatPrice(listing.price, listing.currency)}
                                 </Text>
                                 <Text style={[styles.location, { color: secondaryText }]} numberOfLines={1}>
@@ -111,42 +114,37 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 20,
-        marginBottom: 10,
+        marginTop: SPACING.xl,
+        marginBottom: SPACING.md,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        marginBottom: 12,
+        paddingHorizontal: SPACING.lg,
+        marginBottom: SPACING.md,
     },
     title: {
         fontSize: 20,
         fontWeight: '700',
     },
     clearButton: {
-        padding: 4,
+        padding: SPACING.xs,
     },
     clearButtonText: {
-        color: '#007AFF',
         fontSize: 14,
         fontWeight: '500',
     },
     scrollContent: {
-        paddingHorizontal: 16,
-        gap: 12,
+        paddingHorizontal: SPACING.lg,
+        gap: SPACING.md,
     },
     card: {
         width: 150,
-        borderRadius: 12,
+        borderRadius: BORDER_RADIUS.lg,
         borderWidth: 1,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 2,
+        ...SHADOWS.card,
     },
     cardPressed: {
         opacity: 0.7,
@@ -163,18 +161,17 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     details: {
-        padding: 10,
+        padding: SPACING.md,
     },
     itemTitle: {
         fontSize: 13,
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: SPACING.xs,
         lineHeight: 18,
     },
     price: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#007AFF',
         marginBottom: 2,
     },
     location: {
@@ -184,15 +181,5 @@ const styles = StyleSheet.create({
         height: 80,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    emptyContainer: {
-        height: 80,
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'row',
-        gap: 8,
-    },
-    emptyText: {
-        fontSize: 14,
     },
 });

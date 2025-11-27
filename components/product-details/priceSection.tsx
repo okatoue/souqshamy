@@ -1,4 +1,6 @@
 import { ThemedView } from '@/components/themed-view';
+import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Fontisto } from '@expo/vector-icons';
 import React from 'react';
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -10,35 +12,39 @@ interface PriceSectionProps {
   setCurrency: (currency: string) => void;
 }
 
-export default function PriceSection({ 
-  price, 
-  setPrice, 
-  currency, 
-  setCurrency 
+export default function PriceSection({
+  price,
+  setPrice,
+  currency,
+  setCurrency
 }: PriceSectionProps) {
-  
+  // Theme colors
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'border');
+  const inputBg = useThemeColor({}, 'inputBackground');
+
   const handleCurrencyPress = () => {
     // Toggle between SYP and USD
     setCurrency(currency === 'SYP' ? 'USD' : 'SYP');
   };
 
   return (
-    <ThemedView style={styles.section}>
-      <Text style={styles.sectionTitle}>Price</Text>
+    <ThemedView variant="card" style={[styles.section, { borderColor }]}>
+      <Text style={[styles.sectionTitle, { color: textColor }]}>Price</Text>
       <View style={styles.priceContainer}>
-        <TouchableOpacity 
-          style={styles.currencyButton}
+        <TouchableOpacity
+          style={[styles.currencyButton, { backgroundColor: inputBg, borderColor }]}
           onPress={handleCurrencyPress}
           activeOpacity={0.7}
         >
-          <Text style={styles.currencyText}>{currency}</Text>
-          <Fontisto name="arrow-swap" size={14} color="white" />
+          <Text style={[styles.currencyText, { color: textColor }]}>{currency}</Text>
+          <Fontisto name="arrow-swap" size={14} color={textColor} />
         </TouchableOpacity>
-        
+
         <TextInput
-          style={styles.priceInput}
+          style={[styles.priceInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
           placeholder="0.00"
-          placeholderTextColor="#888"
+          placeholderTextColor={COLORS.placeholder}
           keyboardType="decimal-pad"
           value={price}
           onChangeText={setPrice}
@@ -53,48 +59,40 @@ export default function PriceSection({
 
 const styles = StyleSheet.create({
   section: {
-    marginHorizontal: 20,
-    marginBottom: 25,
-    padding: 15,
-    borderRadius: 12,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#333',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: 'white',
-    marginBottom: 15,
+    marginBottom: SPACING.lg,
   },
   priceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SPACING.md,
   },
   currencyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    borderColor: '#333',
-    gap: 8,
+    gap: SPACING.sm,
   },
   currencyText: {
     fontSize: 16,
-    color: 'white',
     fontWeight: '600',
   },
   priceInput: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.md,
     fontSize: 20,
-    color: 'white',
     borderWidth: 1,
-    borderColor: '#333',
   },
 });

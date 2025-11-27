@@ -1,3 +1,5 @@
+import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
@@ -13,26 +15,32 @@ interface LocationSectionProps {
 }
 
 export default function LocationSection({ location, onPress }: LocationSectionProps) {
+    // Theme colors
+    const textColor = useThemeColor({}, 'text');
+    const inputBg = useThemeColor({}, 'inputBackground');
+    const borderColor = useThemeColor({}, 'border');
+    const mutedColor = useThemeColor({}, 'textMuted');
+
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>Location</Text>
+            <Text style={[styles.label, { color: textColor }]}>Location</Text>
 
             <TouchableOpacity
-                style={styles.locationBox}
+                style={[styles.locationBox, { backgroundColor: inputBg, borderColor }]}
                 onPress={onPress}
                 activeOpacity={0.7}
             >
                 <View style={styles.locationContent}>
-                    <Ionicons name="location" size={20} color="#007AFF" />
-                    <Text style={styles.locationText}>
+                    <Ionicons name="location" size={20} color={BRAND_COLOR} />
+                    <Text style={[styles.locationText, { color: textColor }]}>
                         {location || 'Select location'}
                     </Text>
                 </View>
 
-                <Ionicons name="chevron-forward" size={20} color="#888" />
+                <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
             </TouchableOpacity>
 
-            <Text style={styles.helperText}>
+            <Text style={[styles.helperText, { color: mutedColor }]}>
                 Tap to select your location on the map
             </Text>
         </View>
@@ -41,24 +49,21 @@ export default function LocationSection({ location, onPress }: LocationSectionPr
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: 20,
-        marginBottom: 24,
+        paddingHorizontal: SPACING.xl,
+        marginBottom: SPACING.xxl,
     },
     label: {
         fontSize: 16,
         fontWeight: '600',
-        color: 'white',
-        marginBottom: 8,
+        marginBottom: SPACING.sm,
     },
     locationBox: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: 12,
+        borderRadius: BORDER_RADIUS.lg,
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.1)',
-        paddingHorizontal: 16,
+        paddingHorizontal: SPACING.lg,
         paddingVertical: 14,
     },
     locationContent: {
@@ -68,13 +73,11 @@ const styles = StyleSheet.create({
     },
     locationText: {
         fontSize: 16,
-        color: 'white',
-        marginLeft: 10,
+        marginLeft: SPACING.md,
         flex: 1,
     },
     helperText: {
         fontSize: 12,
-        color: '#888',
         marginTop: 6,
     },
 });
