@@ -65,10 +65,6 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
 
-    // Track which user we've completed initialization for
-    // This is the KEY fix: isDataLoading is computed synchronously from this
-    const [initializedForUserId, setInitializedForUserId] = useState<string | null>(null);
-
     // Conversations state
     const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
     const [isConversationsLoading, setIsConversationsLoading] = useState(true);
@@ -88,10 +84,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // Refs
     const previousUserId = useRef<string | undefined>(undefined);
 
-    // CRITICAL: Compute unified loading state SYNCHRONOUSLY
-    // This ensures isDataLoading is true immediately when user changes,
-    // before any effects run, preventing the flash of empty content
-    const isDataLoading = !!(user && user.id !== initializedForUserId);
+    // Compute unified loading state
+    const isDataLoading = isConversationsLoading || isUserListingsLoading || isRecentlyViewedLoading;
 
     // Get storage keys for recently viewed
     const getRecentlyViewedKeys = useCallback((userId: string | undefined) => ({
@@ -573,15 +567,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         const currentUserId = user?.id;
 
         if (previousUserId.current !== currentUserId) {
-            // User changed - clear all state and reset initialization tracker
+            // User changed - clear all state
             setConversations([]);
             setUserListings([]);
             setRecentlyViewed([]);
             setIsConversationsLoading(true);
             setIsUserListingsLoading(true);
             setIsRecentlyViewedLoading(true);
-            // Don't reset initializedForUserId here - the synchronous check
-            // (user.id !== initializedForUserId) already handles this correctly
             previousUserId.current = currentUserId;
         }
     }, [user?.id]);
@@ -597,8 +589,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                 setIsConversationsLoading(false);
                 setIsUserListingsLoading(false);
                 setIsRecentlyViewedLoading(false);
-                // Clear initialization tracker when there's no user
-                setInitializedForUserId(null);
                 return;
             }
 
@@ -633,10 +623,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                 fetchUserListings(false),
                 loadRecentlyViewed(!cachedRecentlyViewed.length)
             ]);
-
-            // Mark initialization complete for this user
-            // This is what allows isDataLoading to become false
-            setInitializedForUserId(user.id);
         };
 
         initializeAllData();
