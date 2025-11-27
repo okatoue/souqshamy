@@ -2,8 +2,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { AUTH_COLORS, isSmallScreen, BRAND_COLOR } from './constants';
-import { authStyles } from './styles';
+import { BRAND_COLOR, isSmallScreen } from './constants';
+import { useAuthColors } from './useAuthStyles';
 
 interface EmailPhoneDisplayProps {
   value: string;
@@ -18,14 +18,16 @@ export function EmailPhoneDisplay({
   onChangePress,
   style,
 }: EmailPhoneDisplayProps) {
+  const colors = useAuthColors();
+
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, { backgroundColor: colors.cardBackground }, style]}>
       <Ionicons
         name={isPhone ? 'call-outline' : 'mail-outline'}
         size={18}
-        color={AUTH_COLORS.textSecondary}
+        color={colors.textSecondary}
       />
-      <Text style={styles.text}>{value}</Text>
+      <Text style={[styles.text, { color: colors.textLabel }]}>{value}</Text>
       {onChangePress && (
         <Pressable onPress={onChangePress} hitSlop={8}>
           <Text style={styles.changeText}>Change</Text>
@@ -39,7 +41,6 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: AUTH_COLORS.cardBackground,
     borderRadius: 12,
     padding: 14,
     marginBottom: isSmallScreen ? 16 : 20,
@@ -53,7 +54,6 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: 14,
-    color: AUTH_COLORS.textLabel,
   },
   changeText: {
     fontSize: 14,
