@@ -15,12 +15,19 @@ export const BRAND_COLOR_DARK = '#0d9fe0';
 export const BRAND_COLOR_LIGHT = '#5cc5f5';
 
 // =============================================================================
+// ACCENT COLOR (for notifications, prices, favorites)
+// =============================================================================
+
+export const ACCENT_COLOR = '#FF3B30';  // Bright Red
+
+// =============================================================================
 // SEMANTIC COLORS
 // =============================================================================
 
 export const COLORS = {
   // Accent colors (used for notifications, prices, favorites)
-  favorite: '#FF3B30',      // Bright red for favorites/hearts
+  accent: ACCENT_COLOR,     // Primary accent color
+  favorite: ACCENT_COLOR,   // Bright red for favorites/hearts
   error: '#FF3B30',         // Same red for errors
   warning: '#FF9500',       // Orange for warnings
   success: '#4CD964',       // Green for success states
@@ -160,95 +167,97 @@ export const SHADOWS = StyleSheet.create({
 
 // =============================================================================
 // LIGHT/DARK THEME COLORS
+// Following "White & Light Grey" secondary scheme
 // =============================================================================
-
-const tintColorLight = BRAND_COLOR;
-const tintColorDark = '#fff';
 
 export const Colors = {
   light: {
     // Core colors
     text: '#11181C',
-    textSecondary: '#666666',
-    textMuted: '#888888',
+    textSecondary: '#64748b',
+    textMuted: '#94a3b8',
+    textLabel: '#334155',
     background: '#ffffff',
-    backgroundSecondary: '#f5f5f5',
-    tint: tintColorLight,
+    backgroundSecondary: '#f8fafc',
+    tint: BRAND_COLOR,
 
     // Interactive elements
     icon: '#687076',
-    iconMuted: '#999999',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
+    iconMuted: '#94a3b8',
+    tabIconDefault: '#8E8E93',
+    tabIconSelected: BRAND_COLOR,
 
     // Brand
     primary: BRAND_COLOR,
     primaryDark: BRAND_COLOR_DARK,
     primaryLight: BRAND_COLOR_LIGHT,
+    accent: ACCENT_COLOR,
 
     // Borders
     border: '#e2e8f0',
     borderSecondary: '#e0e0e0',
-    divider: '#f0f0f0',
+    divider: '#f1f5f9',
 
     // Cards & Surfaces
     cardBackground: '#ffffff',
-    cardBackgroundSecondary: '#f8f8f8',
+    cardBackgroundSecondary: '#f8fafc',
     inputBackground: '#f8fafc',
 
     // Search bar
-    searchBackground: '#f0f0f0',
-    searchBorder: '#e0e0e0',
+    searchBackground: '#f1f5f9',
+    searchBorder: '#e2e8f0',
 
     // Image placeholders
-    placeholder: '#f0f0f0',
-    placeholderIcon: '#666666',
+    placeholder: '#f1f5f9',
+    placeholderIcon: '#64748b',
 
     // Bottom sheet
-    handleIndicator: '#DDDDDD',
-    sheetItemBackground: '#F5F5F5',
+    handleIndicator: '#cbd5e1',
+    sheetItemBackground: '#f8fafc',
   },
   dark: {
     // Core colors
     text: '#ECEDEE',
-    textSecondary: '#999999',
-    textMuted: '#888888',
-    background: '#151718',
-    backgroundSecondary: '#1a1a1a',
-    tint: tintColorDark,
+    textSecondary: '#a1a1aa',
+    textMuted: '#71717a',
+    textLabel: '#d4d4d8',
+    background: '#0a0a0a',
+    backgroundSecondary: '#18181b',
+    tint: BRAND_COLOR,
 
     // Interactive elements
     icon: '#9BA1A6',
-    iconMuted: '#666666',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
+    iconMuted: '#52525b',
+    tabIconDefault: '#636366',
+    tabIconSelected: BRAND_COLOR,
 
     // Brand
     primary: BRAND_COLOR,
     primaryDark: BRAND_COLOR_DARK,
     primaryLight: BRAND_COLOR_LIGHT,
+    accent: ACCENT_COLOR,
 
     // Borders
-    border: '#333333',
-    borderSecondary: '#2a2a2a',
-    divider: '#222222',
+    border: '#27272a',
+    borderSecondary: '#3f3f46',
+    divider: '#27272a',
 
     // Cards & Surfaces
-    cardBackground: '#1e1e1e',
-    cardBackgroundSecondary: '#1c1c1e',
-    inputBackground: '#1a1a1a',
+    cardBackground: '#18181b',
+    cardBackgroundSecondary: '#27272a',
+    inputBackground: '#18181b',
 
     // Search bar
-    searchBackground: '#1a1a1a',
-    searchBorder: '#333333',
+    searchBackground: '#27272a',
+    searchBorder: '#3f3f46',
 
     // Image placeholders
-    placeholder: '#2a2a2a',
-    placeholderIcon: '#666666',
+    placeholder: '#27272a',
+    placeholderIcon: '#71717a',
 
     // Bottom sheet
-    handleIndicator: '#444444',
-    sheetItemBackground: '#1a1a1a',
+    handleIndicator: '#52525b',
+    sheetItemBackground: '#27272a',
   },
 };
 

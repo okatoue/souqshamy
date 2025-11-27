@@ -1,7 +1,7 @@
 // components/auth/AuthDivider.tsx
 import React from 'react';
 import { StyleProp, Text, View, ViewStyle } from 'react-native';
-import { authStyles } from './styles';
+import { useAuthStyles } from './useAuthStyles';
 
 interface AuthDividerProps {
   text?: string;
@@ -9,6 +9,8 @@ interface AuthDividerProps {
 }
 
 export function AuthDivider({ text = 'or', style }: AuthDividerProps) {
+  const authStyles = useAuthStyles();
+
   return (
     <View style={[authStyles.divider, style]}>
       <View style={authStyles.dividerLine} />

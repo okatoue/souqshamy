@@ -1,7 +1,8 @@
 // components/auth/OTPInput.tsx
 import React, { useRef } from 'react';
 import { StyleProp, StyleSheet, TextInput, View, ViewStyle } from 'react-native';
-import { AUTH_COLORS, BRAND_COLOR, isSmallScreen } from './constants';
+import { BRAND_COLOR, isSmallScreen } from './constants';
+import { useAuthColors } from './useAuthStyles';
 
 interface OTPInputProps {
   code: string[];
@@ -18,6 +19,7 @@ export function OTPInput({
   disabled = false,
   style,
 }: OTPInputProps) {
+  const colors = useAuthColors();
   const inputRefs = useRef<(TextInput | null)[]>([]);
 
   const handleChange = (text: string, index: number) => {
@@ -63,7 +65,15 @@ export function OTPInput({
         <TextInput
           key={index}
           ref={(ref) => (inputRefs.current[index] = ref)}
-          style={[styles.input, digit !== '' && styles.inputFilled]}
+          style={[
+            styles.input,
+            {
+              borderColor: colors.border,
+              backgroundColor: colors.cardBackground,
+              color: colors.textPrimary,
+            },
+            digit !== '' && styles.inputFilled,
+          ]}
           value={digit}
           onChangeText={(text) => handleChange(text, index)}
           onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
@@ -89,13 +99,10 @@ const styles = StyleSheet.create({
     width: isSmallScreen ? 36 : 40,
     height: isSmallScreen ? 46 : 52,
     borderWidth: 2,
-    borderColor: AUTH_COLORS.border,
     borderRadius: 8,
-    backgroundColor: AUTH_COLORS.cardBackground,
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: AUTH_COLORS.textPrimary,
   },
   inputFilled: {
     borderColor: BRAND_COLOR,

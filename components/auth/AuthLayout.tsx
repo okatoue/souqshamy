@@ -9,7 +9,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { authStyles } from './styles';
+import { useAuthStyles } from './useAuthStyles';
 
 interface AuthLayoutProps extends Omit<ScrollViewProps, 'style'> {
   children: React.ReactNode;
@@ -25,14 +25,16 @@ export function AuthLayout({
   contentStyle,
   ...scrollProps
 }: AuthLayoutProps) {
+  const styles = useAuthStyles();
+
   return (
-    <SafeAreaView style={[authStyles.container, containerStyle]}>
+    <SafeAreaView style={[styles.container, containerStyle]}>
       <KeyboardAvoidingView
-        style={authStyles.keyboardView}
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={[authStyles.scrollContent, contentStyle]}
+          contentContainerStyle={[styles.scrollContent, contentStyle]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           bounces={false}

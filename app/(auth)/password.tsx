@@ -8,8 +8,8 @@ import {
   AuthTitle,
   EmailPhoneDisplay,
   PasswordRequirements,
-  authStyles,
   cleanPhoneNumber,
+  useAuthStyles,
 } from '@/components/auth';
 import { useAuth } from '@/lib/auth_context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { Alert, View } from 'react-native';
 
 export default function PasswordScreen() {
+  const authStyles = useAuthStyles();
   const params = useLocalSearchParams<{
     emailOrPhone: string;
     isPhone: string;

@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { AUTH_COLORS, isSmallScreen } from './constants';
-import { authStyles } from './styles';
+import { useAuthTheme } from './useAuthStyles';
 
 type SocialProvider = 'google' | 'facebook' | 'telegram';
 
@@ -13,50 +13,54 @@ interface SocialAuthButtonsProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const GoogleIcon = () => (
-  <View style={styles.iconContainer}>
-    <View style={styles.googleIcon}>
-      <Text style={styles.googleText}>G</Text>
+function GoogleIcon({ borderColor }: { borderColor: string }) {
+  return (
+    <View style={styles.iconContainer}>
+      <View style={[styles.googleIcon, { borderColor }]}>
+        <Text style={styles.googleText}>G</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+}
 
-const FacebookIcon = () => (
-  <View style={[styles.iconContainer, styles.facebookIcon]}>
-    <Text style={styles.facebookText}>f</Text>
-  </View>
-);
+function FacebookIcon() {
+  return (
+    <View style={[styles.iconContainer, styles.facebookIcon]}>
+      <Text style={styles.facebookText}>f</Text>
+    </View>
+  );
+}
 
-const TelegramIcon = () => (
-  <View style={[styles.iconContainer, styles.telegramIcon]}>
-    <Ionicons name="paper-plane" size={12} color="white" />
-  </View>
-);
-
-const SOCIAL_CONFIG: Record<SocialProvider, { icon: React.ReactNode; label: string }> = {
-  google: {
-    icon: <GoogleIcon />,
-    label: 'Continue with Google',
-  },
-  facebook: {
-    icon: <FacebookIcon />,
-    label: 'Continue with Facebook',
-  },
-  telegram: {
-    icon: <TelegramIcon />,
-    label: 'Log in with Telegram',
-  },
-};
+function TelegramIcon() {
+  return (
+    <View style={[styles.iconContainer, styles.telegramIcon]}>
+      <Ionicons name="paper-plane" size={12} color="white" />
+    </View>
+  );
+}
 
 export function SocialAuthButtons({
   onPress,
   providers = ['google', 'facebook', 'telegram'],
   style,
 }: SocialAuthButtonsProps) {
+  const { styles: authStyles, colors } = useAuthTheme();
+
+  const getSocialConfig = (provider: SocialProvider) => {
+    switch (provider) {
+      case 'google':
+        return { icon: <GoogleIcon borderColor={colors.border} />, label: 'Continue with Google' };
+      case 'facebook':
+        return { icon: <FacebookIcon />, label: 'Continue with Facebook' };
+      case 'telegram':
+        return { icon: <TelegramIcon />, label: 'Log in with Telegram' };
+    }
+  };
+
   return (
     <View style={[styles.container, style]}>
       {providers.map((provider) => {
-        const config = SOCIAL_CONFIG[provider];
+        const config = getSocialConfig(provider);
         return (
           <Pressable
             key={provider}
@@ -91,7 +95,6 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: AUTH_COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },

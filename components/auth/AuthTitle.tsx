@@ -1,8 +1,7 @@
 // components/auth/AuthTitle.tsx
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { authStyles } from './styles';
-import { BRAND_COLOR } from './constants';
+import { useAuthTheme } from './useAuthStyles';
 
 interface AuthTitleProps {
   title: string;
@@ -12,6 +11,8 @@ interface AuthTitleProps {
 }
 
 export function AuthTitle({ title, subtitle, highlightedText, style }: AuthTitleProps) {
+  const { styles: authStyles, colors } = useAuthTheme();
+
   return (
     <View style={[authStyles.titleContainer, style]}>
       <Text style={authStyles.title}>{title}</Text>
@@ -21,7 +22,9 @@ export function AuthTitle({ title, subtitle, highlightedText, style }: AuthTitle
           {highlightedText && (
             <>
               {'\n'}
-              <Text style={styles.highlight}>{highlightedText}</Text>
+              <Text style={[styles.highlight, { color: colors.textLabel }]}>
+                {highlightedText}
+              </Text>
             </>
           )}
         </Text>
@@ -33,6 +36,5 @@ export function AuthTitle({ title, subtitle, highlightedText, style }: AuthTitle
 const styles = StyleSheet.create({
   highlight: {
     fontWeight: '600',
-    color: '#334155',
   },
 });

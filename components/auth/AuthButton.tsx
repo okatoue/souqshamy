@@ -9,7 +9,8 @@ import {
   Text,
   ViewStyle,
 } from 'react-native';
-import { authStyles } from './styles';
+import { BRAND_COLOR } from './constants';
+import { useAuthTheme } from './useAuthStyles';
 
 interface AuthButtonProps extends Omit<PressableProps, 'style'> {
   title: string;
@@ -26,6 +27,7 @@ export function AuthButton({
   style,
   ...props
 }: AuthButtonProps) {
+  const { styles: authStyles, colors } = useAuthTheme();
   const isDisabled = disabled || loading;
 
   if (variant === 'link') {
@@ -57,7 +59,7 @@ export function AuthButton({
         {...props}
       >
         {loading ? (
-          <ActivityIndicator color="#334155" />
+          <ActivityIndicator color={colors.textLabel} />
         ) : (
           <Text style={authStyles.socialButtonText}>{title}</Text>
         )}
@@ -95,7 +97,7 @@ const styles = StyleSheet.create({
   },
   linkButtonText: {
     fontSize: 14,
-    color: '#18AEF2',
+    color: BRAND_COLOR,
     fontWeight: '500',
   },
 });

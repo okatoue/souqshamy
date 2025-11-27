@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ListingItem } from '@/components/listings/ListingItem';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BRAND_COLOR } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useUserListings } from '@/hooks/useUserListings';
 import { Listing } from '@/types/listing';
@@ -35,6 +36,8 @@ export default function ListingsScreen() {
 
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
+  const iconMutedColor = useThemeColor({}, 'iconMuted');
+  const borderColor = useThemeColor({}, 'border');
 
   useFocusEffect(
     useCallback(() => {
@@ -57,13 +60,13 @@ export default function ListingsScreen() {
   // Empty state
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <MaterialCommunityIcons name="package-variant" size={80} color="#666" />
+      <MaterialCommunityIcons name="package-variant" size={80} color={iconMutedColor} />
       <ThemedText style={styles.emptyTitle}>No Listings Yet</ThemedText>
       <ThemedText style={styles.emptySubtext}>
         Your posted items will appear here
       </ThemedText>
       <Pressable
-        style={styles.createButton}
+        style={[styles.createButton, { backgroundColor: BRAND_COLOR }]}
         onPress={() => router.push('/(tabs)/post')}
       >
         <MaterialIcons name="add" size={20} color="white" />
@@ -77,7 +80,7 @@ export default function ListingsScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={BRAND_COLOR} />
           <ThemedText style={styles.loadingText}>Loading your listings...</ThemedText>
         </View>
       </SafeAreaView>
@@ -89,13 +92,13 @@ export default function ListingsScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <View style={styles.emptyContainer}>
-          <MaterialCommunityIcons name="account-lock" size={80} color="#666" />
+          <MaterialCommunityIcons name="account-lock" size={80} color={iconMutedColor} />
           <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
           <ThemedText style={styles.emptySubtext}>
             Please sign in to view your listings
           </ThemedText>
           <Pressable
-            style={styles.createButton}
+            style={[styles.createButton, { backgroundColor: BRAND_COLOR }]}
             onPress={() => router.push('/(auth)')}
           >
             <Text style={styles.createButtonText}>Sign In</Text>
@@ -107,11 +110,11 @@ export default function ListingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <ThemedView style={styles.header}>
+      <ThemedView style={[styles.header, { borderBottomColor: borderColor }]}>
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>My Listings</ThemedText>
           <Pressable
-            style={styles.addButton}
+            style={[styles.addButton, { backgroundColor: BRAND_COLOR }]}
             onPress={() => router.push('/(tabs)/post')}
           >
             <MaterialIcons name="add" size={24} color="white" />
@@ -153,7 +156,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerTop: {
     flexDirection: 'row',
@@ -165,7 +167,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addButton: {
-    backgroundColor: '#007AFF',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -212,7 +213,6 @@ const styles = StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
