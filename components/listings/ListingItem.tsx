@@ -29,7 +29,6 @@ export function ListingItem({
     const placeholderBg = useThemeColor({}, 'placeholder');
     const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
     const mutedColor = useThemeColor({}, 'textMuted');
-    const dividerColor = useThemeColor({}, 'divider');
 
     const { categoryName, categoryIcon, subcategoryName } = getCategoryInfo(
         item.category_id,
@@ -111,8 +110,8 @@ export function ListingItem({
                 </View>
             </View>
 
-            {/* Action buttons - separated from main clickable area */}
-            <View style={[styles.actionButtons, { borderTopColor: dividerColor }]}>
+            {/* Action buttons */}
+            <View style={styles.actionButtons}>
                 {/* ACTIVE LISTING BUTTONS */}
                 {item.status === 'active' && (
                     <>
@@ -262,8 +261,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     listingTitle: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 18,
+        fontWeight: '700',
         marginBottom: SPACING.xs,
     },
     listingPrice: {
@@ -289,9 +288,8 @@ const styles = StyleSheet.create({
     },
     actionButtons: {
         flexDirection: 'row',
-        padding: SPACING.md,
-        paddingTop: 0,
-        borderTopWidth: 1,
+        paddingHorizontal: SPACING.md,
+        paddingBottom: SPACING.md,
     },
     actionButton: {
         flexDirection: 'row',
