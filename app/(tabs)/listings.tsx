@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ListingItem } from '@/components/listings/ListingItem';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useUserListings } from '@/hooks/useUserListings';
@@ -35,9 +35,7 @@ export default function ListingsScreen() {
   } = useUserListings();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
   const iconMutedColor = useThemeColor({}, 'iconMuted');
-  const borderColor = useThemeColor({}, 'border');
 
   useFocusEffect(
     useCallback(() => {
@@ -108,22 +106,24 @@ export default function ListingsScreen() {
     );
   }
 
+  const itemLabel = listings.length === 1 ? 'item' : 'items';
+
+  const AddButton = (
+    <Pressable
+      style={[styles.addButton, { backgroundColor: BRAND_COLOR }]}
+      onPress={() => router.push('/(tabs)/post')}
+    >
+      <MaterialIcons name="add" size={24} color="white" />
+    </Pressable>
+  );
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <View style={[styles.header, { borderBottomColor: borderColor }]}>
-        <View style={styles.headerLeft}>
-          <ThemedText type="title">My Listings</ThemedText>
-          <Text style={[styles.listingCount, { color: textColor }]}>
-            {listings.length} {listings.length === 1 ? 'item' : 'items'}
-          </Text>
-        </View>
-        <Pressable
-          style={[styles.addButton, { backgroundColor: BRAND_COLOR }]}
-          onPress={() => router.push('/(tabs)/post')}
-        >
-          <MaterialIcons name="add" size={24} color="white" />
-        </Pressable>
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+      <ScreenHeader
+        title="My Listings"
+        subtitle={`${listings.length} ${itemLabel}`}
+        rightAction={AddButton}
+      />
 
       <FlatList
         data={listings}
@@ -152,29 +152,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flex: 1,
-  },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  listingCount: {
-    fontSize: 14,
-    marginTop: SPACING.xs,
-    opacity: 0.7,
   },
   loadingContainer: {
     flex: 1,

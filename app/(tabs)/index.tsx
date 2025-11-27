@@ -3,6 +3,7 @@ import { ThemedView } from '@/components/themed-view';
 import { CategoriesList } from '@/components/ui/CategoriesList';
 import { Location } from '@/components/ui/location';
 import { RecentlyViewedSection } from '@/components/ui/recentlyViewedSection';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { UserIcon } from '@/components/ui/userIcon';
 import { SPACING } from '@/constants/theme';
@@ -53,12 +54,12 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       <ScrollView keyboardShouldPersistTaps="handled">
-        <View style={styles.headerRow}>
-          <UserIcon />
-          <Location />
-        </View>
+        <ScreenHeader
+          leftAction={<UserIcon />}
+          customTitle={<Location />}
+        />
 
         <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
           <SearchBar
@@ -141,12 +142,5 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     resizeMode: 'contain',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
   },
 });

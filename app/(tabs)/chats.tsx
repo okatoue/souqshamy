@@ -1,4 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
@@ -168,10 +169,8 @@ export default function ChatsScreen() {
     // Loading state
     if (isLoading && !isRefreshing) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <ThemedText style={styles.headerTitle}>Messages</ThemedText>
-                </View>
+            <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+                <ScreenHeader title="Messages" />
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={BRAND_COLOR} />
                     <ThemedText style={[styles.loadingText, { color: secondaryTextColor }]}>
@@ -185,10 +184,8 @@ export default function ChatsScreen() {
     // Not authenticated
     if (!user) {
         return (
-            <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <ThemedText style={styles.headerTitle}>Messages</ThemedText>
-                </View>
+            <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+                <ScreenHeader title="Messages" />
                 <View style={styles.emptyContainer}>
                     <MaterialCommunityIcons name="account-lock" size={80} color={mutedColor} />
                     <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
@@ -207,10 +204,8 @@ export default function ChatsScreen() {
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                <ThemedText style={styles.headerTitle}>Messages</ThemedText>
-            </View>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+            <ScreenHeader title="Messages" />
 
             <FlatList
                 data={conversations}
@@ -233,16 +228,6 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    header: {
-        paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.md,
-        paddingBottom: SPACING.md,
-        borderBottomWidth: 1,
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontWeight: '700',
     },
     loadingContainer: {
         flex: 1,
