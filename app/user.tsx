@@ -110,8 +110,6 @@ export default function UserScreen() {
     // Theme context and bottom sheet
     const { themePreference, setThemePreference } = useThemeContext();
     const themeSheetRef = useRef<BottomSheetRefProps>(null);
-    const initialThemeRef = useRef<ThemePreference>(themePreference);
-    const savedRef = useRef<boolean>(false);
 
     // Get current theme subtitle
     const getThemeSubtitle = () => {
@@ -121,29 +119,12 @@ export default function UserScreen() {
 
     // Open theme bottom sheet
     const handleOpenThemeSheet = useCallback(() => {
-        // Store the initial theme before opening
-        initialThemeRef.current = themePreference;
-        savedRef.current = false;
         themeSheetRef.current?.open();
-    }, [themePreference]);
-
-    // Handle theme option selection (live preview)
-    const handleThemeSelect = useCallback((theme: ThemePreference) => {
-        setThemePreference(theme);
-    }, [setThemePreference]);
-
-    // Handle save button
-    const handleSaveTheme = useCallback(() => {
-        savedRef.current = true;
-        themeSheetRef.current?.close();
     }, []);
 
-    // Handle sheet dismiss (revert if not saved)
-    const handleThemeSheetDismiss = useCallback(() => {
-        if (!savedRef.current) {
-            // Revert to initial theme
-            setThemePreference(initialThemeRef.current);
-        }
+    // Handle theme option selection (auto-save with immediate effect)
+    const handleThemeSelect = useCallback((theme: ThemePreference) => {
+        setThemePreference(theme);
     }, [setThemePreference]);
 
     const handleLogout = () => {
@@ -303,8 +284,7 @@ export default function UserScreen() {
             <BottomSheet
                 ref={themeSheetRef}
                 title="App Theme"
-                snapPoints={['40%']}
-                onDismiss={handleThemeSheetDismiss}
+                snapPoints={['30%']}
             >
                 <View style={styles.themeSheetContent}>
                     {THEME_OPTIONS.map((option) => (
@@ -326,19 +306,12 @@ export default function UserScreen() {
                                 </Text>
                             </View>
                             {themePreference === option.value && (
-                                <Ionicons name="checkmark" size={24} color={checkmarkColor} />
+                                <View style={styles.checkmarkContainer}>
+                                    <Ionicons name="checkmark" size={26} color={checkmarkColor} />
+                                </View>
                             )}
                         </TouchableOpacity>
                     ))}
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                        style={styles.saveButton}
-                        onPress={handleSaveTheme}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.saveButtonText}>Save</Text>
-                    </TouchableOpacity>
                 </View>
             </BottomSheet>
         </SafeAreaView>
@@ -493,17 +466,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
-    saveButton: {
-        backgroundColor: BRAND_COLOR,
-        paddingVertical: SPACING.lg,
-        borderRadius: BORDER_RADIUS.lg,
+    checkmarkContainer: {
+        width: 28,
+        height: 28,
+        justifyContent: 'center',
         alignItems: 'center',
-        marginTop: SPACING.lg,
-        marginHorizontal: SPACING.sm,
-    },
-    saveButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: '600',
     },
 });
