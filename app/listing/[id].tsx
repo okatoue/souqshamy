@@ -1,7 +1,8 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
-import { useFavorites } from '@/hooks/useFavorites';
+import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
+import { COLORS } from '@/constants/theme';
 import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
@@ -38,10 +39,10 @@ export default function ListingDetailScreen() {
     const [modalVisible, setModalVisible] = useState(false);
     const [modalImageIndex, setModalImageIndex] = useState(0);
 
-    // Favorites
-    const { isFavorite, toggleFavorite } = useFavorites();
-    const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-    const [localIsFavorite, setLocalIsFavorite] = useState(false);
+    // Favorites - instant toggle, no loading spinner
+    const { isFavorite, handleToggle: handleToggleFavorite } = useFavoriteToggle({
+        listingId: params.id || ''
+    });
 
     // Chat
     const { getOrCreateConversation } = useConversations();
@@ -73,7 +74,6 @@ export default function ListingDetailScreen() {
                 if (error) throw error;
 
                 setListing(data);
-                setLocalIsFavorite(isFavorite(data.id));
 
                 if (data.user_id !== user?.id) {
                     addToRecentlyViewed(data.id, user?.id);
@@ -87,7 +87,7 @@ export default function ListingDetailScreen() {
         };
 
         fetchListing();
-    }, [params.id, isFavorite, user?.id]);
+    }, [params.id, user?.id]);
 
     const handleCall = () => {
         if (listing?.phone_number) {
@@ -154,23 +154,6 @@ export default function ListingDetailScreen() {
 
     const handleShare = () => {
         Alert.alert('Share', 'Share functionality coming soon!');
-    };
-
-    const handleToggleFavorite = async () => {
-        if (!listing || isTogglingFavorite) return;
-
-        setIsTogglingFavorite(true);
-        // Optimistic update
-        setLocalIsFavorite(!localIsFavorite);
-
-        const success = await toggleFavorite(listing.id);
-
-        if (!success) {
-            // Revert on failure
-            setLocalIsFavorite(localIsFavorite);
-        }
-
-        setIsTogglingFavorite(false);
     };
 
     const openImageModal = (index: number) => {
@@ -266,15 +249,11 @@ export default function ListingDetailScreen() {
                     </Pressable>
                     <View style={styles.headerRight}>
                         <Pressable onPress={handleToggleFavorite} style={styles.headerButton}>
-                            {isTogglingFavorite ? (
-                                <ActivityIndicator size="small" color="#FF3B30" />
-                            ) : (
-                                <Ionicons
-                                    name={localIsFavorite ? "heart" : "heart-outline"}
-                                    size={24}
-                                    color={localIsFavorite ? "#FF3B30" : textColor}
-                                />
-                            )}
+                            <Ionicons
+                                name={isFavorite ? "heart" : "heart-outline"}
+                                size={24}
+                                color={isFavorite ? COLORS.favorite : textColor}
+                            />
                         </Pressable>
                         <Pressable onPress={handleShare} style={styles.headerButton}>
                             <Ionicons name="share-outline" size={24} color={textColor} />
