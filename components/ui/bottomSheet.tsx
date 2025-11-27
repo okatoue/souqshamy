@@ -7,6 +7,109 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
 
+// =============================================================================
+// Generic Bottom Sheet Component
+// =============================================================================
+
+export interface BottomSheetRefProps {
+    open: () => void;
+    close: () => void;
+}
+
+export interface GenericBottomSheetProps {
+    /** Content to render inside the bottom sheet */
+    children: React.ReactNode;
+    /** Title displayed at the top of the sheet */
+    title?: string;
+    /** Custom snap points for the sheet height (default: ['50%', '75%', '90%']) */
+    snapPoints?: (string | number)[];
+    /** Callback when the sheet is dismissed */
+    onDismiss?: () => void;
+    /** Enable or disable pan down to close (default: true) */
+    enablePanDownToClose?: boolean;
+}
+
+/**
+ * Generic reusable bottom sheet component.
+ * Use this for any custom content that needs to be displayed in a bottom sheet.
+ */
+export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetProps>(
+    ({ children, title, snapPoints: customSnapPoints, onDismiss, enablePanDownToClose = true }, ref) => {
+        const bottomSheetRef = useRef<BottomSheetModal>(null);
+
+        const snapPoints = useMemo(
+            () => customSnapPoints ?? ['50%', '75%', '90%'],
+            [customSnapPoints]
+        );
+
+        // Theme colors
+        const backgroundColor = useThemeColor({}, 'background');
+        const textColor = useThemeColor({}, 'text');
+        const handleColor = useThemeColor({}, 'handleIndicator');
+
+        useImperativeHandle(ref, () => ({
+            open: () => {
+                bottomSheetRef.current?.present();
+            },
+            close: () => {
+                bottomSheetRef.current?.dismiss();
+            },
+        }));
+
+        const renderBackdrop = useCallback(
+            (props: any) => (
+                <BottomSheetBackdrop
+                    {...props}
+                    appearsOnIndex={0}
+                    disappearsOnIndex={-1}
+                    opacity={0.5}
+                />
+            ),
+            []
+        );
+
+        const handleSheetChanges = useCallback((index: number) => {
+            if (index === -1 && onDismiss) {
+                onDismiss();
+            }
+        }, [onDismiss]);
+
+        return (
+            <BottomSheetModal
+                ref={bottomSheetRef}
+                snapPoints={snapPoints}
+                enablePanDownToClose={enablePanDownToClose}
+                backgroundStyle={[styles.bottomSheetBackground, { backgroundColor }]}
+                handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: handleColor }]}
+                backdropComponent={renderBackdrop}
+                onChange={handleSheetChanges}
+            >
+                <View style={styles.contentContainer}>
+                    {title && (
+                        <View style={styles.header}>
+                            <Text style={[styles.title, { color: textColor }]}>
+                                {title}
+                            </Text>
+                        </View>
+                    )}
+                    <BottomSheetScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollViewContent}
+                    >
+                        {children}
+                    </BottomSheetScrollView>
+                </View>
+            </BottomSheetModal>
+        );
+    }
+);
+
+BottomSheet.displayName = 'BottomSheet';
+
+// =============================================================================
+// Category Bottom Sheet Component (Backward Compatible)
+// =============================================================================
+
 export interface CategoryBottomSheetRefProps {
     open: () => void;
     close: () => void;
@@ -19,6 +122,10 @@ interface CategoryBottomSheetProps {
     title?: string;
 }
 
+/**
+ * Category selection bottom sheet.
+ * Maintains backward compatibility with existing usage in post.tsx and index.tsx.
+ */
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBottomSheetProps>(
     ({ onCategorySelect, showCategories = true, children, title }, ref) => {
         const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -168,6 +275,12 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
 
 CategoryBottomSheet.displayName = 'CategoryBottomSheet';
 
+export default CategoryBottomSheet;
+
+// =============================================================================
+// Styles
+// =============================================================================
+
 const styles = StyleSheet.create({
     bottomSheetBackground: {
         borderTopLeftRadius: BORDER_RADIUS.xxl,
@@ -238,5 +351,3 @@ const styles = StyleSheet.create({
         marginLeft: SPACING.sm,
     },
 });
-
-export default CategoryBottomSheet;

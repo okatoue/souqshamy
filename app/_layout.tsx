@@ -1,6 +1,7 @@
 // app/_layout.tsx
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider } from '@/lib/favorites_context';
+import { ThemeProvider } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
@@ -58,13 +59,15 @@ function RootLayoutNav() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <BottomSheetModalProvider>
-        <AuthProvider>
-          <FavoritesProvider>
-            <RootLayoutNav />
-          </FavoritesProvider>
-        </AuthProvider>
-      </BottomSheetModalProvider>
+      <ThemeProvider>
+        <BottomSheetModalProvider>
+          <AuthProvider>
+            <FavoritesProvider>
+              <RootLayoutNav />
+            </FavoritesProvider>
+          </AuthProvider>
+        </BottomSheetModalProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
