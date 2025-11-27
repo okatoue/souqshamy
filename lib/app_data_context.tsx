@@ -36,10 +36,8 @@ const getRecentlyViewedKeys = (userId: string | undefined) => ({
 });
 
 interface AppDataContextType {
-    // Global loading state - true until all initial data is fetched for the current user
+    // Global loading state - true until all initial data is fetched
     isGlobalLoading: boolean;
-    // Track which user's data is currently loaded (null if no data loaded yet)
-    dataLoadedForUserId: string | null;
 
     // Conversations
     conversations: ConversationWithDetails[];
@@ -73,9 +71,8 @@ const AppDataContext = createContext<AppDataContextType | null>(null);
 export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
 
-    // Global loading state - tracks which user's data is loaded
+    // Global loading state
     const [isGlobalLoading, setIsGlobalLoading] = useState(true);
-    const [dataLoadedForUserId, setDataLoadedForUserId] = useState<string | null>(null);
     const initialLoadComplete = useRef(false);
     const previousUserId = useRef<string | undefined>(undefined);
 
@@ -570,7 +567,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             setUserListingsLoading(true);
             setRecentlyViewedLoading(true);
             setIsGlobalLoading(true);
-            setDataLoadedForUserId(null); // Reset - data not loaded for new user yet
             initialLoadComplete.current = false;
             previousUserId.current = currentUserId;
         }
@@ -580,18 +576,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const initializeAllData = async () => {
             if (!user) {
-                // No user - clear everything
-                // IMPORTANT: Keep isGlobalLoading true and dataLoadedForUserId null
-                // so that if a user logs in, we block until their data is loaded
+                // No user - clear everything and stop loading
                 setConversations([]);
                 setUserListings([]);
                 setRecentlyViewed([]);
                 setConversationsLoading(false);
                 setUserListingsLoading(false);
                 setRecentlyViewedLoading(false);
-                // Don't set isGlobalLoading to false here - leave it true
-                // The blocking logic in _layout checks dataLoadedForUserId === user?.id
-                setDataLoadedForUserId(null);
+                setIsGlobalLoading(false);
                 return;
             }
 
@@ -756,7 +748,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             await Promise.all(fetchPromises);
 
             initialLoadComplete.current = true;
-            setDataLoadedForUserId(user.id); // Mark data as loaded for this user
             setIsGlobalLoading(false);
         };
 
@@ -835,7 +826,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const value: AppDataContextType = {
         isGlobalLoading,
-        dataLoadedForUserId,
 
         conversations,
         conversationsLoading,
