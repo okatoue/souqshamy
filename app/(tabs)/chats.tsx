@@ -105,17 +105,6 @@ export default function ChatsScreen() {
 
             {/* Conversation Details */}
             <View style={styles.conversationDetails}>
-                <Text
-                    style={[
-                        styles.listingTitle,
-                        { color: textColor },
-                        item.unread_count > 0 && styles.unreadListingTitle
-                    ]}
-                    numberOfLines={1}
-                >
-                    {item.listing?.title || 'Listing'}
-                </Text>
-
                 <View style={styles.topRow}>
                     <Text
                         style={[
@@ -131,6 +120,17 @@ export default function ChatsScreen() {
                         {formatTime(item.last_message_at)}
                     </Text>
                 </View>
+
+                <Text
+                    style={[
+                        styles.listingTitle,
+                        { color: textColor },
+                        item.unread_count > 0 && styles.unreadListingTitle
+                    ]}
+                    numberOfLines={1}
+                >
+                    {item.listing?.title || 'Listing'}
+                </Text>
 
                 <Text
                     style={[
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     userName: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '400',
         flex: 1,
         marginRight: SPACING.sm,
@@ -349,10 +349,10 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     time: {
-        fontSize: 13,
+        fontSize: 12,
     },
     listingTitle: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
         marginBottom: 2,
     },
