@@ -139,6 +139,36 @@ export function useConversations() {
         }
     }, [user, saveCachedConversations]);
 
+    // Delete a conversation
+    const deleteConversation = useCallback(async (conversationId: string): Promise<boolean> => {
+        if (!user) return false;
+
+        try {
+            const { error } = await supabase
+                .from('conversations')
+                .delete()
+                .eq('id', conversationId)
+                .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+
+            if (error) {
+                console.error('Error deleting conversation:', error);
+                return false;
+            }
+
+            // Update local state
+            setConversations(prev => prev.filter(c => c.id !== conversationId));
+
+            // Update cache
+            const updatedConversations = conversations.filter(c => c.id !== conversationId);
+            await saveCachedConversations(updatedConversations);
+
+            return true;
+        } catch (error) {
+            console.error('Error in deleteConversation:', error);
+            return false;
+        }
+    }, [user, conversations, saveCachedConversations]);
+
     // Get or create a conversation
     const getOrCreateConversation = useCallback(async (
         listingId: string,
@@ -262,6 +292,7 @@ export function useConversations() {
         isRefreshing,
         totalUnreadCount,
         fetchConversations,
-        getOrCreateConversation
+        getOrCreateConversation,
+        deleteConversation
     };
 }
