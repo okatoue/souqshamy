@@ -2,7 +2,7 @@ import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 
 interface FavoriteButtonProps {
   listingId: string;
@@ -12,8 +12,9 @@ interface FavoriteButtonProps {
 }
 
 /**
- * Reusable favorite/heart button component with toggle functionality.
+ * Reusable favorite/heart button component with instant toggle.
  * Supports two variants: 'elevated' (default with shadow) and 'overlay' (for use on images).
+ * No loading state - the heart toggles instantly on press.
  */
 export function FavoriteButton({
   listingId,
@@ -21,7 +22,7 @@ export function FavoriteButton({
   style,
   variant = 'elevated',
 }: FavoriteButtonProps) {
-  const { isFavorite, isToggling, handleToggle } = useFavoriteToggle({ listingId });
+  const { isFavorite, handleToggle } = useFavoriteToggle({ listingId });
 
   const buttonStyle = variant === 'overlay' ? styles.overlayButton : styles.elevatedButton;
   const inactiveColor = variant === 'overlay' ? '#fff' : COLORS.muted;
@@ -34,17 +35,12 @@ export function FavoriteButton({
         pressed && styles.pressed,
         style,
       ]}
-      disabled={isToggling}
     >
-      {isToggling ? (
-        <ActivityIndicator size="small" color={COLORS.favorite} />
-      ) : (
-        <Ionicons
-          name={isFavorite ? 'heart' : 'heart-outline'}
-          size={size}
-          color={isFavorite ? COLORS.favorite : inactiveColor}
-        />
-      )}
+      <Ionicons
+        name={isFavorite ? 'heart' : 'heart-outline'}
+        size={size}
+        color={isFavorite ? COLORS.favorite : inactiveColor}
+      />
     </Pressable>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { useFavorites } from './useFavorites';
 
 interface UseFavoriteToggleOptions {
@@ -7,45 +7,24 @@ interface UseFavoriteToggleOptions {
 
 interface UseFavoriteToggleResult {
   isFavorite: boolean;
-  isToggling: boolean;
-  handleToggle: () => Promise<void>;
+  handleToggle: () => void;
 }
 
 /**
- * Custom hook for managing favorite toggle state with optimistic updates.
- * Extracts the common toggle logic used across FavoriteButton and ListingCard.
+ * Custom hook for managing favorite toggle with instant feedback.
+ * Since FavoritesContext handles optimistic updates, the UI updates
+ * immediately without any loading state.
  */
 export function useFavoriteToggle({ listingId }: UseFavoriteToggleOptions): UseFavoriteToggleResult {
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
-  const [isToggling, setIsToggling] = useState(false);
-  const [localIsFavorite, setLocalIsFavorite] = useState(false);
 
-  // Sync with the parent hook's state
-  useEffect(() => {
-    setLocalIsFavorite(checkIsFavorite(listingId));
-  }, [checkIsFavorite, listingId]);
-
-  const handleToggle = useCallback(async () => {
-    if (isToggling) return;
-
-    setIsToggling(true);
-    // Optimistic update for immediate UI feedback
-    const previousState = localIsFavorite;
-    setLocalIsFavorite(!previousState);
-
-    const success = await toggleFavorite(listingId);
-
-    if (!success) {
-      // Revert on failure
-      setLocalIsFavorite(previousState);
-    }
-
-    setIsToggling(false);
-  }, [isToggling, localIsFavorite, listingId, toggleFavorite]);
+  const handleToggle = useCallback(() => {
+    // Fire and forget - context handles optimistic update and rollback
+    toggleFavorite(listingId);
+  }, [listingId, toggleFavorite]);
 
   return {
-    isFavorite: localIsFavorite,
-    isToggling,
+    isFavorite: checkIsFavorite(listingId),
     handleToggle,
   };
 }
