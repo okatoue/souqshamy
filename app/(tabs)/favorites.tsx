@@ -1,7 +1,7 @@
 import { FavoriteListingItem } from '@/components/favorites/favoriteListingItem';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { UserIcon } from '@/components/ui/userIcon';
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -15,7 +15,6 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,8 +31,6 @@ export default function FavoritesScreen() {
   } = useFavorites();
 
   const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({}, 'border');
 
   useFocusEffect(
     useCallback(() => {
@@ -89,9 +86,15 @@ export default function FavoritesScreen() {
     );
   }
 
+  const itemLabel = favorites.length === 1 ? 'item' : 'items';
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <Header count={favorites.length} textColor={textColor} borderColor={borderColor} />
+    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+      <ScreenHeader
+        title="Favorites"
+        subtitle={`${favorites.length} ${itemLabel}`}
+        rightAction={<UserIcon />}
+      />
       <FlatList
         data={favorites}
         renderItem={renderItem}
@@ -134,52 +137,9 @@ function LoadingState() {
   );
 }
 
-interface HeaderProps {
-  count: number;
-  textColor: string;
-  borderColor: string;
-}
-
-function Header({ count, textColor, borderColor }: HeaderProps) {
-  const itemLabel = count === 1 ? 'item' : 'items';
-
-  return (
-    <View style={[styles.header, { borderBottomColor: borderColor }]}>
-      <View style={styles.headerLeft}>
-        <ThemedText type="title" style={styles.headerTitle}>
-          Favorites
-        </ThemedText>
-        <Text style={[styles.countText, { color: textColor }]}>
-          {count} {itemLabel}
-        </Text>
-      </View>
-      <UserIcon />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  headerTitle: {
-    marginBottom: SPACING.xs,
-  },
-  countText: {
-    fontSize: 14,
-    opacity: 0.7,
   },
   listContent: {
     paddingBottom: SPACING.xl,
