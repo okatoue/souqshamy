@@ -2,6 +2,7 @@ import { FavoriteListingItem } from '@/components/favorites/favoriteListingItem'
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { UserIcon } from '@/components/ui/userIcon';
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -32,6 +33,7 @@ export default function FavoritesScreen() {
 
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'border');
 
   useFocusEffect(
     useCallback(() => {
@@ -89,7 +91,7 @@ export default function FavoritesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <Header count={favorites.length} textColor={textColor} />
+      <Header count={favorites.length} textColor={textColor} borderColor={borderColor} />
       <FlatList
         data={favorites}
         renderItem={renderItem}
@@ -135,20 +137,24 @@ function LoadingState() {
 interface HeaderProps {
   count: number;
   textColor: string;
+  borderColor: string;
 }
 
-function Header({ count, textColor }: HeaderProps) {
+function Header({ count, textColor, borderColor }: HeaderProps) {
   const itemLabel = count === 1 ? 'item' : 'items';
 
   return (
-    <ThemedView style={styles.header}>
-      <ThemedText type="title" style={styles.headerTitle}>
-        Favorites
-      </ThemedText>
-      <Text style={[styles.countText, { color: textColor }]}>
-        {count} {itemLabel}
-      </Text>
-    </ThemedView>
+    <View style={[styles.header, { borderBottomColor: borderColor }]}>
+      <View style={styles.headerLeft}>
+        <ThemedText type="title" style={styles.headerTitle}>
+          Favorites
+        </ThemedText>
+        <Text style={[styles.countText, { color: textColor }]}>
+          {count} {itemLabel}
+        </Text>
+      </View>
+      <UserIcon />
+    </View>
   );
 }
 
@@ -157,9 +163,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: SPACING.xl,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
     paddingTop: SPACING.md,
-    paddingBottom: 15,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+  },
+  headerLeft: {
+    flex: 1,
   },
   headerTitle: {
     marginBottom: SPACING.xs,

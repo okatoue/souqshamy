@@ -105,11 +105,22 @@ export default function ChatsScreen() {
 
             {/* Conversation Details */}
             <View style={styles.conversationDetails}>
+                <Text
+                    style={[
+                        styles.listingTitle,
+                        { color: textColor },
+                        item.unread_count > 0 && styles.unreadListingTitle
+                    ]}
+                    numberOfLines={1}
+                >
+                    {item.listing?.title || 'Listing'}
+                </Text>
+
                 <View style={styles.topRow}>
                     <Text
                         style={[
                             styles.userName,
-                            { color: textColor },
+                            { color: secondaryTextColor },
                             item.unread_count > 0 && styles.unreadUserName
                         ]}
                         numberOfLines={1}
@@ -120,13 +131,6 @@ export default function ChatsScreen() {
                         {formatTime(item.last_message_at)}
                     </Text>
                 </View>
-
-                <Text
-                    style={[styles.listingTitle, { color: secondaryTextColor }]}
-                    numberOfLines={1}
-                >
-                    {item.listing?.title || 'Listing'}
-                </Text>
 
                 <Text
                     style={[
@@ -232,7 +236,8 @@ const styles = StyleSheet.create({
     },
     header: {
         paddingHorizontal: SPACING.lg,
-        paddingVertical: SPACING.md,
+        paddingTop: SPACING.md,
+        paddingBottom: SPACING.md,
         borderBottomWidth: 1,
     },
     headerTitle: {
@@ -335,20 +340,24 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     userName: {
-        fontSize: 16,
-        fontWeight: '500',
+        fontSize: 14,
+        fontWeight: '400',
         flex: 1,
         marginRight: SPACING.sm,
     },
     unreadUserName: {
-        fontWeight: '700',
+        fontWeight: '600',
     },
     time: {
         fontSize: 13,
     },
     listingTitle: {
-        fontSize: 13,
+        fontSize: 16,
+        fontWeight: '600',
         marginBottom: 2,
+    },
+    unreadListingTitle: {
+        fontWeight: '700',
     },
     lastMessage: {
         fontSize: 14,
