@@ -13,7 +13,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function RootLayoutNav() {
   const { user, loading: authLoading, isPasswordResetInProgress } = useAuth();
-  const { isGlobalLoading } = useAppData();
+  const { isGlobalLoading, dataLoadedForUserId } = useAppData();
   const { isLoading: favoritesLoading } = useFavoritesContext();
   const segments = useSegments();
   const router = useRouter();
@@ -21,8 +21,10 @@ function RootLayoutNav() {
   const colors = Colors[colorScheme];
 
   // Determine if we should show loading screen
-  // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
-  const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
+  // CRITICAL: Check that data is loaded for the CURRENT user, not just that loading is done
+  // This prevents a race condition when transitioning from unauthenticated → authenticated
+  const isDataReadyForCurrentUser = dataLoadedForUserId === user?.id;
+  const shouldShowLoading = authLoading || (user && (!isDataReadyForCurrentUser || favoritesLoading));
 
   // Handle auth state changes
   useEffect(() => {
