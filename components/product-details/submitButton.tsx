@@ -1,3 +1,5 @@
+import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
@@ -8,11 +10,14 @@ interface SubmitButtonProps {
 }
 
 export default function SubmitButton({ onPress, disabled, loading }: SubmitButtonProps) {
+  const disabledBg = useThemeColor({}, 'border');
+
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[
         styles.submitButton,
-        disabled && styles.submitButtonDisabled
+        { backgroundColor: BRAND_COLOR },
+        disabled && [styles.submitButtonDisabled, { backgroundColor: disabledBg }]
       ]}
       onPress={onPress}
       disabled={disabled}
@@ -28,16 +33,14 @@ export default function SubmitButton({ onPress, disabled, loading }: SubmitButto
 
 const styles = StyleSheet.create({
   submitButton: {
-    marginHorizontal: 20,
-    marginVertical: 30,
+    marginHorizontal: SPACING.xl,
+    marginVertical: SPACING.xxxl,
     height: 56,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#333',
     opacity: 0.5,
   },
   submitButtonText: {

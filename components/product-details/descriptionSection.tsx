@@ -1,4 +1,6 @@
 import { ThemedView } from '@/components/themed-view';
+import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import React from 'react';
 import { Keyboard, StyleSheet, Text, TextInput } from 'react-native';
 
@@ -7,17 +9,22 @@ interface DescriptionSectionProps {
   setDescription: (description: string) => void;
 }
 
-export default function DescriptionSection({ 
-  description, 
-  setDescription 
+export default function DescriptionSection({
+  description,
+  setDescription
 }: DescriptionSectionProps) {
+  // Theme colors
+  const textColor = useThemeColor({}, 'text');
+  const borderColor = useThemeColor({}, 'border');
+  const inputBg = useThemeColor({}, 'inputBackground');
+
   return (
-    <ThemedView style={styles.section}>
-      <Text style={styles.sectionTitle}>Description</Text>
+    <ThemedView variant="card" style={[styles.section, { borderColor }]}>
+      <Text style={[styles.sectionTitle, { color: textColor }]}>Description</Text>
       <TextInput
-        style={styles.descriptionInput}
+        style={[styles.descriptionInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
         placeholder="Describe your item in detail..."
-        placeholderTextColor="#888"
+        placeholderTextColor={COLORS.placeholder}
         multiline
         numberOfLines={6}
         value={description}
@@ -33,27 +40,22 @@ export default function DescriptionSection({
 
 const styles = StyleSheet.create({
   section: {
-    marginHorizontal: 20,
-    marginBottom: 25,
-    padding: 15,
-    borderRadius: 12,
+    marginHorizontal: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    borderColor: '#333',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: 'white',
-    marginBottom: 15,
+    marginBottom: SPACING.lg,
   },
   descriptionInput: {
     minHeight: 120,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.md,
     fontSize: 16,
-    color: 'white',
     borderWidth: 1,
-    borderColor: '#333',
   },
 });

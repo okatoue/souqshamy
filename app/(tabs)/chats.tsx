@@ -1,4 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
+import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
 import { useAuth } from '@/lib/auth_context';
@@ -28,11 +29,13 @@ export default function ChatsScreen() {
         fetchConversations
     } = useConversations();
 
+    // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
-    const secondaryTextColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const cardBg = useThemeColor({ light: '#fff', dark: '#1a1a1a' }, 'background');
+    const secondaryTextColor = useThemeColor({}, 'textSecondary');
+    const borderColor = useThemeColor({}, 'border');
+    const cardBg = useThemeColor({}, 'cardBackground');
+    const mutedColor = useThemeColor({}, 'textMuted');
 
     // Refresh when screen comes into focus
     useFocusEffect(
@@ -92,7 +95,7 @@ export default function ChatsScreen() {
                 )}
                 {/* Unread badge */}
                 {item.unread_count > 0 && (
-                    <View style={styles.unreadBadge}>
+                    <View style={[styles.unreadBadge, { backgroundColor: COLORS.favorite }]}>
                         <Text style={styles.unreadText}>
                             {item.unread_count > 9 ? '9+' : item.unread_count}
                         </Text>
@@ -129,7 +132,7 @@ export default function ChatsScreen() {
                     style={[
                         styles.lastMessage,
                         { color: secondaryTextColor },
-                        item.unread_count > 0 && styles.unreadMessage
+                        item.unread_count > 0 && [styles.unreadMessage, { color: textColor }]
                     ]}
                     numberOfLines={1}
                 >
@@ -143,13 +146,13 @@ export default function ChatsScreen() {
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="chat-outline" size={80} color="#666" />
+            <MaterialCommunityIcons name="chat-outline" size={80} color={mutedColor} />
             <ThemedText style={styles.emptyTitle}>No Conversations Yet</ThemedText>
-            <ThemedText style={styles.emptySubtext}>
+            <ThemedText style={[styles.emptySubtext, { color: secondaryTextColor }]}>
                 Start chatting with sellers by visiting a listing and tapping "Chat"
             </ThemedText>
             <Pressable
-                style={styles.browseButton}
+                style={[styles.browseButton, { backgroundColor: BRAND_COLOR }]}
                 onPress={() => router.push('/(tabs)')}
             >
                 <Ionicons name="search" size={20} color="white" />
@@ -162,12 +165,14 @@ export default function ChatsScreen() {
     if (isLoading && !isRefreshing) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={styles.header}>
+                <View style={[styles.header, { borderBottomColor: borderColor }]}>
                     <ThemedText style={styles.headerTitle}>Messages</ThemedText>
                 </View>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007AFF" />
-                    <ThemedText style={styles.loadingText}>Loading conversations...</ThemedText>
+                    <ActivityIndicator size="large" color={BRAND_COLOR} />
+                    <ThemedText style={[styles.loadingText, { color: secondaryTextColor }]}>
+                        Loading conversations...
+                    </ThemedText>
                 </View>
             </SafeAreaView>
         );
@@ -177,17 +182,17 @@ export default function ChatsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <View style={styles.header}>
+                <View style={[styles.header, { borderBottomColor: borderColor }]}>
                     <ThemedText style={styles.headerTitle}>Messages</ThemedText>
                 </View>
                 <View style={styles.emptyContainer}>
-                    <MaterialCommunityIcons name="account-lock" size={80} color="#666" />
+                    <MaterialCommunityIcons name="account-lock" size={80} color={mutedColor} />
                     <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
-                    <ThemedText style={styles.emptySubtext}>
+                    <ThemedText style={[styles.emptySubtext, { color: secondaryTextColor }]}>
                         Please sign in to view your messages
                     </ThemedText>
                     <Pressable
-                        style={styles.browseButton}
+                        style={[styles.browseButton, { backgroundColor: BRAND_COLOR }]}
                         onPress={() => router.push('/(auth)')}
                     >
                         <Text style={styles.browseButtonText}>Sign In</Text>
@@ -199,7 +204,7 @@ export default function ChatsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <View style={styles.header}>
+            <View style={[styles.header, { borderBottomColor: borderColor }]}>
                 <ThemedText style={styles.headerTitle}>Messages</ThemedText>
             </View>
 
@@ -213,7 +218,7 @@ export default function ChatsScreen() {
                     <RefreshControl
                         refreshing={isRefreshing}
                         onRefresh={onRefresh}
-                        tintColor="#007AFF"
+                        tintColor={BRAND_COLOR}
                     />
                 }
             />
@@ -226,10 +231,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     header: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.md,
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
     },
     headerTitle: {
         fontSize: 28,
@@ -241,9 +245,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     loadingText: {
-        marginTop: 12,
+        marginTop: SPACING.md,
         fontSize: 16,
-        color: '#666',
     },
     emptyList: {
         flex: 1,
@@ -252,29 +255,27 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 40,
+        paddingHorizontal: SPACING.section,
     },
     emptyTitle: {
         fontSize: 22,
         fontWeight: '600',
-        marginTop: 16,
-        marginBottom: 8,
+        marginTop: SPACING.lg,
+        marginBottom: SPACING.sm,
     },
     emptySubtext: {
         fontSize: 16,
-        color: '#666',
         textAlign: 'center',
         lineHeight: 22,
     },
     browseButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#007AFF',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 25,
-        marginTop: 24,
-        gap: 8,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xxl,
+        borderRadius: BORDER_RADIUS.pill,
+        marginTop: SPACING.xxl,
+        gap: SPACING.sm,
     },
     browseButtonText: {
         color: 'white',
@@ -284,8 +285,8 @@ const styles = StyleSheet.create({
     conversationItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.md,
         borderBottomWidth: 1,
     },
     conversationItemPressed: {
@@ -297,12 +298,12 @@ const styles = StyleSheet.create({
     listingImage: {
         width: 56,
         height: 56,
-        borderRadius: 8,
+        borderRadius: BORDER_RADIUS.sm,
     },
     imagePlaceholder: {
         width: 56,
         height: 56,
-        borderRadius: 8,
+        borderRadius: BORDER_RADIUS.sm,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -310,8 +311,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -4,
         right: -4,
-        backgroundColor: '#FF3B30',
-        borderRadius: 10,
+        borderRadius: BORDER_RADIUS.md,
         minWidth: 20,
         height: 20,
         justifyContent: 'center',
@@ -325,8 +325,8 @@ const styles = StyleSheet.create({
     },
     conversationDetails: {
         flex: 1,
-        marginLeft: 12,
-        marginRight: 8,
+        marginLeft: SPACING.md,
+        marginRight: SPACING.sm,
     },
     topRow: {
         flexDirection: 'row',
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
         flex: 1,
-        marginRight: 8,
+        marginRight: SPACING.sm,
     },
     unreadUserName: {
         fontWeight: '700',
@@ -355,6 +355,5 @@ const styles = StyleSheet.create({
     },
     unreadMessage: {
         fontWeight: '600',
-        color: '#000',
     },
 });

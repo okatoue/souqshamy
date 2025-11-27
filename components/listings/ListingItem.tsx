@@ -1,3 +1,4 @@
+import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
@@ -21,25 +22,30 @@ export function ListingItem({
     onSoftDelete,
     onPermanentDelete
 }: ListingItemProps) {
+    // Theme colors
     const textColor = useThemeColor({}, 'text');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const placeholderColor = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
+    const borderColor = useThemeColor({}, 'border');
+    const cardBg = useThemeColor({}, 'cardBackground');
+    const placeholderBg = useThemeColor({}, 'placeholder');
+    const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
+    const mutedColor = useThemeColor({}, 'textMuted');
+    const dividerColor = useThemeColor({}, 'divider');
 
     const { categoryName, categoryIcon, subcategoryName } = getCategoryInfo(
         item.category_id,
         item.subcategory_id
     );
 
-    // Determine badge style based on status
-    let badgeColor = '#4CAF50'; // Active (Green)
+    // Determine badge style based on status using semantic colors
+    let badgeColor = COLORS.statusActive;
     let statusText = 'Active';
     let showRemovedIcon = false;
 
     if (item.status === 'sold') {
-        badgeColor = '#FF9800'; // Sold (Orange)
+        badgeColor = COLORS.statusSold;
         statusText = 'Sold';
     } else if (item.status === 'inactive') {
-        badgeColor = '#D32F2F'; // Removed (Red)
+        badgeColor = COLORS.statusInactive;
         statusText = 'Removed';
         showRemovedIcon = true;
     }
@@ -49,7 +55,7 @@ export function ListingItem({
             onPress={() => onPress(item)}
             style={({ pressed }) => [
                 styles.listingCard,
-                { borderColor },
+                { borderColor, backgroundColor: cardBg },
                 pressed && styles.listingCardPressed
             ]}
         >
@@ -77,8 +83,8 @@ export function ListingItem({
                     {item.images && item.images.length > 0 ? (
                         <Image source={{ uri: getThumbnailUrl(item.images[0]) }} style={styles.listingImage} />
                     ) : (
-                        <View style={[styles.imagePlaceholder, { backgroundColor: placeholderColor }]}>
-                            <MaterialIcons name="image" size={30} color="#666" />
+                        <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
+                            <MaterialIcons name="image" size={30} color={placeholderIconColor} />
                         </View>
                     )}
 
@@ -92,33 +98,33 @@ export function ListingItem({
                         </Text>
 
                         <View style={styles.listingMeta}>
-                            <Ionicons name="location-outline" size={14} color="#888" />
-                            <Text style={styles.locationText}>{item.location}</Text>
-                            <Text style={styles.dateText}>• {formatDate(item.created_at)}</Text>
+                            <Ionicons name="location-outline" size={14} color={mutedColor} />
+                            <Text style={[styles.locationText, { color: mutedColor }]}>{item.location}</Text>
+                            <Text style={[styles.dateText, { color: mutedColor }]}>• {formatDate(item.created_at)}</Text>
                         </View>
                     </View>
 
                     {/* View Details Arrow */}
                     <View style={styles.viewArrow}>
-                        <Ionicons name="chevron-forward" size={20} color="#888" />
+                        <Ionicons name="chevron-forward" size={20} color={mutedColor} />
                     </View>
                 </View>
             </View>
 
             {/* Action buttons - separated from main clickable area */}
-            <View style={styles.actionButtons}>
+            <View style={[styles.actionButtons, { borderTopColor: dividerColor }]}>
                 {/* ACTIVE LISTING BUTTONS */}
                 {item.status === 'active' && (
                     <>
                         <Pressable
                             style={[styles.actionButton, styles.editButton]}
                             onPress={(e) => {
-                                e.stopPropagation(); // Prevent triggering parent onPress
+                                e.stopPropagation();
                                 onUpdateStatus(item, 'sold');
                             }}
                         >
-                            <MaterialCommunityIcons name="check-circle" size={20} color="#4CAF50" />
-                            <Text style={styles.actionButtonText}>Mark Sold</Text>
+                            <MaterialCommunityIcons name="check-circle" size={20} color={COLORS.success} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.success }]}>Mark Sold</Text>
                         </Pressable>
 
                         <Pressable
@@ -128,8 +134,8 @@ export function ListingItem({
                                 onSoftDelete(item.id);
                             }}
                         >
-                            <MaterialIcons name="delete-outline" size={20} color="#F44336" />
-                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Remove</Text>
+                            <MaterialIcons name="delete-outline" size={20} color={COLORS.error} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.error }]}>Remove</Text>
                         </Pressable>
                     </>
                 )}
@@ -144,8 +150,8 @@ export function ListingItem({
                                 onUpdateStatus(item, 'active');
                             }}
                         >
-                            <MaterialCommunityIcons name="replay" size={20} color="#4CAF50" />
-                            <Text style={styles.actionButtonText}>Reactivate</Text>
+                            <MaterialCommunityIcons name="replay" size={20} color={COLORS.success} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.success }]}>Reactivate</Text>
                         </Pressable>
 
                         <Pressable
@@ -155,8 +161,8 @@ export function ListingItem({
                                 onSoftDelete(item.id);
                             }}
                         >
-                            <MaterialIcons name="delete-outline" size={20} color="#F44336" />
-                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Remove</Text>
+                            <MaterialIcons name="delete-outline" size={20} color={COLORS.error} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.error }]}>Remove</Text>
                         </Pressable>
                     </>
                 )}
@@ -171,8 +177,8 @@ export function ListingItem({
                                 onUpdateStatus(item, 'active');
                             }}
                         >
-                            <MaterialCommunityIcons name="replay" size={20} color="#4CAF50" />
-                            <Text style={styles.actionButtonText}>Restore</Text>
+                            <MaterialCommunityIcons name="replay" size={20} color={COLORS.success} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.success }]}>Restore</Text>
                         </Pressable>
 
                         <Pressable
@@ -182,8 +188,8 @@ export function ListingItem({
                                 onPermanentDelete(item.id);
                             }}
                         >
-                            <MaterialIcons name="delete-forever" size={20} color="#F44336" />
-                            <Text style={[styles.actionButtonText, { color: '#F44336' }]}>Delete Forever</Text>
+                            <MaterialIcons name="delete-forever" size={20} color={COLORS.error} />
+                            <Text style={[styles.actionButtonText, { color: COLORS.error }]}>Delete Forever</Text>
                         </Pressable>
                     </>
                 )}
@@ -195,41 +201,40 @@ export function ListingItem({
 const styles = StyleSheet.create({
     listingCard: {
         borderWidth: 1,
-        borderRadius: 12,
-        marginBottom: 12,
+        borderRadius: BORDER_RADIUS.lg,
+        marginBottom: SPACING.md,
         overflow: 'hidden',
-        backgroundColor: '#1a1a1a',
     },
     listingCardPressed: {
         opacity: 0.7,
     },
     mainContent: {
-        padding: 12,
+        padding: SPACING.md,
     },
     listingHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: SPACING.md,
     },
     categoryBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        marginRight: 8,
+        marginRight: SPACING.sm,
     },
     categoryIcon: {
         fontSize: 14,
-        marginRight: 4,
+        marginRight: SPACING.xs,
     },
     categoryText: {
         fontSize: 12,
         opacity: 0.7,
     },
     statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.xs,
+        borderRadius: BORDER_RADIUS.lg,
     },
     statusText: {
         color: 'white',
@@ -242,14 +247,14 @@ const styles = StyleSheet.create({
     listingImage: {
         width: 80,
         height: 80,
-        borderRadius: 8,
-        marginRight: 12,
+        borderRadius: BORDER_RADIUS.sm,
+        marginRight: SPACING.md,
     },
     imagePlaceholder: {
         width: 80,
         height: 80,
-        borderRadius: 8,
-        marginRight: 12,
+        borderRadius: BORDER_RADIUS.sm,
+        marginRight: SPACING.md,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -259,7 +264,7 @@ const styles = StyleSheet.create({
     listingTitle: {
         fontSize: 16,
         fontWeight: '600',
-        marginBottom: 4,
+        marginBottom: SPACING.xs,
     },
     listingPrice: {
         fontSize: 18,
@@ -272,32 +277,29 @@ const styles = StyleSheet.create({
     },
     locationText: {
         fontSize: 12,
-        color: '#888',
         marginLeft: 2,
     },
     dateText: {
         fontSize: 12,
-        color: '#888',
-        marginLeft: 4,
+        marginLeft: SPACING.xs,
     },
     viewArrow: {
         justifyContent: 'center',
-        paddingLeft: 8,
+        paddingLeft: SPACING.sm,
     },
     actionButtons: {
         flexDirection: 'row',
-        padding: 12,
+        padding: SPACING.md,
         paddingTop: 0,
         borderTopWidth: 1,
-        borderTopColor: 'rgba(255, 255, 255, 0.1)',
     },
     actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 6,
-        paddingHorizontal: 12,
+        paddingHorizontal: SPACING.md,
         borderRadius: 6,
-        marginRight: 10,
+        marginRight: SPACING.md,
     },
     editButton: {
         backgroundColor: 'rgba(76, 175, 80, 0.1)',
@@ -307,7 +309,6 @@ const styles = StyleSheet.create({
     },
     actionButtonText: {
         fontSize: 14,
-        marginLeft: 4,
-        color: '#4CAF50',
+        marginLeft: SPACING.xs,
     },
 });

@@ -1,8 +1,8 @@
+import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
-import { COLORS } from '@/constants/theme';
 import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
@@ -54,10 +54,12 @@ export default function ListingDetailScreen() {
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
-    const secondaryBg = useThemeColor({ light: '#f5f5f5', dark: '#1a1a1a' }, 'background');
-    const cardBg = useThemeColor({ light: '#fff', dark: '#1e1e1e' }, 'background');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const placeholderColor = useThemeColor({ light: '#999', dark: '#666' }, 'text');
+    const secondaryBg = useThemeColor({}, 'backgroundSecondary');
+    const cardBg = useThemeColor({}, 'cardBackground');
+    const borderColor = useThemeColor({}, 'border');
+    const placeholderColor = useThemeColor({}, 'textSecondary');
+    const mutedColor = useThemeColor({}, 'textMuted');
+    const paginationInactive = useThemeColor({}, 'borderSecondary');
 
     // Fetch listing data
     useEffect(() => {
@@ -92,7 +94,7 @@ export default function ListingDetailScreen() {
     const handleCall = () => {
         if (listing?.phone_number) {
             const phoneUrl = `tel:${listing.phone_number}`;
-            Linking.openURL(phoneUrl).catch(err =>
+            Linking.openURL(phoneUrl).catch(() =>
                 Alert.alert('Error', 'Unable to make phone call')
             );
         }
@@ -103,7 +105,7 @@ export default function ListingDetailScreen() {
             const cleanNumber = listing.phone_number.replace(/\D/g, '');
             const whatsappUrl = `whatsapp://send?phone=${cleanNumber}`;
 
-            Linking.openURL(whatsappUrl).catch(err =>
+            Linking.openURL(whatsappUrl).catch(() =>
                 Alert.alert('Error', 'WhatsApp is not installed')
             );
         }
@@ -211,7 +213,7 @@ export default function ListingDetailScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#007AFF" />
+                    <ActivityIndicator size="large" color={BRAND_COLOR} />
                 </View>
             </SafeAreaView>
         );
@@ -222,9 +224,9 @@ export default function ListingDetailScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.errorContainer}>
-                    <MaterialCommunityIcons name="alert-circle-outline" size={80} color="#666" />
+                    <MaterialCommunityIcons name="alert-circle-outline" size={80} color={mutedColor} />
                     <Text style={[styles.errorText, { color: textColor }]}>Listing not found</Text>
-                    <Pressable style={styles.backButton} onPress={() => router.back()}>
+                    <Pressable style={[styles.backButton, { backgroundColor: BRAND_COLOR }]} onPress={() => router.back()}>
                         <Text style={styles.backButtonText}>Go Back</Text>
                     </Pressable>
                 </View>
@@ -267,7 +269,7 @@ export default function ListingDetailScreen() {
                         <FlatList
                             data={listing.images}
                             renderItem={renderImageItem}
-                            keyExtractor={(item, index) => index.toString()}
+                            keyExtractor={(_, index) => index.toString()}
                             horizontal
                             pagingEnabled
                             showsHorizontalScrollIndicator={false}
@@ -283,7 +285,11 @@ export default function ListingDetailScreen() {
                                         key={index}
                                         style={[
                                             styles.paginationDot,
-                                            index === currentImageIndex && styles.paginationDotActive
+                                            { backgroundColor: paginationInactive },
+                                            index === currentImageIndex && [
+                                                styles.paginationDotActive,
+                                                { backgroundColor: BRAND_COLOR }
+                                            ]
                                         ]}
                                     />
                                 ))}
@@ -335,7 +341,7 @@ export default function ListingDetailScreen() {
                     {listing.status !== 'active' && (
                         <View style={[
                             styles.statusBadge,
-                            { backgroundColor: listing.status === 'sold' ? '#FF9800' : '#D32F2F' }
+                            { backgroundColor: listing.status === 'sold' ? COLORS.statusSold : COLORS.statusInactive }
                         ]}>
                             <MaterialIcons
                                 name={listing.status === 'sold' ? 'check-circle' : 'remove-circle'}
@@ -363,7 +369,7 @@ export default function ListingDetailScreen() {
                 <View style={[styles.contactBar, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
                     {/* Chat Button */}
                     <Pressable
-                        style={[styles.contactButton, styles.chatButton]}
+                        style={[styles.contactButton, { backgroundColor: COLORS.chatButton }]}
                         onPress={handleChat}
                         disabled={isStartingChat}
                     >
@@ -380,7 +386,7 @@ export default function ListingDetailScreen() {
                     {/* Call Button */}
                     {listing.phone_number && (
                         <Pressable
-                            style={[styles.contactButton, styles.callButton]}
+                            style={[styles.contactButton, { backgroundColor: COLORS.callButton }]}
                             onPress={handleCall}
                         >
                             <Ionicons name="call" size={20} color="white" />
@@ -391,7 +397,7 @@ export default function ListingDetailScreen() {
                     {/* WhatsApp Button */}
                     {listing.phone_number && (
                         <Pressable
-                            style={[styles.contactButton, styles.whatsappButton]}
+                            style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
                             onPress={handleWhatsApp}
                         >
                             <Ionicons name="logo-whatsapp" size={20} color="white" />
@@ -417,11 +423,11 @@ export default function ListingDetailScreen() {
                             <FlatList
                                 data={listing.images || []}
                                 renderItem={renderModalImageItem}
-                                keyExtractor={(item, index) => index.toString()}
+                                keyExtractor={(_, index) => index.toString()}
                                 horizontal
                                 pagingEnabled
                                 initialScrollIndex={modalImageIndex}
-                                getItemLayout={(data, index) => ({
+                                getItemLayout={(_, index) => ({
                                     length: screenWidth,
                                     offset: screenWidth * index,
                                     index,
@@ -448,26 +454,26 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        padding: SPACING.xl,
     },
     errorText: {
         fontSize: 18,
-        marginTop: 16,
-        marginBottom: 20,
+        marginTop: SPACING.lg,
+        marginBottom: SPACING.xl,
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 8,
-        paddingVertical: 8,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.sm,
     },
     headerButton: {
-        padding: 8,
+        padding: SPACING.sm,
     },
     headerRight: {
         flexDirection: 'row',
-        gap: 4,
+        gap: SPACING.xs,
     },
     listingImage: {
         width: screenWidth,
@@ -480,41 +486,39 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     placeholderText: {
-        marginTop: 8,
+        marginTop: SPACING.sm,
         fontSize: 14,
     },
     pagination: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: 12,
+        paddingVertical: SPACING.md,
     },
     paginationDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#ccc',
-        marginHorizontal: 4,
+        marginHorizontal: SPACING.xs,
     },
     paginationDotActive: {
-        backgroundColor: '#007AFF',
         width: 10,
         height: 10,
         borderRadius: 5,
     },
     detailsContainer: {
-        padding: 16,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        padding: SPACING.lg,
+        borderTopLeftRadius: BORDER_RADIUS.round,
+        borderTopRightRadius: BORDER_RADIUS.round,
         marginTop: -20,
     },
     titleSection: {
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     title: {
         fontSize: 24,
         fontWeight: '700',
-        marginBottom: 8,
+        marginBottom: SPACING.sm,
     },
     price: {
         fontSize: 22,
@@ -523,24 +527,24 @@ const styles = StyleSheet.create({
     categoryRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: SPACING.md,
     },
     categoryIcon: {
         fontSize: 18,
-        marginRight: 8,
+        marginRight: SPACING.sm,
     },
     categoryText: {
         fontSize: 14,
     },
     metaRow: {
         flexDirection: 'row',
-        gap: 20,
-        marginBottom: 15,
+        gap: SPACING.xl,
+        marginBottom: SPACING.lg,
     },
     metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: SPACING.xs,
     },
     metaText: {
         fontSize: 14,
@@ -550,22 +554,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         alignSelf: 'flex-start',
         paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-        marginBottom: 16,
-        gap: 4,
+        paddingHorizontal: SPACING.md,
+        borderRadius: BORDER_RADIUS.lg,
+        marginBottom: SPACING.lg,
+        gap: SPACING.xs,
     },
     statusText: {
         color: 'white',
         fontWeight: '600',
     },
     descriptionSection: {
-        marginBottom: 20,
+        marginBottom: SPACING.xl,
     },
     sectionTitle: {
         fontSize: 18,
         fontWeight: '600',
-        marginBottom: 8,
+        marginBottom: SPACING.sm,
     },
     description: {
         fontSize: 16,
@@ -573,10 +577,10 @@ const styles = StyleSheet.create({
     },
     contactBar: {
         flexDirection: 'row',
-        paddingHorizontal: 12,
-        paddingVertical: 12,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.md,
         borderTopWidth: 1,
-        gap: 8,
+        gap: SPACING.sm,
     },
     contactButton: {
         flex: 1,
@@ -584,17 +588,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 14,
-        borderRadius: 10,
+        borderRadius: BORDER_RADIUS.md,
         gap: 6,
-    },
-    chatButton: {
-        backgroundColor: '#FF6B35',
-    },
-    callButton: {
-        backgroundColor: '#007AFF',
-    },
-    whatsappButton: {
-        backgroundColor: '#25D366',
     },
     contactButtonText: {
         color: 'white',
@@ -602,10 +597,9 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     backButton: {
-        backgroundColor: '#007AFF',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xxl,
+        borderRadius: BORDER_RADIUS.sm,
     },
     backButtonText: {
         color: 'white',
@@ -631,6 +625,6 @@ const styles = StyleSheet.create({
         top: 50,
         right: 20,
         zIndex: 10,
-        padding: 8,
+        padding: SPACING.sm,
     },
 });
