@@ -215,7 +215,7 @@ export default function UserScreen() {
                         icon={<Ionicons name="person-outline" size={22} color={iconColor} />}
                         title="Personal Details"
                         subtitle="Name, email, phone number"
-                        onPress={() => handleComingSoon('Personal Details')}
+                        onPress={() => router.push('/personal-details')}
                     />
                     <MenuItem
                         icon={<MaterialIcons name="manage-accounts" size={22} color={iconColor} />}
