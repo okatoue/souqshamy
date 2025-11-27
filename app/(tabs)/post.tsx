@@ -38,6 +38,7 @@ export default function PostListingScreen() {
   const disabledButtonColor = useThemeColor({ light: '#ccc', dark: '#444' }, 'icon');
 
   const handleOpenPress = () => {
+    Keyboard.dismiss();
     categorySheetRef.current?.open();
   };
 
