@@ -2,14 +2,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useConversations } from '@/hooks/useConversations';
+import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
-    ActivityIndicator,
     Alert,
     FlatList,
     Image,
@@ -24,13 +23,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function ChatsScreen() {
     const { user } = useAuth();
     const router = useRouter();
+
+    // Consume pre-fetched data from global context
     const {
         conversations,
-        isLoading,
-        isRefreshing,
+        conversationsRefreshing: isRefreshing,
         fetchConversations,
         deleteConversation
-    } = useConversations();
+    } = useAppData();
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -43,7 +43,7 @@ export default function ChatsScreen() {
     const cardBg = useThemeColor({}, 'cardBackground');
     const mutedColor = useThemeColor({}, 'textMuted');
 
-    // Refresh when screen comes into focus
+    // Refresh when screen comes into focus (background refresh only)
     useFocusEffect(
         useCallback(() => {
             if (user) {
@@ -258,21 +258,6 @@ export default function ChatsScreen() {
         </View>
     );
 
-    // Loading state
-    if (isLoading && !isRefreshing) {
-        return (
-            <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-                <ScreenHeader title="Messages" rightAction={EditButton} />
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={BRAND_COLOR} />
-                    <ThemedText style={[styles.loadingText, { color: secondaryTextColor }]}>
-                        Loading conversations...
-                    </ThemedText>
-                </View>
-            </SafeAreaView>
-        );
-    }
-
     // Not authenticated
     if (!user) {
         return (
@@ -330,15 +315,6 @@ const styles = StyleSheet.create({
     },
     selectedItem: {
         backgroundColor: 'rgba(255, 59, 48, 0.08)',
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: SPACING.md,
-        fontSize: 16,
     },
     emptyList: {
         flex: 1,

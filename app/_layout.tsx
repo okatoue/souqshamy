@@ -1,8 +1,9 @@
 // app/_layout.tsx
 import { AuthLogo } from '@/components/auth/AuthLogo';
 import { Colors, BRAND_COLOR } from '@/constants/theme';
+import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
-import { FavoritesProvider } from '@/lib/favorites_context';
+import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -11,16 +12,22 @@ import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function RootLayoutNav() {
-  const { user, loading, isPasswordResetInProgress } = useAuth();
+  const { user, loading: authLoading, isPasswordResetInProgress } = useAuth();
+  const { isGlobalLoading } = useAppData();
+  const { isLoading: favoritesLoading } = useFavoritesContext();
   const segments = useSegments();
   const router = useRouter();
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
+  // Determine if we should show loading screen
+  // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
+  const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
+
   // Handle auth state changes
   useEffect(() => {
     // Don't run until auth loading is complete
-    if (loading) return;
+    if (authLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -40,10 +47,11 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, loading, isPasswordResetInProgress]);
+  }, [user, segments, authLoading, isPasswordResetInProgress]);
 
-  // Show loading screen while auth state is being determined
-  if (loading) {
+  // Show loading screen while auth state OR global data is being loaded
+  // This eliminates the "waterfall effect" where screens load data individually
+  if (shouldShowLoading) {
     return (
       <View
         style={{
@@ -86,7 +94,9 @@ export default function RootLayout() {
         <BottomSheetModalProvider>
           <AuthProvider>
             <FavoritesProvider>
-              <RootLayoutNav />
+              <AppDataProvider>
+                <RootLayoutNav />
+              </AppDataProvider>
             </FavoritesProvider>
           </AuthProvider>
         </BottomSheetModalProvider>
