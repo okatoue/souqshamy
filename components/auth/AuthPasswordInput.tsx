@@ -11,8 +11,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { AUTH_COLORS, AUTH_SIZING } from './constants';
-import { authStyles } from './styles';
+import { AUTH_SIZING, ACCENT_COLOR } from './constants';
+import { useAuthTheme } from './useAuthStyles';
 
 interface AuthPasswordInputProps extends Omit<TextInputProps, 'secureTextEntry'> {
   label?: string;
@@ -29,6 +29,7 @@ export function AuthPasswordInput({
   initialShowPassword = false,
   ...props
 }: AuthPasswordInputProps) {
+  const { styles: authStyles, colors } = useAuthTheme();
   const [showPassword, setShowPassword] = useState(initialShowPassword);
 
   return (
@@ -37,7 +38,7 @@ export function AuthPasswordInput({
       <View style={authStyles.passwordContainer}>
         <TextInput
           style={[authStyles.passwordInput, !editable && styles.inputDisabled]}
-          placeholderTextColor={AUTH_COLORS.textMuted}
+          placeholderTextColor={colors.textMuted}
           secureTextEntry={!showPassword}
           editable={editable}
           {...props}
@@ -50,7 +51,7 @@ export function AuthPasswordInput({
           <Ionicons
             name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={AUTH_SIZING.iconSize.large}
-            color={AUTH_COLORS.textSecondary}
+            color={colors.textSecondary}
           />
         </Pressable>
       </View>
@@ -65,7 +66,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: AUTH_COLORS.error,
+    color: ACCENT_COLOR,
     marginTop: 4,
   },
 });

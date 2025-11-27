@@ -10,8 +10,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { AUTH_COLORS, AUTH_SIZING, AUTH_TYPOGRAPHY } from './constants';
-import { authStyles } from './styles';
+import { AUTH_SIZING, AUTH_TYPOGRAPHY, ACCENT_COLOR } from './constants';
+import { useAuthTheme } from './useAuthStyles';
 
 interface AuthInputProps extends TextInputProps {
   label?: string;
@@ -29,27 +29,47 @@ export function AuthInput({
   editable = true,
   ...props
 }: AuthInputProps) {
+  const { styles: authStyles, colors } = useAuthTheme();
   const hasIcon = !!icon;
 
   return (
     <View style={[authStyles.inputWrapper, containerStyle]}>
       {label && <Text style={authStyles.inputLabel}>{label}</Text>}
-      <View style={[styles.inputContainer, hasIcon && styles.withIcon]}>
+      <View
+        style={[
+          styles.inputContainer,
+          hasIcon && {
+            borderWidth: 1,
+            borderColor: colors.border,
+            borderRadius: AUTH_SIZING.borderRadius,
+            backgroundColor: colors.cardBackground,
+          },
+        ]}
+      >
         {icon && (
           <Ionicons
             name={icon}
             size={20}
-            color={AUTH_COLORS.textSecondary}
+            color={colors.textSecondary}
             style={styles.inputIcon}
           />
         )}
         <TextInput
           style={[
-            hasIcon ? styles.inputWithIcon : styles.input,
+            hasIcon
+              ? [styles.inputWithIcon, { color: colors.textPrimary }]
+              : [
+                  styles.input,
+                  {
+                    borderColor: colors.border,
+                    color: colors.textPrimary,
+                    backgroundColor: colors.cardBackground,
+                  },
+                ],
             !editable && styles.inputDisabled,
             style,
           ]}
-          placeholderTextColor={AUTH_COLORS.textMuted}
+          placeholderTextColor={colors.textMuted}
           editable={editable}
           {...props}
         />
@@ -64,41 +84,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  withIcon: {
-    borderWidth: 1,
-    borderColor: AUTH_COLORS.border,
-    borderRadius: AUTH_SIZING.borderRadius,
-    backgroundColor: AUTH_COLORS.cardBackground,
-  },
   inputIcon: {
     paddingLeft: 14,
   },
-  // Input field without icon - has its own border and takes full width
   input: {
     flex: 1,
     height: AUTH_SIZING.inputHeight,
     borderWidth: 1,
-    borderColor: AUTH_COLORS.border,
     borderRadius: AUTH_SIZING.borderRadius,
     paddingHorizontal: 14,
     fontSize: AUTH_TYPOGRAPHY.body.fontSize,
-    color: AUTH_COLORS.textPrimary,
-    backgroundColor: AUTH_COLORS.cardBackground,
   },
-  // Input field with icon - no border (container has it), takes remaining space
   inputWithIcon: {
     flex: 1,
     height: AUTH_SIZING.inputHeight,
     paddingHorizontal: 10,
     fontSize: AUTH_TYPOGRAPHY.body.fontSize,
-    color: AUTH_COLORS.textPrimary,
   },
   inputDisabled: {
     opacity: 0.6,
   },
   errorText: {
     fontSize: 12,
-    color: AUTH_COLORS.error,
+    color: ACCENT_COLOR,
     marginTop: 4,
   },
 });

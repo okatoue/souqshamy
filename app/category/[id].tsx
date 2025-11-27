@@ -3,7 +3,8 @@ import { Category, Subcategory } from '@/assets/categories';
 import categoriesData from '@/assets/categories.json';
 import { ListingCard } from '@/components/listings/listingCard';
 import { SearchBar } from '@/components/ui/SearchBar';
-import { useThemeColor } from '@/hooks/use-theme-color';
+import { BRAND_COLOR, Colors } from '@/constants/theme';
+import { useThemeColor, useTheme } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -31,11 +32,13 @@ export default function CategoryListingScreen() {
   const [displayedListings, setDisplayedListings] = useState<Listing[]>([]);
 
   // Theme colors
+  const theme = useTheme();
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
-  const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-  const chipBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
-  const chipActiveBg = useThemeColor({ light: '#007AFF', dark: '#0A84FF' }, 'tint');
+  const textMutedColor = useThemeColor({}, 'textMuted');
+  const borderColor = useThemeColor({}, 'border');
+  const chipBg = useThemeColor({}, 'backgroundSecondary');
+  const iconMutedColor = useThemeColor({}, 'iconMuted');
 
   // Get categoryId safely - params.id could be string or string[]
   const categoryId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -103,7 +106,7 @@ export default function CategoryListingScreen() {
           <Pressable
             style={[
               styles.subcategoryChip,
-              { backgroundColor: selectedSubcategory === null ? chipActiveBg : chipBg },
+              { backgroundColor: selectedSubcategory === null ? BRAND_COLOR : chipBg },
             ]}
             onPress={() => setSelectedSubcategory(null)}
           >
@@ -124,7 +127,7 @@ export default function CategoryListingScreen() {
                 styles.subcategoryChip,
                 {
                   backgroundColor:
-                    selectedSubcategory === sub.id.toString() ? chipActiveBg : chipBg,
+                    selectedSubcategory === sub.id.toString() ? BRAND_COLOR : chipBg,
                 },
               ]}
               onPress={() => handleSubcategoryPress(sub as Subcategory)}
@@ -152,18 +155,18 @@ export default function CategoryListingScreen() {
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="inbox" size={64} color="#666" />
+      <MaterialIcons name="inbox" size={64} color={iconMutedColor} />
       <Text style={[styles.emptyText, { color: textColor }]}>
         {searchQuery
           ? 'No listings match your search'
           : 'No listings in this category yet'}
       </Text>
-      <Text style={styles.emptySubtext}>
+      <Text style={[styles.emptySubtext, { color: textMutedColor }]}>
         {searchQuery ? 'Try different keywords' : 'Be the first to post something!'}
       </Text>
 
       {!searchQuery && (
-        <Pressable style={styles.postButton} onPress={() => router.push('/post')}>
+        <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={() => router.push('/post')}>
           <MaterialIcons name="add" size={20} color="white" />
           <Text style={styles.postButtonText}>Post a Listing</Text>
         </Pressable>
@@ -177,8 +180,8 @@ export default function CategoryListingScreen() {
       <Text style={[styles.emptyText, { color: textColor }]}>
         Failed to load listings
       </Text>
-      <Text style={styles.emptySubtext}>{error?.message}</Text>
-      <Pressable style={styles.postButton} onPress={refetch}>
+      <Text style={[styles.emptySubtext, { color: textMutedColor }]}>{error?.message}</Text>
+      <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={refetch}>
         <MaterialIcons name="refresh" size={20} color="white" />
         <Text style={styles.postButtonText}>Try Again</Text>
       </Pressable>
@@ -187,7 +190,7 @@ export default function CategoryListingScreen() {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#007AFF" />
+      <ActivityIndicator size="large" color={BRAND_COLOR} />
       <Text style={[styles.loadingText, { color: textColor }]}>Loading listings...</Text>
     </View>
   );
@@ -195,7 +198,7 @@ export default function CategoryListingScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: BRAND_COLOR }]}>
         <Pressable onPress={handleBack} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </Pressable>
@@ -221,7 +224,7 @@ export default function CategoryListingScreen() {
         <Text style={[styles.resultCount, { color: textColor }]}>
           {displayedListings.length} {displayedListings.length === 1 ? 'listing' : 'listings'}
           {selectedSubcategory && selectedCategory && (
-            <Text style={styles.filterLabel}>
+            <Text style={[styles.filterLabel, { color: BRAND_COLOR }]}>
               {' '}
               in{' '}
               {
@@ -248,7 +251,7 @@ export default function CategoryListingScreen() {
           ListEmptyComponent={renderEmptyList}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={false} onRefresh={refetch} tintColor="#007AFF" />
+            <RefreshControl refreshing={false} onRefresh={refetch} tintColor={BRAND_COLOR} />
           }
         />
       )}
@@ -266,7 +269,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#007AFF',
   },
   backButton: {
     padding: 8,
@@ -313,7 +315,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   filterLabel: {
-    color: '#007AFF',
     fontWeight: '400',
   },
   listContent: {
@@ -336,14 +337,12 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#888',
     marginTop: 8,
     textAlign: 'center',
   },
   postButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 25,

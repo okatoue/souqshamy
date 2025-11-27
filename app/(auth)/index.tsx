@@ -9,12 +9,12 @@ import {
   BRAND_COLOR,
   SocialAuthButtons,
   SyriaFlag,
-  authStyles,
   cleanPhoneNumber,
   detectPhoneNumber,
   formatPhoneInput,
   isValidEmail,
   isValidPhoneNumber,
+  useAuthStyles,
 } from '@/components/auth';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
+  const authStyles = useAuthStyles();
   const [inputValue, setInputValue] = useState('');
   const [isPhoneNumber, setIsPhoneNumber] = useState(false);
   const [loading, setLoading] = useState(false);

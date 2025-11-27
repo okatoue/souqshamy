@@ -16,16 +16,23 @@ export { SocialAuthButtons } from './SocialAuthButtons';
 export { SyriaFlag } from './SyriaFlag';
 
 // Styles and constants
-export { authStyles } from './styles';
+export { authStyles, createAuthStyles } from './styles';
+export type { AuthStylesType } from './styles';
 export {
   AUTH_COLORS,
+  AUTH_COLORS_DARK,
   AUTH_SIZING,
   AUTH_SPACING,
   AUTH_TYPOGRAPHY,
   BRAND_COLOR,
   BRAND_COLOR_DARK,
+  ACCENT_COLOR,
+  getAuthColors,
   isSmallScreen,
 } from './constants';
+
+// Theme hooks
+export { useAuthStyles, useAuthColors, useAuthTheme } from './useAuthStyles';
 
 // Validation utilities
 export {

@@ -1,38 +1,68 @@
 // components/auth/constants.ts
 import { Dimensions } from 'react-native';
-import { BRAND_COLOR, BRAND_COLOR_DARK, Colors } from '@/constants/theme';
+import { BRAND_COLOR, BRAND_COLOR_DARK, Colors, ACCENT_COLOR } from '@/constants/theme';
 
 // Re-export brand colors for convenience
-export { BRAND_COLOR, BRAND_COLOR_DARK };
+export { BRAND_COLOR, BRAND_COLOR_DARK, ACCENT_COLOR };
 
 // Screen dimensions
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const isSmallScreen = SCREEN_HEIGHT < 700;
 
-// Auth-specific color palette (using theme colors)
+// Auth-specific color palette for light mode (using theme colors)
 export const AUTH_COLORS = {
   // Background colors
-  background: Colors.light.inputBackground, // #f8fafc
-  cardBackground: Colors.light.cardBackground, // #fff
+  background: Colors.light.backgroundSecondary,
+  cardBackground: Colors.light.cardBackground,
 
   // Text colors
-  textPrimary: '#1e293b',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
-  textLabel: '#334155',
+  textPrimary: Colors.light.text,
+  textSecondary: Colors.light.textSecondary,
+  textMuted: Colors.light.textMuted,
+  textLabel: Colors.light.textLabel,
 
   // Border colors
-  border: Colors.light.border, // #e2e8f0
+  border: Colors.light.border,
 
   // State colors
   success: '#22c55e',
   successDark: '#16a34a',
-  error: '#ef4444',
+  error: ACCENT_COLOR,
 
   // Social button colors
   facebook: '#1877F2',
   telegram: '#0088cc',
 } as const;
+
+// Auth-specific color palette for dark mode
+export const AUTH_COLORS_DARK = {
+  // Background colors
+  background: Colors.dark.background,
+  cardBackground: Colors.dark.cardBackground,
+
+  // Text colors
+  textPrimary: Colors.dark.text,
+  textSecondary: Colors.dark.textSecondary,
+  textMuted: Colors.dark.textMuted,
+  textLabel: Colors.dark.textLabel,
+
+  // Border colors
+  border: Colors.dark.border,
+
+  // State colors
+  success: '#22c55e',
+  successDark: '#16a34a',
+  error: ACCENT_COLOR,
+
+  // Social button colors
+  facebook: '#1877F2',
+  telegram: '#0088cc',
+} as const;
+
+// Helper to get auth colors based on theme
+export function getAuthColors(theme: 'light' | 'dark') {
+  return theme === 'dark' ? AUTH_COLORS_DARK : AUTH_COLORS;
+}
 
 // Common spacing values
 export const AUTH_SPACING = {

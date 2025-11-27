@@ -1,17 +1,15 @@
 // app/(auth)/forgot-password.tsx
 import {
-  AUTH_COLORS,
   AuthButton,
   AuthInput,
   AuthLayout,
   AuthLogo,
   AuthPasswordInput,
   AuthTitle,
-  BRAND_COLOR,
   NoticeBox,
   OTPInput,
-  authStyles,
   isValidEmail,
+  useAuthTheme,
 } from '@/components/auth';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
@@ -161,6 +159,8 @@ export default function ForgotPasswordScreen() {
     await handleSendCode();
   };
 
+  const { styles: authStyles, colors } = useAuthTheme();
+
   // Success Screen
   if (step === 'success') {
     return (
@@ -169,11 +169,13 @@ export default function ForgotPasswordScreen() {
           <AuthLogo
             icon="checkmark"
             size="large"
-            gradientColors={[AUTH_COLORS.success, AUTH_COLORS.successDark]}
+            gradientColors={[colors.success, colors.successDark]}
           />
 
-          <Text style={styles.statusTitle}>Password Reset!</Text>
-          <Text style={styles.statusSubtitle}>
+          <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>
+            Password Reset!
+          </Text>
+          <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>
             Your password has been successfully reset. You can now sign in with your new password.
           </Text>
 
@@ -288,12 +290,10 @@ const styles = StyleSheet.create({
   statusTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: AUTH_COLORS.textPrimary,
     marginBottom: 12,
   },
   statusSubtitle: {
     fontSize: 15,
-    color: AUTH_COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 32,
