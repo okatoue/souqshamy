@@ -1,7 +1,7 @@
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useConversations } from '@/hooks/useConversations';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
-import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
@@ -45,7 +45,7 @@ export default function ListingDetailScreen() {
     });
 
     // Chat
-    const { getOrCreateConversation } = useAppData();
+    const { getOrCreateConversation } = useConversations();
     const [isStartingChat, setIsStartingChat] = useState(false);
 
     // Animated value for modal swipe
