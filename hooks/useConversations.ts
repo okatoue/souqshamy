@@ -144,19 +144,7 @@ export function useConversations() {
         if (!user) return false;
 
         try {
-            // First verify the user owns this conversation
-            const { data: conv } = await supabase
-                .from('conversations')
-                .select('id, buyer_id, seller_id')
-                .eq('id', conversationId)
-                .single();
-
-            if (!conv || (conv.buyer_id !== user.id && conv.seller_id !== user.id)) {
-                console.error('User does not own this conversation');
-                return false;
-            }
-
-            // Delete the conversation
+            // Delete the conversation from Supabase
             const { error } = await supabase
                 .from('conversations')
                 .delete()
@@ -167,12 +155,10 @@ export function useConversations() {
                 return false;
             }
 
-            // Update local state immediately
-            setConversations(prev => prev.filter(c => c.id !== conversationId));
-
-            // Update cache with current state
-            setConversations(currentConvs => {
-                const updated = currentConvs.filter(c => c.id !== conversationId);
+            // Update local state and cache
+            setConversations(prev => {
+                const updated = prev.filter(c => c.id !== conversationId);
+                // Update cache asynchronously
                 saveCachedConversations(updated);
                 return updated;
             });
@@ -264,7 +250,7 @@ export function useConversations() {
         initialize();
     }, [user, loadCachedConversations, fetchConversations]);
 
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates (only INSERT and UPDATE, not DELETE)
     useEffect(() => {
         if (!user) return;
 
@@ -273,7 +259,7 @@ export function useConversations() {
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'INSERT',
                     schema: 'public',
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
@@ -285,7 +271,31 @@ export function useConversations() {
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `buyer_id=eq.${user.id}`
+                },
+                () => {
+                    fetchConversations(false);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'conversations',
+                    filter: `seller_id=eq.${user.id}`
+                },
+                () => {
+                    fetchConversations(false);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
                     schema: 'public',
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
