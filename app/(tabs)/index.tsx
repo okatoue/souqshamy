@@ -5,6 +5,7 @@ import { Location } from '@/components/ui/location';
 import { RecentlyViewedSection } from '@/components/ui/recentlyViewedSection';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { UserIcon } from '@/components/ui/userIcon';
+import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { useFocusEffect } from '@react-navigation/native';
@@ -19,6 +20,7 @@ export default function HomeScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
   const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
+  const dividerColor = useThemeColor({}, 'border');
 
   // Recently viewed listings
   const {
@@ -72,10 +74,12 @@ export default function HomeScreen() {
         </ThemedView>
 
         <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">Popular Categories</ThemedText>
+          <ThemedText type="title">All Categories</ThemedText>
         </ThemedView>
 
         <CategoriesList />
+
+        <View style={[styles.headerDivider, { backgroundColor: dividerColor }]} />
 
         {/* Recently Viewed Section - Below Categories */}
         <RecentlyViewedSection
@@ -111,7 +115,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginLeft: 16,
+    marginLeft: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  headerDivider: {
+    height: 1,
+    marginTop: SPACING.lg,
+    marginHorizontal: SPACING.lg,
   },
   stepContainer: {
     gap: 8,
@@ -135,7 +145,8 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
 });

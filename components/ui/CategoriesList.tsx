@@ -1,10 +1,17 @@
 import categoriesData from '@/assets/categories.json';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ReactNode, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const GRID_COLUMNS = 3;
+const GRID_PADDING = SPACING.lg;
+const ITEM_MARGIN = SPACING.sm;
+const ITEM_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (ITEM_MARGIN * (GRID_COLUMNS - 1))) / GRID_COLUMNS;
 
 interface CategoryDisplayItem {
     id: number;  // Numeric ID matching categories.json
@@ -88,27 +95,49 @@ export function CategoriesList() {
         });
     };
 
+    // Split categories into rows of 3
+    const row1 = categoryDisplayData.slice(0, 3);
+    const row2 = categoryDisplayData.slice(3, 6);
+
     return (
         <>
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}>
-                {categoryDisplayData.map((category) => (
-                    <Pressable
-                        key={category.id}
-                        onPress={() => handleCategoryPress(category)}
-                        style={({ pressed }) => [
-                            styles.categoryButton,
-                            pressed && styles.categoryButtonPressed
-                        ]}>
-                        <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
-                            {category.icon}
-                        </View>
-                        <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
-                    </Pressable>
-                ))}
-            </ScrollView>
+            <View style={styles.gridContainer}>
+                {/* First row */}
+                <View style={styles.gridRow}>
+                    {row1.map((category) => (
+                        <Pressable
+                            key={category.id}
+                            onPress={() => handleCategoryPress(category)}
+                            style={({ pressed }) => [
+                                styles.categoryButton,
+                                pressed && styles.categoryButtonPressed
+                            ]}>
+                            <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
+                                {category.icon}
+                            </View>
+                            <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+
+                {/* Second row */}
+                <View style={styles.gridRow}>
+                    {row2.map((category) => (
+                        <Pressable
+                            key={category.id}
+                            onPress={() => handleCategoryPress(category)}
+                            style={({ pressed }) => [
+                                styles.categoryButton,
+                                pressed && styles.categoryButtonPressed
+                            ]}>
+                            <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
+                                {category.icon}
+                            </View>
+                            <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
+                        </Pressable>
+                    ))}
+                </View>
+            </View>
 
             {/* Bottom sheet showing ONLY Buy & Sell subcategories */}
             <CategoryBottomSheet
@@ -137,13 +166,18 @@ export function CategoriesList() {
 }
 
 const styles = StyleSheet.create({
-    scrollContent: {
-        paddingHorizontal: 10,
+    gridContainer: {
+        paddingHorizontal: GRID_PADDING,
+    },
+    gridRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: SPACING.md,
     },
     categoryButton: {
+        width: ITEM_WIDTH,
         alignItems: 'center',
-        padding: 10,
-        marginHorizontal: 6,
+        paddingVertical: SPACING.sm,
     },
     categoryButtonPressed: {
         opacity: 0.7,
@@ -155,7 +189,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: SPACING.sm,
     },
     categoryName: {
         fontSize: 12,
