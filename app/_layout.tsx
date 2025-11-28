@@ -26,8 +26,10 @@ function RootLayoutNav() {
 
   // Handle auth state changes
   useEffect(() => {
-    // Don't run until auth loading is complete
+    // Don't run until auth loading is complete AND navigator is mounted
+    // (shouldShowLoading being true means we're showing the loading screen, not the Stack)
     if (authLoading) return;
+    if (shouldShowLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -47,7 +49,7 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress]);
+  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
 
   // Show loading screen while auth state OR global data is being loaded
   // This eliminates the "waterfall effect" where screens load data individually
