@@ -164,13 +164,14 @@ export function useVoiceRecording({
         return () => {
             clearDurationInterval();
 
-            // Stop recording if still active
-            if (audioRecorder.isRecording) {
-                try {
+            // Wrap in try-catch because the native recorder object may already be destroyed
+            try {
+                // Stop recording if still active
+                if (audioRecorder.isRecording) {
                     audioRecorder.stop();
-                } catch {
-                    // Ignore cleanup errors
                 }
+            } catch {
+                // Native object already destroyed - ignore
             }
 
             // Reset audio mode
