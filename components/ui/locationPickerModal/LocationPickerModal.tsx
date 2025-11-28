@@ -1,13 +1,15 @@
+import { useThemeColor } from '@/hooks/use-theme-color';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Keyboard,
     Modal,
+    Platform,
     StyleSheet,
     TextInput,
     View
 } from 'react-native';
+import MapView, { Circle, PROVIDER_DEFAULT, Region, UrlTile } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 
 import {
     CloseButton,
@@ -24,8 +26,19 @@ import {
     RADIUS_MIN
 } from './constants';
 import { useLocationSearch, useReverseGeocode } from './hooks';
-import { MAP_HTML } from './mapHtml';
-import { Coordinates, LocationPickerModalProps, MapMessage, SearchResult } from './types';
+import { Coordinates, LocationPickerModalProps, SearchResult } from './types';
+
+// OpenStreetMap tile URL template
+const OSM_TILE_URL = 'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png';
+
+// Calculate the latitude delta needed to show a given radius in km
+function getLatitudeDeltaForRadius(radiusKm: number): number {
+    // 1 degree of latitude ≈ 111 km
+    // We want the radius to fit comfortably in the view (roughly 35% of view height)
+    // So total view should be about radius * 2 / 0.35 ≈ radius * 5.7
+    const kmPerDegree = 111;
+    return (radiusKm * 5.7) / kmPerDegree;
+}
 
 export default function LocationPickerModal({
     visible,
@@ -36,10 +49,9 @@ export default function LocationPickerModal({
     onClose
 }: LocationPickerModalProps) {
     const insets = useSafeAreaInsets();
-    const webViewRef = useRef<WebView>(null);
+    const mapRef = useRef<MapView>(null);
     const searchInputRef = useRef<TextInput>(null);
 
-    const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
     const [selectedCoordinate, setSelectedCoordinate] = useState<Coordinates>({
@@ -51,6 +63,7 @@ export default function LocationPickerModal({
     const [sliderValue, setSliderValue] = useState(currentRadius || DEFAULT_RADIUS);
 
     const isSlidingRef = useRef(false);
+    const isAnimatingRef = useRef(false);
 
     const { reverseGeocode } = useReverseGeocode();
     const {
@@ -64,6 +77,9 @@ export default function LocationPickerModal({
         clearSearch,
     } = useLocationSearch();
 
+    // Theme colors
+    const tintColor = useThemeColor({}, 'tint');
+
     // Reset state when modal opens
     useEffect(() => {
         if (visible) {
@@ -71,7 +87,7 @@ export default function LocationPickerModal({
             setRadius(currentRadius || DEFAULT_RADIUS);
             setSliderValue(currentRadius || DEFAULT_RADIUS);
             isSlidingRef.current = false;
-            setIsMapReady(false);
+            isAnimatingRef.current = false;
             clearSearch();
             setIsSearchFocused(false);
             if (currentCoordinates) {
@@ -80,58 +96,44 @@ export default function LocationPickerModal({
         }
     }, [visible, currentLocation, currentRadius, currentCoordinates, clearSearch]);
 
-    // Initialize map when ready
-    useEffect(() => {
-        if (isMapReady && webViewRef.current) {
-            const lat = currentCoordinates?.latitude || DEFAULT_COORDINATES.latitude;
-            const lng = currentCoordinates?.longitude || DEFAULT_COORDINATES.longitude;
-            const rad = currentRadius || DEFAULT_RADIUS;
+    // Calculate initial region
+    const initialRegion: Region = {
+        latitude: currentCoordinates?.latitude || DEFAULT_COORDINATES.latitude,
+        longitude: currentCoordinates?.longitude || DEFAULT_COORDINATES.longitude,
+        latitudeDelta: getLatitudeDeltaForRadius(currentRadius || DEFAULT_RADIUS),
+        longitudeDelta: getLatitudeDeltaForRadius(currentRadius || DEFAULT_RADIUS),
+    };
 
-            webViewRef.current.injectJavaScript(`
-                initMap(${lat}, ${lng}, ${rad});
-                true;
-            `);
+    // Handle map region change (when user pans/zooms)
+    const handleRegionChangeComplete = useCallback(async (region: Region) => {
+        if (isAnimatingRef.current) {
+            isAnimatingRef.current = false;
+            return;
         }
-    }, [isMapReady, currentCoordinates, currentRadius]);
 
-    const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
-        try {
-            const data: MapMessage = JSON.parse(event.nativeEvent.data);
+        setSelectedCoordinate({
+            latitude: region.latitude,
+            longitude: region.longitude,
+        });
 
-            if (data.type === 'mapReady') {
-                setIsMapReady(true);
-            } else if (data.type === 'mapMoved' && data.lat !== undefined && data.lng !== undefined) {
-                setSelectedCoordinate({ latitude: data.lat, longitude: data.lng });
-                const locationName = await reverseGeocode(data.lat, data.lng);
-                setSelectedLocationName(locationName);
-            } else if (data.type === 'radiusChanged' && data.radius !== undefined) {
-                if (!isSlidingRef.current) {
-                    const newRadius = Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, data.radius));
-                    setRadius(Math.round(newRadius));
-                    setSliderValue(newRadius);
-                }
-            }
-        } catch (error) {
-            console.error('Error parsing WebView message:', error);
-        }
+        // Reverse geocode to get location name
+        const locationName = await reverseGeocode(region.latitude, region.longitude);
+        setSelectedLocationName(locationName);
     }, [reverseGeocode]);
 
     const handleSliderStart = useCallback(() => {
         isSlidingRef.current = true;
-        webViewRef.current?.injectJavaScript(`onSliderStart(); true;`);
     }, []);
 
     const handleSliderChange = useCallback((value: number) => {
         setSliderValue(value);
         setRadius(Math.round(value));
-        webViewRef.current?.injectJavaScript(`onSliderChange(${value}); true;`);
     }, []);
 
     const handleSliderComplete = useCallback((value: number) => {
         const finalValue = Math.round(value);
         setRadius(finalValue);
         setSliderValue(finalValue);
-        webViewRef.current?.injectJavaScript(`onSliderEnd(${finalValue}); true;`);
 
         setTimeout(() => {
             isSlidingRef.current = false;
@@ -148,11 +150,15 @@ export default function LocationPickerModal({
         clearSearch();
         setIsSearchFocused(false);
 
-        webViewRef.current?.injectJavaScript(`
-            moveToLocation(${lat}, ${lon});
-            true;
-        `);
-    }, [setShowSearchResults, clearSearch]);
+        // Animate map to new location
+        isAnimatingRef.current = true;
+        mapRef.current?.animateToRegion({
+            latitude: lat,
+            longitude: lon,
+            latitudeDelta: getLatitudeDeltaForRadius(radius),
+            longitudeDelta: getLatitudeDeltaForRadius(radius),
+        }, 300);
+    }, [setShowSearchResults, clearSearch, radius]);
 
     const handleSearchFocus = useCallback(() => {
         setIsSearchFocused(true);
@@ -191,15 +197,42 @@ export default function LocationPickerModal({
         >
             <View style={styles.container}>
                 {/* Full Screen Map */}
-                <WebView
-                    ref={webViewRef}
-                    source={{ html: MAP_HTML }}
+                <MapView
+                    ref={mapRef}
                     style={styles.map}
-                    onMessage={handleWebViewMessage}
-                    scrollEnabled={false}
-                    javaScriptEnabled={true}
-                    onLoad={() => setIsMapReady(true)}
-                />
+                    provider={PROVIDER_DEFAULT}
+                    initialRegion={initialRegion}
+                    onRegionChangeComplete={handleRegionChangeComplete}
+                    showsUserLocation={false}
+                    showsMyLocationButton={false}
+                    showsCompass={false}
+                    showsScale={false}
+                    toolbarEnabled={false}
+                    mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+                >
+                    {/* OpenStreetMap tiles */}
+                    <UrlTile
+                        urlTemplate={OSM_TILE_URL}
+                        maximumZ={19}
+                        minimumZ={5}
+                        flipY={false}
+                        zIndex={-1}
+                    />
+
+                    {/* Radius circle */}
+                    <Circle
+                        center={selectedCoordinate}
+                        radius={radius * 1000} // Convert km to meters
+                        strokeColor={tintColor}
+                        strokeWidth={2}
+                        fillColor="rgba(0, 122, 255, 0.12)"
+                    />
+                </MapView>
+
+                {/* Fixed Center Pin Overlay */}
+                <View style={styles.centerPinContainer} pointerEvents="none">
+                    <View style={[styles.centerPinDot, { backgroundColor: tintColor }]} />
+                </View>
 
                 {/* Top Bar */}
                 <View style={[styles.topBar, { paddingTop: insets.top + 12 }]} pointerEvents="box-none">
@@ -251,6 +284,26 @@ const styles = StyleSheet.create({
     },
     map: {
         ...StyleSheet.absoluteFillObject,
+    },
+    centerPinContainer: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginLeft: -8,
+        marginTop: -8,
+        zIndex: 5,
+    },
+    centerPinDot: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        borderWidth: 3,
+        borderColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
     },
     topBar: {
         position: 'absolute',

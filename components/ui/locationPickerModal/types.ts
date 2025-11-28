@@ -18,10 +18,3 @@ export interface Coordinates {
     latitude: number;
     longitude: number;
 }
-
-export interface MapMessage {
-    type: 'mapReady' | 'mapMoved' | 'radiusChanged';
-    lat?: number;
-    lng?: number;
-    radius?: number;
-}
