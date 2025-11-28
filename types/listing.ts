@@ -11,6 +11,8 @@ export interface Listing {
     images: string[] | null;
     status: 'active' | 'sold' | 'inactive';
     location: string;
+    location_lat: number | null;
+    location_lon: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -27,6 +29,8 @@ export interface CreateListingDTO {
     images: string[] | null;
     status: 'active' | 'sold' | 'inactive';
     location: string;
+    location_lat: number | null;
+    location_lon: number | null;
     created_at: string;
     updated_at: string;
 }
