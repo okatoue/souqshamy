@@ -9,11 +9,11 @@ import { Dimensions, Image, ImageSourcePropType, Pressable, StyleSheet, Text, To
 
 // Import custom category icons
 import BuyAndSellIcon from '@/assets/images/BuyAndSell.png';
-import CarsIcon from '@/assets/images/cars.png';
-import RealEstateIcon from '@/assets/images/realEstate.png';
-import JobsIcon from '@/assets/images/jobs.png';
-import ServicesIcon from '@/assets/images/services.png';
-import PetsIcon from '@/assets/images/pets.png';
+import CarsIcon from '@/assets/images/Cars.png';
+import JobsIcon from '@/assets/images/Jobs.png';
+import PetsIcon from '@/assets/images/Pets.png';
+import RealEstateIcon from '@/assets/images/RealEstate.png';
+import ServicesIcon from '@/assets/images/Services.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     iconContainer: {
-        width: 70,
+        width: 30,
         height: 70,
         borderRadius: 35,
         borderWidth: 1,
