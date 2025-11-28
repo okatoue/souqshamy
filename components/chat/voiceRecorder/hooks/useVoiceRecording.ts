@@ -18,59 +18,120 @@ interface UseVoiceRecordingResult {
     sendRecording: () => Promise<void>;
 }
 
+const RECORDING_OPTIONS = RecordingPresets.HIGH_QUALITY;
+
 export function useVoiceRecording({
     onSend,
     onCancel,
 }: UseVoiceRecordingOptions): UseVoiceRecordingResult {
     const [recordingState, setRecordingState] = useState<RecordingState>('idle');
     const [duration, setDuration] = useState(0);
-    const [permissionGranted, setPermissionGranted] = useState(false);
-    const [pendingSend, setPendingSend] = useState(false);
 
-    const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-    const durationInterval = useRef<NodeJS.Timeout | null>(null);
-    const savedDuration = useRef(0);
+    const audioRecorder = useAudioRecorder(RECORDING_OPTIONS);
+    const durationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+    const isMounted = useRef(true);
+    const pendingAction = useRef<'send' | 'cancel' | null>(null);
+    const recordedDuration = useRef(0);
 
-    const requestPermissions = useCallback(async () => {
-        try {
-            const status = await AudioModule.requestRecordingPermissionsAsync();
-            setPermissionGranted(status.granted);
-            return status.granted;
-        } catch (error) {
-            console.error('Error requesting permissions:', error);
-            return false;
+    // Track mounted state for cleanup
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
+
+    // Clear duration interval helper
+    const clearDurationInterval = useCallback(() => {
+        if (durationInterval.current) {
+            clearInterval(durationInterval.current);
+            durationInterval.current = null;
         }
     }, []);
 
-    // Request permissions on mount
-    useEffect(() => {
-        requestPermissions();
-        return () => {
-            if (durationInterval.current) {
-                clearInterval(durationInterval.current);
+    // Start duration tracking
+    const startDurationTracking = useCallback(() => {
+        clearDurationInterval();
+        durationInterval.current = setInterval(() => {
+            if (isMounted.current) {
+                setDuration(prev => {
+                    recordedDuration.current = prev + 1;
+                    return prev + 1;
+                });
             }
-        };
-    }, [requestPermissions]);
+        }, 1000);
+    }, [clearDurationInterval]);
 
-    const handleSendWithUri = useCallback(async (uri: string) => {
-        setPendingSend(false);
+    // Copy file to stable location to prevent race conditions with temp file cleanup
+    const copyToStableLocation = useCallback(async (sourceUri: string): Promise<string> => {
+        const filename = `voice_${Date.now()}.m4a`;
+        const destUri = `${FileSystem.cacheDirectory}${filename}`;
 
         try {
-            const success = await onSend(uri, savedDuration.current);
+            await FileSystem.copyAsync({ from: sourceUri, to: destUri });
+            return destUri;
+        } catch {
+            // If copy fails, use original URI
+            return sourceUri;
+        }
+    }, []);
 
+    // Handle the recorded file after stopping
+    const processRecordedFile = useCallback(async (uri: string, action: 'send' | 'cancel') => {
+        if (action === 'cancel') {
+            // Clean up and reset
+            try {
+                await FileSystem.deleteAsync(uri, { idempotent: true });
+            } catch {
+                // Ignore cleanup errors
+            }
+
+            if (isMounted.current) {
+                setRecordingState('idle');
+                setDuration(0);
+                recordedDuration.current = 0;
+            }
+            onCancel();
+            return;
+        }
+
+        // Action is 'send'
+        if (isMounted.current) {
+            setRecordingState('sending');
+        }
+
+        try {
+            // Verify file exists and has content
+            const fileInfo = await FileSystem.getInfoAsync(uri);
+            if (!fileInfo.exists) {
+                throw new Error('Recording file not found');
+            }
+
+            // Copy to stable location
+            const stableUri = await copyToStableLocation(uri);
+
+            // Reset audio mode for playback
             await AudioModule.setAudioModeAsync({
                 allowsRecording: false,
                 playsInSilentMode: true,
             });
 
-            if (success) {
-                setRecordingState('idle');
-                setDuration(0);
-            } else {
-                setRecordingState('paused');
+            const success = await onSend(stableUri, recordedDuration.current);
+
+            if (isMounted.current) {
+                if (success) {
+                    setRecordingState('idle');
+                    setDuration(0);
+                    recordedDuration.current = 0;
+                } else {
+                    // Keep in paused state so user can retry
+                    setRecordingState('paused');
+                }
             }
         } catch (error) {
-            console.error('Error sending recording:', error);
+            console.error('Error processing recording:', error);
+
+            // Reset audio mode even on error
             try {
                 await AudioModule.setAudioModeAsync({
                     allowsRecording: false,
@@ -79,154 +140,157 @@ export function useVoiceRecording({
             } catch {
                 // Ignore
             }
-            setRecordingState('paused');
+
+            if (isMounted.current) {
+                setRecordingState('paused');
+            }
         }
-    }, [onSend]);
+    }, [onSend, onCancel, copyToStableLocation]);
 
-    // Watch for URI to become available after stopping
+    // Watch for recording state changes from expo-audio
     useEffect(() => {
-        const handleUri = async () => {
-            if (pendingSend && audioRecorder.uri && !audioRecorder.isRecording) {
-                const tempUri = audioRecorder.uri;
+        // When recording stops and we have a URI, process based on pending action
+        if (!audioRecorder.isRecording && audioRecorder.uri && pendingAction.current) {
+            const action = pendingAction.current;
+            const uri = audioRecorder.uri;
+            pendingAction.current = null;
 
-                // Poll for file existence
-                let fileExists = false;
-                let attempts = 0;
-                const maxAttempts = 30;
+            processRecordedFile(uri, action);
+        }
+    }, [audioRecorder.isRecording, audioRecorder.uri, processRecordedFile]);
 
-                while (!fileExists && attempts < maxAttempts) {
-                    try {
-                        const fileInfo = await FileSystem.getInfoAsync(tempUri);
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            clearDurationInterval();
 
-                        if (fileInfo.exists && (fileInfo as any).size && (fileInfo as any).size > 0) {
-                            fileExists = true;
-                        } else {
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            attempts++;
-                        }
-                    } catch {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        attempts++;
-                    }
-                }
-
-                if (!fileExists) {
-                    setPendingSend(false);
-                    setRecordingState('paused');
-                    return;
-                }
-
+            // Stop recording if still active
+            if (audioRecorder.isRecording) {
                 try {
-                    const safeUri = `${FileSystem.cacheDirectory}voice_${Date.now()}.m4a`;
-                    await FileSystem.copyAsync({ from: tempUri, to: safeUri });
-                    handleSendWithUri(safeUri);
+                    audioRecorder.stop();
                 } catch {
-                    handleSendWithUri(tempUri);
+                    // Ignore cleanup errors
                 }
             }
-        };
 
-        handleUri();
-    }, [audioRecorder.uri, audioRecorder.isRecording, pendingSend, handleSendWithUri]);
+            // Reset audio mode
+            AudioModule.setAudioModeAsync({
+                allowsRecording: false,
+                playsInSilentMode: true,
+            }).catch(() => {
+                // Ignore
+            });
+        };
+    }, [audioRecorder, clearDurationInterval]);
 
     const startRecording = useCallback(async () => {
-        let hasPermission = permissionGranted;
-        if (!hasPermission) {
-            hasPermission = await requestPermissions();
-            if (!hasPermission) return;
-        }
-
         try {
-            setDuration(0);
-            setPendingSend(false);
+            // Request permissions
+            const permissionStatus = await AudioModule.requestRecordingPermissionsAsync();
+            if (!permissionStatus.granted) {
+                console.warn('Recording permission not granted');
+                return;
+            }
 
+            // Reset state
+            setDuration(0);
+            recordedDuration.current = 0;
+            pendingAction.current = null;
+
+            // Configure audio mode for recording
             await AudioModule.setAudioModeAsync({
                 allowsRecording: true,
                 playsInSilentMode: true,
             });
 
+            // Prepare and start recording
             await audioRecorder.prepareToRecordAsync();
             audioRecorder.record();
-            setRecordingState('recording');
 
-            durationInterval.current = setInterval(() => {
-                setDuration(prev => prev + 1);
-            }, 1000);
+            setRecordingState('recording');
+            startDurationTracking();
         } catch (error) {
             console.error('Error starting recording:', error);
+
+            // Reset audio mode on error
+            try {
+                await AudioModule.setAudioModeAsync({
+                    allowsRecording: false,
+                    playsInSilentMode: true,
+                });
+            } catch {
+                // Ignore
+            }
         }
-    }, [permissionGranted, requestPermissions, audioRecorder]);
+    }, [audioRecorder, startDurationTracking]);
 
     const pauseRecording = useCallback(async () => {
         try {
             audioRecorder.pause();
+            clearDurationInterval();
             setRecordingState('paused');
-
-            if (durationInterval.current) {
-                clearInterval(durationInterval.current);
-                durationInterval.current = null;
-            }
         } catch (error) {
             console.error('Error pausing recording:', error);
         }
-    }, [audioRecorder]);
+    }, [audioRecorder, clearDurationInterval]);
 
     const resumeRecording = useCallback(async () => {
         try {
             audioRecorder.record();
             setRecordingState('recording');
-
-            durationInterval.current = setInterval(() => {
-                setDuration(prev => prev + 1);
-            }, 1000);
+            startDurationTracking();
         } catch (error) {
             console.error('Error resuming recording:', error);
         }
-    }, [audioRecorder]);
+    }, [audioRecorder, startDurationTracking]);
 
     const cancelRecording = useCallback(async () => {
+        clearDurationInterval();
+
+        if (audioRecorder.isRecording) {
+            // Set pending action and stop - will be processed in useEffect
+            pendingAction.current = 'cancel';
+            audioRecorder.stop();
+        } else if (audioRecorder.uri) {
+            // Already stopped, process immediately
+            await processRecordedFile(audioRecorder.uri, 'cancel');
+        } else {
+            // No recording, just reset
+            setRecordingState('idle');
+            setDuration(0);
+            recordedDuration.current = 0;
+            onCancel();
+        }
+
+        // Reset audio mode
         try {
-            if (durationInterval.current) {
-                clearInterval(durationInterval.current);
-                durationInterval.current = null;
-            }
-
-            if (audioRecorder.isRecording) {
-                audioRecorder.stop();
-            }
-
             await AudioModule.setAudioModeAsync({
                 allowsRecording: false,
                 playsInSilentMode: true,
             });
-
-            setRecordingState('idle');
-            setDuration(0);
-            setPendingSend(false);
-            onCancel();
-        } catch (error) {
-            console.error('Error canceling recording:', error);
+        } catch {
+            // Ignore
         }
-    }, [audioRecorder, onCancel]);
+    }, [audioRecorder, clearDurationInterval, onCancel, processRecordedFile]);
 
     const sendRecording = useCallback(async () => {
-        try {
-            setRecordingState('sending');
-
-            if (durationInterval.current) {
-                clearInterval(durationInterval.current);
-                durationInterval.current = null;
-            }
-
-            savedDuration.current = duration;
-            setPendingSend(true);
-            audioRecorder.stop();
-        } catch (error) {
-            console.error('Error stopping recording:', error);
-            setRecordingState('paused');
-            setPendingSend(false);
+        if (duration === 0 && recordedDuration.current === 0) {
+            // Nothing to send
+            return;
         }
-    }, [duration, audioRecorder]);
+
+        clearDurationInterval();
+        setRecordingState('sending');
+
+        if (audioRecorder.isRecording) {
+            // Set pending action and stop - will be processed in useEffect
+            pendingAction.current = 'send';
+            audioRecorder.stop();
+        } else if (audioRecorder.uri) {
+            // Already stopped (was paused), process immediately
+            await processRecordedFile(audioRecorder.uri, 'send');
+        }
+    }, [duration, audioRecorder, clearDurationInterval, processRecordedFile]);
 
     return {
         recordingState,
