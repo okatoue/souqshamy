@@ -2,12 +2,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
-  TouchableWithoutFeedback
+  StyleSheet
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -140,69 +138,68 @@ export default function ProductDetailsScreen() {
     location !== '';
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <SafeAreaView style={[styles.container, { backgroundColor }]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.container}
+    <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
+        <ProductHeader onBack={() => router.back()} />
+
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
-          <ProductHeader onBack={() => router.back()} />
+          <CategoryInfo
+            category={categoryName as string || 'Category'}
+            subcategory={subcategoryName as string || 'Subcategory'}
+            categoryIcon={categoryIcon as string}
+            title={title as string}
+          />
 
-          <ScrollView
-            style={styles.scrollContainer}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <CategoryInfo
-              category={categoryName as string || 'Category'}
-              subcategory={subcategoryName as string || 'Subcategory'}
-              categoryIcon={categoryIcon as string}
-              title={title as string}
-            />
+          <ImageUploadSection
+            images={images}
+            setImages={setImages}
+          />
 
-            <ImageUploadSection
-              images={images}
-              setImages={setImages}
-            />
+          <DescriptionSection
+            description={description}
+            setDescription={setDescription}
+          />
 
-            <DescriptionSection
-              description={description}
-              setDescription={setDescription}
-            />
+          <PriceSection
+            price={price}
+            currency={currency}
+            setPrice={setPrice}
+            setCurrency={setCurrency}
+          />
 
-            <PriceSection
-              price={price}
-              currency={currency}
-              setPrice={setPrice}
-              setCurrency={setCurrency}
-            />
+          <LocationSection
+            location={location}
+            onPress={() => setShowMapModal(true)}
+          />
 
-            <LocationSection
-              location={location}
-              onPress={() => setShowMapModal(true)}
-            />
+          <ContactSection
+            phoneNumber={phoneNumber}
+            setPhoneNumber={setPhoneNumber}
+          />
 
-            <ContactSection
-              phoneNumber={phoneNumber}
-              setPhoneNumber={setPhoneNumber}
-            />
+          <SubmitButton
+            onPress={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            loading={isSubmitting}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-            <SubmitButton
-              onPress={handleSubmit}
-              disabled={!isFormValid || isSubmitting}
-              loading={isSubmitting}
-            />
-          </ScrollView>
-        </KeyboardAvoidingView>
-
-        <MapModal
-          visible={showMapModal}
-          currentLocation={location}
-          onSelectLocation={handleLocationSelect}
-          onClose={() => setShowMapModal(false)}
-        />
-      </SafeAreaView>
-    </TouchableWithoutFeedback>
+      <MapModal
+        visible={showMapModal}
+        currentLocation={location}
+        onSelectLocation={handleLocationSelect}
+        onClose={() => setShowMapModal(false)}
+      />
+    </SafeAreaView>
   );
 }
 
