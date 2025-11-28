@@ -2,13 +2,18 @@ import categoriesData from '@/assets/categories.json';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { ReactNode, useRef } from 'react';
+import { useRef } from 'react';
 import { Dimensions, Image, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Import custom category icons
 import BuyAndSellIcon from '@/assets/images/BuyAndSell.png';
+import CarsIcon from '@/assets/images/cars.png';
+import RealEstateIcon from '@/assets/images/realEstate.png';
+import JobsIcon from '@/assets/images/jobs.png';
+import ServicesIcon from '@/assets/images/services.png';
+import PetsIcon from '@/assets/images/pets.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -19,8 +24,7 @@ const ITEM_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (ITEM_MARGIN * (GRID_COL
 interface CategoryDisplayItem {
     id: number;  // Numeric ID matching categories.json
     name: string;
-    icon?: ReactNode;  // Vector icon (optional if customImage is provided)
-    customImage?: ImageSourcePropType;  // Custom PNG image (takes precedence over icon)
+    image: ImageSourcePropType;  // Custom PNG image for category
 }
 
 // Map category IDs to their icons (IDs match categories.json)
@@ -28,39 +32,37 @@ const categoryDisplayData: CategoryDisplayItem[] = [
     {
         id: 1,  // Buy & Sell
         name: 'Buy & Sell',
-        customImage: BuyAndSellIcon,  // Custom PNG icon
+        image: BuyAndSellIcon,
     },
     {
         id: 2,  // Cars
         name: 'Cars',
-        icon: <FontAwesome5 name="car" size={36} color="white" />
+        image: CarsIcon,
     },
     {
         id: 3,  // Real Estate
         name: 'Real Estate',
-        icon: <MaterialCommunityIcons name="home" size={40} color="white" />
+        image: RealEstateIcon,
     },
     {
         id: 4,  // Jobs
         name: 'Jobs',
-        icon: <MaterialIcons name="work" size={40} color="white" />
+        image: JobsIcon,
     },
     {
         id: 5,  // Services
         name: 'Services',
-        icon: <MaterialIcons name="build" size={40} color="white" />
+        image: ServicesIcon,
     },
     {
         id: 6,  // Pets
         name: 'Pets',
-        icon: <MaterialCommunityIcons name="paw" size={40} color="white" />
+        image: PetsIcon,
     }
 ];
 
 export function CategoriesList() {
     const textColor = useThemeColor({}, 'text');
-    const iconContainerBg = useThemeColor({ light: 'rgba(0,0,0,0.05)', dark: 'rgba(255, 255, 255, 0.1)' }, 'background');
-    const iconContainerBorder = useThemeColor({ light: 'rgba(0,0,0,0.1)', dark: 'rgba(255, 255, 255, 0.3)' }, 'icon');
     const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
 
     const bottomSheetRef = useRef<CategoryBottomSheetRefProps>(null);
@@ -116,17 +118,11 @@ export function CategoriesList() {
                                 styles.categoryButton,
                                 pressed && styles.categoryButtonPressed
                             ]}>
-                            <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
-                                {category.customImage ? (
-                                    <Image
-                                        source={category.customImage}
-                                        style={styles.customIcon}
-                                        resizeMode="contain"
-                                    />
-                                ) : (
-                                    category.icon
-                                )}
-                            </View>
+                            <Image
+                                source={category.image}
+                                style={styles.categoryImage}
+                                resizeMode="contain"
+                            />
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
                     ))}
@@ -142,17 +138,11 @@ export function CategoriesList() {
                                 styles.categoryButton,
                                 pressed && styles.categoryButtonPressed
                             ]}>
-                            <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
-                                {category.customImage ? (
-                                    <Image
-                                        source={category.customImage}
-                                        style={styles.customIcon}
-                                        resizeMode="contain"
-                                    />
-                                ) : (
-                                    category.icon
-                                )}
-                            </View>
+                            <Image
+                                source={category.image}
+                                style={styles.categoryImage}
+                                resizeMode="contain"
+                            />
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
                     ))}
@@ -216,9 +206,10 @@ const styles = StyleSheet.create({
         height: 100,
     },
     categoryName: {
-        fontSize: 12,
-        fontWeight: '500',
+        fontSize: 14,
+        fontWeight: 'bold',
         textAlign: 'center',
+        marginTop: SPACING.xs,
     },
     // Bottom sheet item styles
     sheetItem: {
