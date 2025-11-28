@@ -197,31 +197,44 @@ export function useVoiceRecording({
 
         try {
             // Request permissions
+            console.log('[VoiceRecording] Requesting permissions...');
             const permissionStatus = await AudioModule.requestRecordingPermissionsAsync();
             if (!permissionStatus.granted) {
-                console.warn('Recording permission not granted');
+                console.warn('[VoiceRecording] Permission denied:', permissionStatus);
                 if (isMounted.current) {
                     setRecordingState('idle');
                 }
                 return;
             }
+            console.log('[VoiceRecording] Permission granted');
 
             // Configure audio mode for recording
+            console.log('[VoiceRecording] Setting audio mode...');
             await AudioModule.setAudioModeAsync({
                 allowsRecording: true,
                 playsInSilentMode: true,
             });
 
             // Prepare and start recording
+            console.log('[VoiceRecording] Preparing recorder...');
             await audioRecorder.prepareToRecordAsync();
+            console.log('[VoiceRecording] Starting recording...');
             audioRecorder.record();
 
             if (isMounted.current) {
+                console.log('[VoiceRecording] Recording started successfully');
                 setRecordingState('recording');
                 startDurationTracking();
+            } else {
+                console.warn('[VoiceRecording] Component unmounted during recording start');
             }
         } catch (error) {
-            console.error('Error starting recording:', error);
+            console.error('[VoiceRecording] Error starting recording:', error);
+            console.error('[VoiceRecording] Error details:', {
+                name: (error as Error)?.name,
+                message: (error as Error)?.message,
+                stack: (error as Error)?.stack,
+            });
 
             // Reset state on error
             if (isMounted.current) {
