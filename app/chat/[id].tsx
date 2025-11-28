@@ -33,7 +33,7 @@ export default function ChatScreen() {
     const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
     const [conversationLoading, setConversationLoading] = useState(true);
     const [messageText, setMessageText] = useState('');
-    const [isRecording, setIsRecording] = useState(false);
+    const [isRecordingActive, setIsRecordingActive] = useState(false);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -116,13 +116,17 @@ export default function ChatScreen() {
     const handleVoiceSend = useCallback(async (uri: string, duration: number): Promise<boolean> => {
         const success = await sendAudioMessage(uri, duration);
         if (success) {
-            setIsRecording(false);
+            setIsRecordingActive(false);
         }
         return success;
     }, [sendAudioMessage]);
 
     const handleVoiceCancel = useCallback(() => {
-        setIsRecording(false);
+        setIsRecordingActive(false);
+    }, []);
+
+    const handleRecordingStateChange = useCallback((isActive: boolean) => {
+        setIsRecordingActive(isActive);
     }, []);
 
     const handleListingPress = () => {
@@ -321,15 +325,20 @@ export default function ChatScreen() {
 
                 {/* Input */}
                 <View style={[styles.inputContainer, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
-                    {isRecording ? (
-                        <VoiceRecorder
-                            onSend={handleVoiceSend}
-                            onCancel={handleVoiceCancel}
-                            accentColor="#007AFF"
-                            backgroundColor={inputBg}
-                            textColor={textColor}
-                        />
+                    {isRecordingActive ? (
+                        /* When recording is active, show only the recording controls */
+                        <View style={styles.recordingContainer}>
+                            <VoiceRecorder
+                                onSend={handleVoiceSend}
+                                onCancel={handleVoiceCancel}
+                                onStateChange={handleRecordingStateChange}
+                                accentColor="#007AFF"
+                                backgroundColor={inputBg}
+                                textColor={textColor}
+                            />
+                        </View>
                     ) : (
+                        /* Normal input mode: TextInput + action button */
                         <>
                             <TextInput
                                 style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
@@ -349,13 +358,14 @@ export default function ChatScreen() {
                                     <Ionicons name="send" size={20} color="white" />
                                 </Pressable>
                             ) : (
-                                <Pressable
-                                    style={styles.micButton}
-                                    onPress={() => setIsRecording(true)}
-                                    disabled={isSending}
-                                >
-                                    <Ionicons name="mic" size={22} color="white" />
-                                </Pressable>
+                                <VoiceRecorder
+                                    onSend={handleVoiceSend}
+                                    onCancel={handleVoiceCancel}
+                                    onStateChange={handleRecordingStateChange}
+                                    accentColor="#007AFF"
+                                    backgroundColor={inputBg}
+                                    textColor={textColor}
+                                />
                             )}
                         </>
                     )}
@@ -533,14 +543,10 @@ const styles = StyleSheet.create({
     sendButtonDisabled: {
         backgroundColor: '#ccc',
     },
-    micButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#007AFF',
-        justifyContent: 'center',
+    recordingContainer: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
-        marginLeft: 8,
     },
     audioMessageTime: {
         fontSize: 11,

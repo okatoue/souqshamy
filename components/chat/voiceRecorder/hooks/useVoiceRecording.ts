@@ -162,7 +162,11 @@ export function useVoiceRecording({
     // Cleanup on unmount
     useEffect(() => {
         return () => {
+            // Clear interval first
             clearDurationInterval();
+
+            // Clear pending action to prevent stale processing
+            pendingAction.current = null;
 
             // Wrap in try-catch because the native recorder object may already be destroyed
             try {
@@ -185,18 +189,22 @@ export function useVoiceRecording({
     }, [audioRecorder, clearDurationInterval]);
 
     const startRecording = useCallback(async () => {
+        // Set preparing state immediately to prevent double-press
+        setRecordingState('preparing');
+        setDuration(0);
+        recordedDuration.current = 0;
+        pendingAction.current = null;
+
         try {
             // Request permissions
             const permissionStatus = await AudioModule.requestRecordingPermissionsAsync();
             if (!permissionStatus.granted) {
                 console.warn('Recording permission not granted');
+                if (isMounted.current) {
+                    setRecordingState('idle');
+                }
                 return;
             }
-
-            // Reset state
-            setDuration(0);
-            recordedDuration.current = 0;
-            pendingAction.current = null;
 
             // Configure audio mode for recording
             await AudioModule.setAudioModeAsync({
@@ -208,10 +216,17 @@ export function useVoiceRecording({
             await audioRecorder.prepareToRecordAsync();
             audioRecorder.record();
 
-            setRecordingState('recording');
-            startDurationTracking();
+            if (isMounted.current) {
+                setRecordingState('recording');
+                startDurationTracking();
+            }
         } catch (error) {
             console.error('Error starting recording:', error);
+
+            // Reset state on error
+            if (isMounted.current) {
+                setRecordingState('idle');
+            }
 
             // Reset audio mode on error
             try {
