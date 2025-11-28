@@ -66,7 +66,7 @@ export default function PasswordScreen() {
           const cleanedPhone = cleanPhoneNumber(emailOrPhone);
           await signUp(undefined, password, cleanedPhone, displayName.trim());
           Alert.alert('Account Created!', 'Your account has been created successfully.', [
-            { text: 'OK', onPress: () => router.replace('/(tabs)') },
+            { text: 'OK', onPress: () => router.replace('/(tabs)/index') },
           ]);
         } else {
           await signUp(emailOrPhone, password, undefined, displayName.trim());
@@ -83,7 +83,7 @@ export default function PasswordScreen() {
         } else {
           await signIn(emailOrPhone, password);
         }
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/index');
       }
     } catch (error: any) {
       // Error is handled in auth context

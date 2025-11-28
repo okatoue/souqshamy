@@ -47,7 +47,7 @@ function RootLayoutNav() {
       }
 
       // Not in password reset flow, safe to redirect to main app
-      router.replace('/(tabs)');
+      router.replace('/(tabs)/index');
     }
   }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
 
