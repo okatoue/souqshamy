@@ -104,9 +104,8 @@ export default function ProductDetailsScreen() {
       images: images.length > 0 ? images : null,
       status: 'active' as const,
       location,
-      // You can also store coordinates in your database if needed
-      // location_lat: locationCoordinates.latitude,
-      // location_lon: locationCoordinates.longitude,
+      location_lat: locationCoordinates.latitude,
+      location_lon: locationCoordinates.longitude,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
