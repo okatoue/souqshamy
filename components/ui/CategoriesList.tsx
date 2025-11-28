@@ -5,7 +5,10 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ReactNode, useRef } from 'react';
-import { Dimensions, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+// Import custom category icons
+import BuyAndSellIcon from '@/assets/images/BuyAndSell.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -16,7 +19,8 @@ const ITEM_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (ITEM_MARGIN * (GRID_COL
 interface CategoryDisplayItem {
     id: number;  // Numeric ID matching categories.json
     name: string;
-    icon: ReactNode;
+    icon?: ReactNode;  // Vector icon (optional if customImage is provided)
+    customImage?: ImageSourcePropType;  // Custom PNG image (takes precedence over icon)
 }
 
 // Map category IDs to their icons (IDs match categories.json)
@@ -24,7 +28,7 @@ const categoryDisplayData: CategoryDisplayItem[] = [
     {
         id: 1,  // Buy & Sell
         name: 'Buy & Sell',
-        icon: <MaterialIcons name="shopping-cart" size={40} color="white" />
+        customImage: BuyAndSellIcon,  // Custom PNG icon
     },
     {
         id: 2,  // Cars
@@ -113,7 +117,15 @@ export function CategoriesList() {
                                 pressed && styles.categoryButtonPressed
                             ]}>
                             <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
-                                {category.icon}
+                                {category.customImage ? (
+                                    <Image
+                                        source={category.customImage}
+                                        style={styles.customIcon}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    category.icon
+                                )}
                             </View>
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
@@ -131,7 +143,15 @@ export function CategoriesList() {
                                 pressed && styles.categoryButtonPressed
                             ]}>
                             <View style={[styles.iconContainer, { backgroundColor: iconContainerBg, borderColor: iconContainerBorder }]}>
-                                {category.icon}
+                                {category.customImage ? (
+                                    <Image
+                                        source={category.customImage}
+                                        style={styles.customIcon}
+                                        resizeMode="contain"
+                                    />
+                                ) : (
+                                    category.icon
+                                )}
                             </View>
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
@@ -190,6 +210,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: SPACING.sm,
+    },
+    customIcon: {
+        width: 40,
+        height: 40,
     },
     categoryName: {
         fontSize: 12,
