@@ -15,111 +15,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
+import { useLocationSearch, useReverseGeocode } from '@/components/ui/locationPickerModal/hooks';
+import { MAP_HTML } from './mapHtml';
+
 interface MapModalProps {
     visible: boolean;
     currentLocation: string;
     onSelectLocation: (location: string, coordinates: { latitude: number; longitude: number }) => void;
     onClose: () => void;
 }
-
-interface SearchResult {
-    place_id: string;
-    display_name: string;
-    lat: string;
-    lon: string;
-}
-
-// Using OpenStreetMap.fr HOT tiles with Arabic labels + hard zoom lock
-const MAP_HTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { margin: 0; padding: 0; overflow: hidden; }
-    #map { height: 100vh; width: 100vw; }
-    .leaflet-control-attribution { display: none !important; }
-    .custom-marker {
-      background: #007AFF;
-      border: 3px solid white;
-      border-radius: 50%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-  </style>
-</head>
-<body>
-  <div id="map"></div>
-  <script>
-    var map, marker;
-    var isInitialized = false;
-    var MAX_ZOOM = 16;
-    var MIN_ZOOM = 5;
-    
-    function initMap(lat, lng) {
-      if (isInitialized) return;
-      isInitialized = true;
-      
-      map = L.map('map', { 
-        zoomControl: false,
-        attributionControl: false,
-        minZoom: MIN_ZOOM,
-        maxZoom: MAX_ZOOM,
-        bounceAtZoomLimits: false,
-        maxBoundsViscosity: 1.0
-      }).setView([lat, lng], 12);
-      
-      // OpenStreetMap French tiles - better international/Arabic label support
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: MAX_ZOOM,
-        minZoom: MIN_ZOOM
-      }).addTo(map);
-      
-      var markerIcon = L.divIcon({
-        className: 'custom-marker',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-      });
-      
-      marker = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
-      
-      // Hard zoom lock - prevent any zoom beyond limits
-      map.on('zoom', function() {
-        if (map.getZoom() > MAX_ZOOM) {
-          map.setZoom(MAX_ZOOM);
-        }
-        if (map.getZoom() < MIN_ZOOM) {
-          map.setZoom(MIN_ZOOM);
-        }
-      });
-      
-      map.on('click', function(e) {
-        var lat = e.latlng.lat;
-        var lng = e.latlng.lng;
-        
-        marker.setLatLng([lat, lng]);
-        
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'locationTapped',
-          lat: lat,
-          lng: lng
-        }));
-      });
-      
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'mapReady' }));
-    }
-    
-    function moveToLocation(lat, lng, zoom) {
-      if (!map) return;
-      marker.setLatLng([lat, lng]);
-      map.setView([lat, lng], Math.min(zoom || 12, MAX_ZOOM), { animate: true, duration: 0.3 });
-    }
-  </script>
-</body>
-</html>
-`;
 
 export default function MapModal({
     visible,
@@ -130,10 +34,6 @@ export default function MapModal({
     const insets = useSafeAreaInsets();
     const webViewRef = useRef<WebView>(null);
     const searchInputRef = useRef<TextInput>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [showSearchResults, setShowSearchResults] = useState(false);
     const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -142,6 +42,19 @@ export default function MapModal({
         longitude: 36.2765,
     });
     const [selectedLocationName, setSelectedLocationName] = useState(currentLocation || 'دمشق');
+
+    // Use shared hooks
+    const { reverseGeocode } = useReverseGeocode();
+    const {
+        searchQuery,
+        setSearchQuery,
+        searchResults,
+        isSearching,
+        showSearchResults,
+        setShowSearchResults,
+        searchLocation,
+        clearSearch,
+    } = useLocationSearch();
 
     // Theme colors
     const tintColor = useThemeColor({}, 'tint');
@@ -155,11 +68,10 @@ export default function MapModal({
         if (visible) {
             setSelectedLocationName(currentLocation || 'دمشق');
             setIsMapReady(false);
-            setSearchQuery('');
-            setShowSearchResults(false);
+            clearSearch();
             setIsSearchFocused(false);
         }
-    }, [visible]);
+    }, [visible, currentLocation, clearSearch]);
 
     // Initialize map when ready
     useEffect(() => {
@@ -171,29 +83,7 @@ export default function MapModal({
         }
     }, [isMapReady]);
 
-    // Reverse geocode function - Arabic language
-    const reverseGeocode = useCallback(async (lat: number, lng: number) => {
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`
-            );
-            if (response.ok) {
-                const data = await response.json();
-                const locationName = data.address?.city ||
-                    data.address?.town ||
-                    data.address?.village ||
-                    data.address?.suburb ||
-                    data.address?.county ||
-                    data.display_name?.split(',')[0] ||
-                    'الموقع المحدد';
-                setSelectedLocationName(locationName);
-            }
-        } catch (error) {
-            console.error('Reverse geocode error:', error);
-        }
-    }, []);
-
-    const handleWebViewMessage = useCallback((event: any) => {
+    const handleWebViewMessage = useCallback(async (event: any) => {
         try {
             const data = JSON.parse(event.nativeEvent.data);
 
@@ -202,57 +92,29 @@ export default function MapModal({
             } else if (data.type === 'locationTapped') {
                 setSelectedCoordinate({ latitude: data.lat, longitude: data.lng });
                 setSelectedLocationName('جاري التحميل...');
-                reverseGeocode(data.lat, data.lng);
+                const locationName = await reverseGeocode(data.lat, data.lng);
+                setSelectedLocationName(locationName);
             }
         } catch (error) {
             console.error('Error parsing WebView message:', error);
         }
     }, [reverseGeocode]);
 
-    // Search with Arabic results
-    const searchLocation = async () => {
-        if (!searchQuery.trim()) return;
-
-        setIsSearching(true);
-        setShowSearchResults(true);
-        Keyboard.dismiss();
-
-        try {
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?` +
-                `q=${encodeURIComponent(searchQuery)},سوريا&` +
-                `format=json&limit=5&` +
-                `bounded=1&` +
-                `viewbox=35.7,32.3,42.4,37.3&` +
-                `accept-language=ar`
-            );
-
-            if (response.ok) {
-                const data = await response.json();
-                setSearchResults(data);
-            }
-        } catch (error) {
-            console.error('Search error:', error);
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const selectSearchResult = useCallback((result: SearchResult) => {
+    const selectSearchResult = useCallback((result: { place_id: string; display_name: string; lat: string; lon: string }) => {
         const lat = parseFloat(result.lat);
         const lon = parseFloat(result.lon);
 
         setSelectedCoordinate({ latitude: lat, longitude: lon });
         setSelectedLocationName(result.display_name.split(',')[0]);
         setShowSearchResults(false);
-        setSearchQuery('');
+        clearSearch();
         setIsSearchFocused(false);
 
         webViewRef.current?.injectJavaScript(`
             moveToLocation(${lat}, ${lon}, 12);
             true;
         `);
-    }, []);
+    }, [setShowSearchResults, clearSearch]);
 
     const handleSearchFocus = () => {
         setIsSearchFocused(true);
@@ -265,8 +127,7 @@ export default function MapModal({
     };
 
     const handleClearSearch = () => {
-        setSearchQuery('');
-        setShowSearchResults(false);
+        clearSearch();
         setIsSearchFocused(false);
         Keyboard.dismiss();
     };
@@ -394,7 +255,7 @@ export default function MapModal({
                                 onPress={() => {
                                     setShowSearchResults(false);
                                     setIsSearchFocused(false);
-                                    setSearchQuery('');
+                                    clearSearch();
                                 }}
                             >
                                 <Text style={[styles.closeSearchText, { color: tintColor }]}>
