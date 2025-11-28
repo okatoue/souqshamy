@@ -41,8 +41,8 @@ export interface Message {
     audio_url?: string | null;
     /** Duration in seconds for audio messages */
     audio_duration?: number | null;
-    /** Message type: 'text' or 'audio' */
-    message_type?: 'text' | 'audio';
+    /** Message type: 'text' or 'voice' */
+    message_type?: 'text' | 'voice';
 }
 
 export interface CreateConversationDTO {
