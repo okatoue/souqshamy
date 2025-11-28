@@ -10,10 +10,10 @@ import { Dimensions, Image, ImageSourcePropType, Pressable, StyleSheet, Text, To
 // Import custom category icons
 import BuyAndSellIcon from '@/assets/images/BuyAndSell.png';
 import CarsIcon from '@/assets/images/Cars.png';
-import RealEstateIcon from '@/assets/images/RealEstate.png';
 import JobsIcon from '@/assets/images/Jobs.png';
-import ServicesIcon from '@/assets/images/Services.png';
 import PetsIcon from '@/assets/images/Pets.png';
+import RealEstateIcon from '@/assets/images/RealEstate.png';
+import ServicesIcon from '@/assets/images/Services.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
