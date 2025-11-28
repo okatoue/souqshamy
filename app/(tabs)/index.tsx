@@ -20,7 +20,6 @@ export default function HomeScreen() {
 
   const backgroundColor = useThemeColor({}, 'background');
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
-  const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
   const dividerColor = useThemeColor({}, 'border');
 
   // Consume pre-fetched data from global context
@@ -61,7 +60,7 @@ export default function HomeScreen() {
           rightAction={<Location />}
         />
 
-        <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
+        <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg }]}>
           <SearchBar
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -101,7 +100,6 @@ const styles = StyleSheet.create({
     marginLeft: 20,
     marginRight: 20,
     height: 50,
-    borderWidth: 1,
     paddingHorizontal: 16,
     borderRadius: 30,
     justifyContent: 'center',
