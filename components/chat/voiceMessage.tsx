@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer } from 'expo-audio';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -24,30 +24,13 @@ export function VoiceMessage({
     bubbleColor,
     textColor
 }: VoiceMessageProps) {
-    const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [playbackPosition, setPlaybackPosition] = useState(0);
-    const [playbackDuration, setPlaybackDuration] = useState(duration);
-
     const player = useAudioPlayer(audioUrl);
 
-    useEffect(() => {
-        // Update playback state based on player status
-        if (player.playing) {
-            setIsPlaying(true);
-            setIsLoading(false);
-        } else {
-            setIsPlaying(false);
-        }
-
-        // Update duration if available
-        if (player.duration && player.duration > 0) {
-            setPlaybackDuration(player.duration);
-        }
-
-        // Update position
-        setPlaybackPosition(player.currentTime || 0);
-    }, [player.playing, player.duration, player.currentTime]);
+    // Use player properties directly as the source of truth
+    const isPlaying = player.playing;
+    const playbackPosition = player.currentTime || 0;
+    const playbackDuration = player.duration > 0 ? player.duration : duration;
 
     const togglePlayback = async () => {
         if (isLoading) return;
@@ -58,13 +41,15 @@ export function VoiceMessage({
             } else {
                 setIsLoading(true);
                 // If at the end, seek to beginning
-                if (player.currentTime >= player.duration - 0.1) {
+                if (player.duration > 0 && player.currentTime >= player.duration - 0.1) {
                     player.seekTo(0);
                 }
                 player.play();
             }
         } catch (error) {
             console.error('Error toggling playback:', error);
+        } finally {
+            // Always reset loading state to prevent stuck spinner
             setIsLoading(false);
         }
     };
