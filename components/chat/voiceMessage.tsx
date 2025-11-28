@@ -10,19 +10,25 @@ import {
 } from 'react-native';
 
 interface VoiceMessageProps {
+    messageId: string;
     audioUrl: string;
     duration: number;
     isOwnMessage: boolean;
     bubbleColor: string;
     textColor: string;
+    playingMessageId: string | null;
+    onPlay: (messageId: string | null) => void;
 }
 
 export function VoiceMessage({
+    messageId,
     audioUrl,
     duration,
     isOwnMessage,
     bubbleColor,
-    textColor
+    textColor,
+    playingMessageId,
+    onPlay
 }: VoiceMessageProps) {
     const [isLoading, setIsLoading] = useState(false);
     // Reactive state for player status - updated via event listener
@@ -35,21 +41,45 @@ export function VoiceMessage({
     // Subscribe to player status updates for reactive UI
     useEffect(() => {
         const subscription = player.addListener('playbackStatusUpdate', (status: AudioPlayer) => {
-            setIsPlaying(status.playing);
+            const wasPlaying = isPlaying;
+            const nowPlaying = status.playing;
+
+            setIsPlaying(nowPlaying);
             setCurrentTime(status.currentTime || 0);
             if (status.duration && status.duration > 0) {
                 setAudioDuration(status.duration);
             }
+
             // Clear loading state when player starts playing
-            if (status.playing) {
+            if (nowPlaying) {
                 setIsLoading(false);
+            }
+
+            // Notify parent when playback starts (for exclusive playback)
+            if (!wasPlaying && nowPlaying) {
+                onPlay(messageId);
+            }
+
+            // Notify parent when playback stops naturally
+            if (wasPlaying && !nowPlaying) {
+                // Only clear if we're still the active player
+                if (playingMessageId === messageId) {
+                    onPlay(null);
+                }
             }
         });
 
         return () => {
             subscription.remove();
         };
-    }, [player]);
+    }, [player, messageId, isPlaying, playingMessageId, onPlay]);
+
+    // Pause this player if another message starts playing
+    useEffect(() => {
+        if (playingMessageId !== null && playingMessageId !== messageId && isPlaying) {
+            player.pause();
+        }
+    }, [playingMessageId, messageId, isPlaying, player]);
 
     const togglePlayback = async () => {
         if (isLoading) return;
