@@ -2,15 +2,26 @@ import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocationFilter } from './useLocationFilter';
 
 interface UseCategoryListingsParams {
     categoryId: string | undefined;
     subcategoryId?: string | null;
 }
 
-const getCacheKey = (categoryId: string, subcategoryId?: string | null) => {
-    const base = `@category_listings_${categoryId}`;
-    return subcategoryId ? `${base}_${subcategoryId}` : base;
+const getCacheKey = (
+    categoryId: string,
+    subcategoryId?: string | null,
+    locationKey?: string
+) => {
+    let key = `@category_listings_${categoryId}`;
+    if (subcategoryId) {
+        key += `_${subcategoryId}`;
+    }
+    if (locationKey) {
+        key += `_${locationKey}`;
+    }
+    return key;
 };
 
 // Cache expiry time (5 minutes) - category listings change more frequently
@@ -27,12 +38,27 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
     const [error, setError] = useState<Error | null>(null);
     const isInitialLoad = useRef(true);
 
+    // Get location filter for bounding box queries
+    const { locationFilter, getBoundingBox, isLoading: isLocationLoading } = useLocationFilter();
+
+    // Create a stable location cache key based on bounding box
+    const getLocationCacheKey = useCallback(() => {
+        const boundingBox = getBoundingBox();
+        if (!boundingBox) {
+            // No location filter active (radius >= 100km)
+            return 'all';
+        }
+        // Round to 2 decimal places for cache key stability
+        return `${boundingBox.minLat.toFixed(2)}_${boundingBox.maxLat.toFixed(2)}_${boundingBox.minLon.toFixed(2)}_${boundingBox.maxLon.toFixed(2)}`;
+    }, [getBoundingBox]);
+
     // Load cached listings from AsyncStorage
     const loadCachedListings = useCallback(async (): Promise<Listing[] | null> => {
         if (!categoryId) return null;
 
         try {
-            const cacheKey = getCacheKey(categoryId, subcategoryId);
+            const locationKey = getLocationCacheKey();
+            const cacheKey = getCacheKey(categoryId, subcategoryId, locationKey);
             const cachedData = await AsyncStorage.getItem(cacheKey);
 
             if (cachedData) {
@@ -48,14 +74,15 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
             console.error('Error loading cached category listings:', err);
         }
         return null;
-    }, [categoryId, subcategoryId]);
+    }, [categoryId, subcategoryId, getLocationCacheKey]);
 
     // Save listings to cache
     const saveCachedListings = useCallback(async (listingsToCache: Listing[]) => {
         if (!categoryId) return;
 
         try {
-            const cacheKey = getCacheKey(categoryId, subcategoryId);
+            const locationKey = getLocationCacheKey();
+            const cacheKey = getCacheKey(categoryId, subcategoryId, locationKey);
             const cacheData: CachedCategoryListings = {
                 listings: listingsToCache,
                 timestamp: Date.now()
@@ -64,7 +91,7 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
         } catch (err) {
             console.error('Error saving cached category listings:', err);
         }
-    }, [categoryId, subcategoryId]);
+    }, [categoryId, subcategoryId, getLocationCacheKey]);
 
     // Fetch listings from Supabase
     const fetchListings = useCallback(async (showLoading = false) => {
@@ -103,6 +130,21 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
                 }
             }
 
+            // Apply location-based bounding box filter for efficient database queries
+            // This filters listings at the database level, only fetching items within the selected radius
+            const boundingBox = getBoundingBox();
+            if (boundingBox) {
+                // Only apply location filter if bounding box is available (radius < 100km)
+                // Listings without coordinates (null) will be excluded when filtering is active
+                query = query
+                    .gte('location_lat', boundingBox.minLat)
+                    .lte('location_lat', boundingBox.maxLat)
+                    .gte('location_lon', boundingBox.minLon)
+                    .lte('location_lon', boundingBox.maxLon);
+            }
+            // When boundingBox is null (radius >= 100km), no location filter is applied
+            // This acts as a "show all listings" fallback
+
             const { data, error: fetchError } = await query;
 
             if (fetchError) {
@@ -121,11 +163,17 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
         } finally {
             setIsLoading(false);
         }
-    }, [categoryId, subcategoryId, saveCachedListings]);
+    }, [categoryId, subcategoryId, saveCachedListings, getBoundingBox]);
 
     // Initialize: load cache first, then refresh in background
+    // Also refetch when location filter changes
     useEffect(() => {
         const initialize = async () => {
+            // Wait for location filter to load before fetching
+            if (isLocationLoading) {
+                return;
+            }
+
             if (!categoryId) {
                 setIsLoading(false);
                 return;
@@ -150,7 +198,7 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
         };
 
         initialize();
-    }, [categoryId, subcategoryId, loadCachedListings, fetchListings]);
+    }, [categoryId, subcategoryId, loadCachedListings, fetchListings, isLocationLoading, locationFilter]);
 
     // Local search within loaded listings
     const searchListings = useCallback((searchQuery: string) => {
