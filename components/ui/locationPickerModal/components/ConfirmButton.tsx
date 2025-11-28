@@ -1,24 +1,32 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface ConfirmButtonProps {
     onPress: () => void;
+    loading?: boolean;
 }
 
-export function ConfirmButton({ onPress }: ConfirmButtonProps) {
+export function ConfirmButton({ onPress, loading = false }: ConfirmButtonProps) {
     const tintColor = useThemeColor({}, 'tint');
 
     return (
         <TouchableOpacity
             style={[styles.button, { backgroundColor: tintColor }]}
             onPress={onPress}
+            disabled={loading}
             accessibilityRole="button"
             accessibilityLabel="Confirm location"
         >
-            <Ionicons name="checkmark" size={22} color="white" style={styles.icon} />
-            <Text style={styles.text}>تطبيق الموقع</Text>
+            {loading ? (
+                <ActivityIndicator size="small" color="white" />
+            ) : (
+                <>
+                    <Ionicons name="checkmark" size={22} color="white" style={styles.icon} />
+                    <Text style={styles.text}>تطبيق الموقع</Text>
+                </>
+            )}
         </TouchableOpacity>
     );
 }

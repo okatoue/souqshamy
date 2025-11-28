@@ -41,6 +41,7 @@ export default function LocationPickerModal({
 
     const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [isConfirming, setIsConfirming] = useState(false);
 
     const [selectedCoordinate, setSelectedCoordinate] = useState<Coordinates>({
         latitude: currentCoordinates?.latitude || DEFAULT_COORDINATES.latitude,
@@ -72,6 +73,7 @@ export default function LocationPickerModal({
             setSliderValue(currentRadius || DEFAULT_RADIUS);
             isSlidingRef.current = false;
             setIsMapReady(false);
+            setIsConfirming(false);
             clearSearch();
             setIsSearchFocused(false);
             if (currentCoordinates) {
@@ -110,11 +112,18 @@ export default function LocationPickerModal({
                     setRadius(Math.round(newRadius));
                     setSliderValue(newRadius);
                 }
+            } else if (data.type === 'centerResponse' && data.lat !== undefined && data.lng !== undefined) {
+                // Received fresh coordinates from map - complete the confirm action
+                const freshCoordinates = { latitude: data.lat, longitude: data.lng };
+                setIsConfirming(false);
+                onConfirm(selectedLocationName, freshCoordinates, Math.round(radius));
+                onClose();
             }
         } catch (error) {
             console.error('Error parsing WebView message:', error);
+            setIsConfirming(false);
         }
-    }, [reverseGeocode]);
+    }, [reverseGeocode, selectedLocationName, radius, onConfirm, onClose]);
 
     const handleSliderStart = useCallback(() => {
         isSlidingRef.current = true;
@@ -178,9 +187,10 @@ export default function LocationPickerModal({
     }, [setShowSearchResults, clearSearch]);
 
     const handleConfirm = useCallback(() => {
-        onConfirm(selectedLocationName, selectedCoordinate, Math.round(radius));
-        onClose();
-    }, [selectedLocationName, selectedCoordinate, radius, onConfirm, onClose]);
+        // Request fresh coordinates from the map to avoid race condition with debounced updates
+        setIsConfirming(true);
+        webViewRef.current?.injectJavaScript(`getCenter(); true;`);
+    }, []);
 
     return (
         <Modal
@@ -238,7 +248,7 @@ export default function LocationPickerModal({
                         onSlidingComplete={handleSliderComplete}
                     />
 
-                    <ConfirmButton onPress={handleConfirm} />
+                    <ConfirmButton onPress={handleConfirm} loading={isConfirming} />
                 </View>
             </View>
         </Modal>
