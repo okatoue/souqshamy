@@ -1,3 +1,5 @@
+import { VoiceMessage } from '@/components/chat/voiceMessage';
+import { VoiceRecorder } from '@/components/chat/voiceRecorder';
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
@@ -8,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails, Message } from '@/types/chat';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -31,8 +33,9 @@ export default function ChatScreen() {
     const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
     const [conversationLoading, setConversationLoading] = useState(true);
     const [messageText, setMessageText] = useState('');
+    const [isRecording, setIsRecording] = useState(false);
 
-    const { messages, isLoading, isSending, sendMessage } = useMessages(conversationId);
+    const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
 
     const backgroundColor = useThemeColor({}, 'background');
@@ -110,6 +113,18 @@ export default function ChatScreen() {
         }
     };
 
+    const handleVoiceSend = useCallback(async (uri: string, duration: number): Promise<boolean> => {
+        const success = await sendAudioMessage(uri, duration);
+        if (success) {
+            setIsRecording(false);
+        }
+        return success;
+    }, [sendAudioMessage]);
+
+    const handleVoiceCancel = useCallback(() => {
+        setIsRecording(false);
+    }, []);
+
     const handleListingPress = () => {
         if (conversation?.listing?.id) {
             router.push(`/listing/${conversation.listing.id}`);
@@ -145,6 +160,7 @@ export default function ChatScreen() {
         const showDateHeader = index === 0 ||
             new Date(item.created_at).toDateString() !==
             new Date(messages[index - 1].created_at).toDateString();
+        const isAudioMessage = item.message_type === 'audio' && item.audio_url;
 
         return (
             <View>
@@ -159,25 +175,46 @@ export default function ChatScreen() {
                     styles.messageContainer,
                     isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer
                 ]}>
-                    <View style={[
-                        styles.messageBubble,
-                        isMyMessage
-                            ? { backgroundColor: myMessageBg }
-                            : { backgroundColor: otherMessageBg }
-                    ]}>
-                        <Text style={[
-                            styles.messageText,
-                            { color: isMyMessage ? 'white' : textColor }
+                    {isAudioMessage ? (
+                        <View>
+                            <VoiceMessage
+                                audioUrl={item.audio_url!}
+                                duration={item.audio_duration || 0}
+                                isOwnMessage={isMyMessage}
+                                bubbleColor={isMyMessage ? myMessageBg : otherMessageBg}
+                                textColor={isMyMessage ? 'white' : textColor}
+                            />
+                            <Text style={[
+                                styles.audioMessageTime,
+                                {
+                                    color: secondaryTextColor,
+                                    textAlign: isMyMessage ? 'right' : 'left'
+                                }
+                            ]}>
+                                {formatTime(item.created_at)}
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={[
+                            styles.messageBubble,
+                            isMyMessage
+                                ? { backgroundColor: myMessageBg }
+                                : { backgroundColor: otherMessageBg }
                         ]}>
-                            {item.content}
-                        </Text>
-                        <Text style={[
-                            styles.messageTime,
-                            { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
-                        ]}>
-                            {formatTime(item.created_at)}
-                        </Text>
-                    </View>
+                            <Text style={[
+                                styles.messageText,
+                                { color: isMyMessage ? 'white' : textColor }
+                            ]}>
+                                {item.content}
+                            </Text>
+                            <Text style={[
+                                styles.messageTime,
+                                { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
+                            ]}>
+                                {formatTime(item.created_at)}
+                            </Text>
+                        </View>
+                    )}
                 </View>
             </View>
         );
@@ -284,25 +321,44 @@ export default function ChatScreen() {
 
                 {/* Input */}
                 <View style={[styles.inputContainer, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
-                    <TextInput
-                        style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
-                        placeholder="Type a message..."
-                        placeholderTextColor={secondaryTextColor}
-                        value={messageText}
-                        onChangeText={setMessageText}
-                        multiline
-                        maxLength={1000}
-                    />
-                    <Pressable
-                        style={[
-                            styles.sendButton,
-                            !messageText.trim() && styles.sendButtonDisabled
-                        ]}
-                        onPress={handleSend}
-                        disabled={!messageText.trim() || isSending}
-                    >
-                        <Ionicons name="send" size={20} color="white" />
-                    </Pressable>
+                    {isRecording ? (
+                        <VoiceRecorder
+                            onSend={handleVoiceSend}
+                            onCancel={handleVoiceCancel}
+                            accentColor="#007AFF"
+                            backgroundColor={inputBg}
+                            textColor={textColor}
+                        />
+                    ) : (
+                        <>
+                            <TextInput
+                                style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
+                                placeholder="Type a message..."
+                                placeholderTextColor={secondaryTextColor}
+                                value={messageText}
+                                onChangeText={setMessageText}
+                                multiline
+                                maxLength={1000}
+                            />
+                            {messageText.trim() ? (
+                                <Pressable
+                                    style={styles.sendButton}
+                                    onPress={handleSend}
+                                    disabled={isSending}
+                                >
+                                    <Ionicons name="send" size={20} color="white" />
+                                </Pressable>
+                            ) : (
+                                <Pressable
+                                    style={styles.micButton}
+                                    onPress={() => setIsRecording(true)}
+                                    disabled={isSending}
+                                >
+                                    <Ionicons name="mic" size={22} color="white" />
+                                </Pressable>
+                            )}
+                        </>
+                    )}
                 </View>
             </KeyboardAvoidingView>
         </SafeAreaView>
@@ -476,5 +532,19 @@ const styles = StyleSheet.create({
     },
     sendButtonDisabled: {
         backgroundColor: '#ccc',
+    },
+    micButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#007AFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 8,
+    },
+    audioMessageTime: {
+        fontSize: 11,
+        marginTop: 4,
+        paddingHorizontal: 4,
     },
 });
