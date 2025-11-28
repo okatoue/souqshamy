@@ -32,7 +32,7 @@ export function ScreenHeader({
   const textColor = useThemeColor({}, 'text');
 
   return (
-    <View style={[styles.container, showBorder && { borderBottomWidth: 1, borderBottomColor: borderColor }]}>
+    <View style={[styles.container, showBorder ? { borderBottomWidth: 1, borderBottomColor: borderColor } : { borderBottomWidth: 0 }]}>
       <View style={styles.row}>
         {/* Left side: leftAction or title section */}
         {leftAction ? (
