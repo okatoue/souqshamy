@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useAudioPlayer } from 'expo-audio';
-import React, { useState } from 'react';
+import { AudioPlayer, useAudioPlayer } from 'expo-audio';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -25,12 +25,31 @@ export function VoiceMessage({
     textColor
 }: VoiceMessageProps) {
     const [isLoading, setIsLoading] = useState(false);
+    // Reactive state for player status - updated via event listener
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [audioDuration, setAudioDuration] = useState(duration);
+
     const player = useAudioPlayer(audioUrl);
 
-    // Use player properties directly as the source of truth
-    const isPlaying = player.playing;
-    const playbackPosition = player.currentTime || 0;
-    const playbackDuration = player.duration > 0 ? player.duration : duration;
+    // Subscribe to player status updates for reactive UI
+    useEffect(() => {
+        const subscription = player.addListener('playbackStatusUpdate', (status: AudioPlayer) => {
+            setIsPlaying(status.playing);
+            setCurrentTime(status.currentTime || 0);
+            if (status.duration && status.duration > 0) {
+                setAudioDuration(status.duration);
+            }
+            // Clear loading state when player starts playing
+            if (status.playing) {
+                setIsLoading(false);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [player]);
 
     const togglePlayback = async () => {
         if (isLoading) return;
@@ -42,14 +61,12 @@ export function VoiceMessage({
                 setIsLoading(true);
                 // If at the end, seek to beginning
                 if (player.duration > 0 && player.currentTime >= player.duration - 0.1) {
-                    player.seekTo(0);
+                    await player.seekTo(0);
                 }
                 player.play();
             }
         } catch (error) {
             console.error('Error toggling playback:', error);
-        } finally {
-            // Always reset loading state to prevent stuck spinner
             setIsLoading(false);
         }
     };
@@ -60,7 +77,7 @@ export function VoiceMessage({
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    const progress = playbackDuration > 0 ? (playbackPosition / playbackDuration) * 100 : 0;
+    const progress = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0;
 
     return (
         <View style={[styles.container, { backgroundColor: bubbleColor }]}>
@@ -110,9 +127,9 @@ export function VoiceMessage({
 
                 {/* Duration */}
                 <Text style={[styles.durationText, { color: textColor }]}>
-                    {isPlaying || playbackPosition > 0
-                        ? formatTime(playbackPosition)
-                        : formatTime(playbackDuration)
+                    {isPlaying || currentTime > 0
+                        ? formatTime(currentTime)
+                        : formatTime(audioDuration)
                     }
                 </Text>
             </View>
