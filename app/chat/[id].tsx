@@ -331,11 +331,33 @@ export default function ChatScreen() {
                     }
                 />
 
-                {/* Input */}
+                {/* Input - Single VoiceRecorder instance to prevent state reset */}
                 <View style={[styles.inputContainer, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
-                    {isRecordingActive ? (
-                        /* When recording is active, show only the recording controls */
-                        <View style={styles.recordingContainer}>
+                    {/* TextInput - hidden when recording */}
+                    {!isRecordingActive && (
+                        <TextInput
+                            style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
+                            placeholder="Type a message..."
+                            placeholderTextColor={secondaryTextColor}
+                            value={messageText}
+                            onChangeText={setMessageText}
+                            multiline
+                            maxLength={1000}
+                        />
+                    )}
+
+                    {/* Send button - only when there's text and not recording */}
+                    {!isRecordingActive && messageText.trim() ? (
+                        <Pressable
+                            style={styles.sendButton}
+                            onPress={handleSend}
+                            disabled={isSending}
+                        >
+                            <Ionicons name="send" size={20} color="white" />
+                        </Pressable>
+                    ) : (
+                        /* Single VoiceRecorder - always the same instance */
+                        <View style={isRecordingActive ? styles.recordingContainer : undefined}>
                             <VoiceRecorder
                                 onSend={handleVoiceSend}
                                 onCancel={handleVoiceCancel}
@@ -345,37 +367,6 @@ export default function ChatScreen() {
                                 textColor={textColor}
                             />
                         </View>
-                    ) : (
-                        /* Normal input mode: TextInput + action button */
-                        <>
-                            <TextInput
-                                style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
-                                placeholder="Type a message..."
-                                placeholderTextColor={secondaryTextColor}
-                                value={messageText}
-                                onChangeText={setMessageText}
-                                multiline
-                                maxLength={1000}
-                            />
-                            {messageText.trim() ? (
-                                <Pressable
-                                    style={styles.sendButton}
-                                    onPress={handleSend}
-                                    disabled={isSending}
-                                >
-                                    <Ionicons name="send" size={20} color="white" />
-                                </Pressable>
-                            ) : (
-                                <VoiceRecorder
-                                    onSend={handleVoiceSend}
-                                    onCancel={handleVoiceCancel}
-                                    onStateChange={handleRecordingStateChange}
-                                    accentColor="#007AFF"
-                                    backgroundColor={inputBg}
-                                    textColor={textColor}
-                                />
-                            )}
-                        </>
                     )}
                 </View>
             </KeyboardAvoidingView>
