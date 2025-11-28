@@ -192,18 +192,9 @@ const styles = StyleSheet.create({
     categoryButtonPressed: {
         opacity: 0.7,
     },
-    iconContainer: {
-        width: 30,
+    categoryImage: {
+        width: 70,
         height: 70,
-        borderRadius: 35,
-        borderWidth: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: SPACING.sm,
-    },
-    customIcon: {
-        width: 100,
-        height: 100,
     },
     categoryName: {
         fontSize: 14,
