@@ -58,6 +58,7 @@ export default function HomeScreen() {
         <ScreenHeader
           leftAction={<UserIcon />}
           rightAction={<Location />}
+          showBorder={false}
         />
 
         <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg }]}>

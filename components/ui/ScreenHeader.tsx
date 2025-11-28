@@ -16,6 +16,8 @@ export interface ScreenHeaderProps {
   rightAction?: ReactNode;
   /** Optional subtitle for item counts like "3 items" */
   subtitle?: string;
+  /** Whether to show the bottom border (default: true) */
+  showBorder?: boolean;
 }
 
 export function ScreenHeader({
@@ -24,12 +26,13 @@ export function ScreenHeader({
   leftAction,
   rightAction,
   subtitle,
+  showBorder = true,
 }: ScreenHeaderProps) {
   const borderColor = useThemeColor({}, 'border');
   const textColor = useThemeColor({}, 'text');
 
   return (
-    <View style={[styles.container, { borderBottomColor: borderColor }]}>
+    <View style={[styles.container, showBorder && { borderBottomWidth: 1, borderBottomColor: borderColor }]}>
       <View style={styles.row}>
         {/* Left side: leftAction or title section */}
         {leftAction ? (
@@ -67,7 +70,6 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
   },
   row: {
     flexDirection: 'row',
