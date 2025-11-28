@@ -160,7 +160,7 @@ export default function ChatScreen() {
         const showDateHeader = index === 0 ||
             new Date(item.created_at).toDateString() !==
             new Date(messages[index - 1].created_at).toDateString();
-        const isAudioMessage = item.message_type === 'audio' && item.audio_url;
+        const isAudioMessage = item.message_type === 'voice' && item.audio_url;
 
         return (
             <View>
