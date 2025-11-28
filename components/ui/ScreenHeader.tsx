@@ -76,7 +76,6 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
   },
   row: {
     flexDirection: 'row',
