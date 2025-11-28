@@ -34,6 +34,7 @@ export default function ChatScreen() {
     const [conversationLoading, setConversationLoading] = useState(true);
     const [messageText, setMessageText] = useState('');
     const [isRecordingActive, setIsRecordingActive] = useState(false);
+    const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -129,6 +130,10 @@ export default function ChatScreen() {
         setIsRecordingActive(isActive);
     }, []);
 
+    const handleAudioPlay = useCallback((messageId: string | null) => {
+        setPlayingMessageId(messageId);
+    }, []);
+
     const handleListingPress = () => {
         if (conversation?.listing?.id) {
             router.push(`/listing/${conversation.listing.id}`);
@@ -182,11 +187,14 @@ export default function ChatScreen() {
                     {isAudioMessage ? (
                         <View>
                             <VoiceMessage
+                                messageId={item.id}
                                 audioUrl={item.audio_url!}
                                 duration={item.audio_duration || 0}
                                 isOwnMessage={isMyMessage}
                                 bubbleColor={isMyMessage ? myMessageBg : otherMessageBg}
                                 textColor={isMyMessage ? 'white' : textColor}
+                                playingMessageId={playingMessageId}
+                                onPlay={handleAudioPlay}
                             />
                             <Text style={[
                                 styles.audioMessageTime,
