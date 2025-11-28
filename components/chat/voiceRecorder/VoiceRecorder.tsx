@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { MicButton, RecordingControls } from './components';
 import { usePulseAnimation, useVoiceRecording } from './hooks';
 import { VoiceRecorderProps } from './types';
@@ -6,6 +6,7 @@ import { VoiceRecorderProps } from './types';
 export function VoiceRecorder({
     onSend,
     onCancel,
+    onStateChange,
     accentColor = '#007AFF',
     backgroundColor = '#f5f5f5',
     textColor = '#000'
@@ -22,11 +23,23 @@ export function VoiceRecorder({
 
     const pulseAnim = usePulseAnimation(recordingState);
 
-    if (recordingState === 'idle') {
+    // Notify parent when recording becomes active/inactive
+    const prevIsActive = useRef(false);
+    useEffect(() => {
+        const isActive = recordingState === 'recording' || recordingState === 'paused' || recordingState === 'sending';
+        if (isActive !== prevIsActive.current) {
+            prevIsActive.current = isActive;
+            onStateChange?.(isActive);
+        }
+    }, [recordingState, onStateChange]);
+
+    // Show mic button during idle or preparing (with loading indicator when preparing)
+    if (recordingState === 'idle' || recordingState === 'preparing') {
         return (
             <MicButton
                 onPress={startRecording}
                 accentColor={accentColor}
+                isPreparing={recordingState === 'preparing'}
             />
         );
     }

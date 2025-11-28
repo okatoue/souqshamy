@@ -1,21 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
 interface MicButtonProps {
     onPress: () => void;
     accentColor: string;
+    isPreparing?: boolean;
 }
 
-export function MicButton({ onPress, accentColor }: MicButtonProps) {
+export function MicButton({ onPress, accentColor, isPreparing = false }: MicButtonProps) {
     return (
         <Pressable
             style={[styles.button, { backgroundColor: accentColor }]}
             onPress={onPress}
+            disabled={isPreparing}
             accessibilityRole="button"
-            accessibilityLabel="Start recording"
+            accessibilityLabel={isPreparing ? 'Preparing to record' : 'Start recording'}
         >
-            <Ionicons name="mic" size={22} color="white" />
+            {isPreparing ? (
+                <ActivityIndicator size="small" color="white" />
+            ) : (
+                <Ionicons name="mic" size={22} color="white" />
+            )}
         </Pressable>
     );
 }
