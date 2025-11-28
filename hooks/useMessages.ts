@@ -141,7 +141,7 @@ export function useMessages(conversationId: string | null) {
 
             // Upload to Supabase Storage
             const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('chat-audio')
+                .from('voice-messages')
                 .upload(filename, decode(base64), {
                     contentType: 'audio/mp4',
                     upsert: false,
@@ -151,7 +151,7 @@ export function useMessages(conversationId: string | null) {
 
             // Get public URL for the uploaded audio
             const { data: urlData } = supabase.storage
-                .from('chat-audio')
+                .from('voice-messages')
                 .getPublicUrl(uploadData.path);
 
             const audioUrl = urlData.publicUrl;
