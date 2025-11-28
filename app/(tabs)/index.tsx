@@ -55,7 +55,8 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-      <ScrollView keyboardShouldPersistTaps="handled">
+      {/* Fixed Header Section - stays at top */}
+      <ThemedView style={styles.fixedHeader}>
         <ScreenHeader
           leftAction={<UserIcon />}
           rightAction={<Location />}
@@ -74,7 +75,14 @@ export default function HomeScreen() {
             style={styles.searchBarContent}
           />
         </ThemedView>
+      </ThemedView>
 
+      {/* Scrollable Content Section */}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <ThemedView style={styles.titleContainer}>
           <ThemedText type="title">All Categories</ThemedText>
         </ThemedView>
@@ -89,16 +97,24 @@ export default function HomeScreen() {
           isLoading={isLoadingRecent}
           onClear={clearRecentlyViewed}
         />
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  fixedHeader: {
+    // Fixed header section - does not scroll
+  },
+  scrollContent: {
+    paddingBottom: 100, // Ensures last items are not cut off by tab bar
+  },
   searchContainer: {
     marginTop: 5,
-    marginBottom: 25,
+    marginBottom: 15,
     marginLeft: 20,
     marginRight: 20,
     height: 50,
@@ -108,9 +124,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   searchBarContent: {
-    flex: 1,
-  },
-  container: {
     flex: 1,
   },
   titleContainer: {
