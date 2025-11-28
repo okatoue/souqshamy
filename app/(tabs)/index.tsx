@@ -56,13 +56,18 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       {/* Fixed Header Section - stays at top */}
-      <ThemedView style={styles.fixedHeader}>
-        <ScreenHeader
-          leftAction={<UserIcon />}
-          rightAction={<Location />}
-          showBorder={false}
-        />
+      <ScreenHeader
+        leftAction={<UserIcon />}
+        rightAction={<Location />}
+        showBorder={false}
+      />
 
+      {/* Scrollable Content Section */}
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
           <SearchBar
             value={searchQuery}
@@ -75,14 +80,7 @@ export default function HomeScreen() {
             style={styles.searchBarContent}
           />
         </ThemedView>
-      </ThemedView>
 
-      {/* Scrollable Content Section */}
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
         <ThemedView style={styles.titleContainer}>
           <ThemedText type="title">All Categories</ThemedText>
         </ThemedView>
@@ -106,15 +104,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  fixedHeader: {
-    // Fixed header section - does not scroll
-  },
   scrollContent: {
     paddingBottom: 100, // Ensures last items are not cut off by tab bar
   },
   searchContainer: {
     marginTop: 5,
-    marginBottom: 15,
+    marginBottom: 25,
     marginLeft: 20,
     marginRight: 20,
     height: 50,
