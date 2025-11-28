@@ -1,5 +1,5 @@
 import { AudioModule, RecordingPresets, useAudioRecorder } from 'expo-audio';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RecordingState } from '../types';
 
