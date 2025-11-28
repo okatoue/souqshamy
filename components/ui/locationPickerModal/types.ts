@@ -20,7 +20,7 @@ export interface Coordinates {
 }
 
 export interface MapMessage {
-    type: 'mapReady' | 'mapMoved' | 'radiusChanged';
+    type: 'mapReady' | 'mapMoved' | 'radiusChanged' | 'centerResponse';
     lat?: number;
     lng?: number;
     radius?: number;
