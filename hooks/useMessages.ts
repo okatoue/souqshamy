@@ -118,7 +118,7 @@ export function useMessages(conversationId: string | null) {
             conversation_id: conversationId,
             sender_id: user.id,
             content: '',
-            message_type: 'audio',
+            message_type: 'voice',
             audio_url: uri, // Use local URI temporarily
             audio_duration: duration,
             is_read: false,
@@ -163,7 +163,7 @@ export function useMessages(conversationId: string | null) {
                     conversation_id: conversationId,
                     sender_id: user.id,
                     content: '',
-                    message_type: 'audio',
+                    message_type: 'voice',
                     audio_url: audioUrl,
                     audio_duration: duration,
                 })
