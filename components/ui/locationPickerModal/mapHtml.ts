@@ -206,6 +206,16 @@ export const MAP_HTML = `
         map.setView([lat, lng], currentZoom, { animate: true, duration: 0.3 });
       }
     }
+
+    function getCenter() {
+      if (!map) return;
+      var center = map.getCenter();
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'centerResponse',
+        lat: center.lat,
+        lng: center.lng
+      }));
+    }
   </script>
 </body>
 </html>
