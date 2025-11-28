@@ -1,6 +1,8 @@
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Message } from '@/types/chat';
+import * as FileSystem from 'expo-file-system';
+import { decode } from 'base64-arraybuffer';
 import { useCallback, useEffect, useState } from 'react';
 
 export function useMessages(conversationId: string | null) {
@@ -106,6 +108,97 @@ export function useMessages(conversationId: string | null) {
         }
     }, [conversationId, user]);
 
+    // Send an audio message
+    const sendAudioMessage = useCallback(async (uri: string, duration: number): Promise<boolean> => {
+        if (!conversationId || !user) return false;
+
+        // Create optimistic message to show immediately
+        const optimisticMessage: Message = {
+            id: `temp-${Date.now()}`,
+            conversation_id: conversationId,
+            sender_id: user.id,
+            content: '',
+            message_type: 'audio',
+            audio_url: uri, // Use local URI temporarily
+            audio_duration: duration,
+            is_read: false,
+            created_at: new Date().toISOString()
+        };
+
+        // Add message to state immediately (optimistic update)
+        setMessages(prev => [...prev, optimisticMessage]);
+
+        try {
+            setIsSending(true);
+
+            // Read file as base64
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+
+            // Generate unique filename
+            const filename = `${conversationId}/${user.id}_${Date.now()}.m4a`;
+
+            // Upload to Supabase Storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('chat-audio')
+                .upload(filename, decode(base64), {
+                    contentType: 'audio/mp4',
+                    upsert: false,
+                });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL for the uploaded audio
+            const { data: urlData } = supabase.storage
+                .from('chat-audio')
+                .getPublicUrl(uploadData.path);
+
+            const audioUrl = urlData.publicUrl;
+
+            // Insert message record
+            const { data, error } = await supabase
+                .from('messages')
+                .insert({
+                    conversation_id: conversationId,
+                    sender_id: user.id,
+                    content: '',
+                    message_type: 'audio',
+                    audio_url: audioUrl,
+                    audio_duration: duration,
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Replace optimistic message with real message from server
+            if (data) {
+                setMessages(prev =>
+                    prev.map(msg =>
+                        msg.id === optimisticMessage.id ? data : msg
+                    )
+                );
+            }
+
+            // Clean up local file
+            try {
+                await FileSystem.deleteAsync(uri, { idempotent: true });
+            } catch {
+                // Ignore cleanup errors
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error sending audio message:', error);
+            // Remove optimistic message on failure
+            setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+            return false;
+        } finally {
+            setIsSending(false);
+        }
+    }, [conversationId, user]);
+
     // Initial fetch
     useEffect(() => {
         fetchMessages();
@@ -153,6 +246,7 @@ export function useMessages(conversationId: string | null) {
         isLoading,
         isSending,
         sendMessage,
+        sendAudioMessage,
         fetchMessages,
         markMessagesAsRead
     };
