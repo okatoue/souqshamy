@@ -381,19 +381,19 @@ export const messagesApi = {
     },
 
     /**
-     * Marks messages as read.
+     * Marks messages as read using the database RPC function.
+     * This updates both the messages.is_read column and the
+     * conversation's buyer_unread_count or seller_unread_count.
      */
     async markAsRead(
         conversationId: string,
         userId: string
     ): Promise<ApiResponse<boolean>> {
         try {
-            const { error } = await supabase
-                .from('messages')
-                .update({ is_read: true })
-                .eq('conversation_id', conversationId)
-                .neq('sender_id', userId)
-                .eq('is_read', false);
+            const { error } = await supabase.rpc('mark_messages_as_read', {
+                p_conversation_id: conversationId,
+                p_user_id: userId
+            });
 
             if (error) throw error;
             return { data: true, error: null };
