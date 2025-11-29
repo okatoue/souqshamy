@@ -6,7 +6,6 @@ import {
   AuthLogo,
   AuthPasswordInput,
   AuthTitle,
-  NoticeBox,
   OTPInput,
   isValidEmail,
   useAuthTheme,
@@ -29,13 +28,11 @@ export default function ForgotPasswordScreen() {
   const { setPasswordResetInProgress } = useAuth();
 
   const [step, setStep] = useState<Step>('email');
-  const [email, setEmail] = useState(params.isPhone === 'true' ? '' : params.emailOrPhone || '');
+  const [email, setEmail] = useState(params.emailOrPhone || '');
   const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const isPhone = params.isPhone === 'true';
 
   // Step 1: Send verification code
   const handleSendCode = async () => {
@@ -196,10 +193,6 @@ export default function ForgotPasswordScreen() {
             title="Forgot Password?"
             subtitle="Enter your email and we'll send you a verification code."
           />
-
-          {isPhone && (
-            <NoticeBox message="Password reset is only available via email. Please enter the email associated with your account." />
-          )}
 
           <View style={styles.inputSection}>
             <AuthInput

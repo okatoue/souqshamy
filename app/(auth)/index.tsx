@@ -8,40 +8,25 @@ import {
   AuthTitle,
   BRAND_COLOR,
   SocialAuthButtons,
-  SyriaFlag,
-  cleanPhoneNumber,
-  detectPhoneNumber,
-  formatPhoneInput,
   isValidEmail,
-  isValidPhoneNumber,
   useAuthStyles,
 } from '@/components/auth';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
   const authStyles = useAuthStyles();
   const [inputValue, setInputValue] = useState('');
-  const [isPhoneNumber, setIsPhoneNumber] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Detect if input is phone number
-  useEffect(() => {
-    setIsPhoneNumber(detectPhoneNumber(inputValue));
-  }, [inputValue]);
-
-  const handleInputChange = (value: string) => {
-    setInputValue(formatPhoneInput(value));
-  };
-
-  const checkUserExists = async (emailOrPhone: string, isPhone: boolean): Promise<boolean> => {
+  const checkUserExists = async (email: string): Promise<boolean> => {
     try {
       const { data } = await supabase
         .from('profiles')
         .select('id')
-        .eq(isPhone ? 'phone_number' : 'email', isPhone ? cleanPhoneNumber(emailOrPhone) : emailOrPhone)
+        .eq('email', email)
         .maybeSingle();
       return !!data;
     } catch (error) {
@@ -54,28 +39,25 @@ export default function AuthScreen() {
     const trimmedInput = inputValue.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Error', 'Please enter your email or phone number');
+      Alert.alert('Error', 'Please enter your email address');
       return;
     }
 
-    const validEmail = isValidEmail(trimmedInput);
-    const validPhone = isValidPhoneNumber(trimmedInput);
-
-    if (!validEmail && !validPhone) {
-      Alert.alert('Error', 'Please enter a valid email address or phone number');
+    if (!isValidEmail(trimmedInput)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
     setLoading(true);
 
     try {
-      const userExists = await checkUserExists(trimmedInput, validPhone);
+      const userExists = await checkUserExists(trimmedInput);
 
       router.push({
         pathname: '/(auth)/password',
         params: {
           emailOrPhone: trimmedInput,
-          isPhone: validPhone ? 'true' : 'false',
+          isPhone: 'false',
           isNewUser: userExists ? 'false' : 'true',
         },
       });
@@ -98,17 +80,16 @@ export default function AuthScreen() {
 
       <View style={styles.inputSection}>
         <AuthInput
-          label="Email or Mobile Number"
-          placeholder="Enter your email or phone number"
+          label="Email Address"
+          placeholder="Enter your email address"
           value={inputValue}
-          onChangeText={handleInputChange}
-          keyboardType={isPhoneNumber ? 'phone-pad' : 'email-address'}
+          onChangeText={setInputValue}
+          keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           editable={!loading}
           containerStyle={styles.inputContainer}
         />
-        {isPhoneNumber && <SyriaFlag />}
       </View>
 
       <AuthButton title="Continue" onPress={handleContinue} loading={loading} />
