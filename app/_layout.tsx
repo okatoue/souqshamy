@@ -47,7 +47,7 @@ function RootLayoutNav() {
       }
 
       // Not in password reset flow, safe to redirect to main app
-      router.replace('/(tabs)/index');
+      router.replace('/(tabs)');
     }
   }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
 
@@ -70,7 +70,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack initialRouteName="(tabs)">
+    <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(test)/test-supabase" options={{
