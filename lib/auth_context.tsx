@@ -285,7 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const response = await GoogleSignin.signIn();
 
             if (isSuccessResponse(response)) {
-                const { idToken } = response.data;
+                const { idToken, user: googleUser } = response.data;
 
                 if (idToken) {
                     console.log('[Auth] Got Google ID token, exchanging with Supabase...');
@@ -296,7 +296,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         token: idToken,
                     });
 
-                    if (error) throw error;
+                    if (error) {
+                        // Handle specific Supabase errors for existing accounts
+                        const errorMessage = error.message?.toLowerCase() || '';
+                        const errorCode = (error as any).code?.toLowerCase() || '';
+
+                        // Check for "email already exists" or "user already registered" errors
+                        if (
+                            errorMessage.includes('already registered') ||
+                            errorMessage.includes('already exists') ||
+                            errorMessage.includes('user_already_exists') ||
+                            errorCode === 'user_already_exists' ||
+                            errorCode === 'email_exists'
+                        ) {
+                            console.log('[Auth] Email already exists with password auth:', googleUser?.email);
+
+                            // Sign out from Google to allow retry
+                            try {
+                                await GoogleSignin.signOut();
+                            } catch (e) {
+                                // Ignore sign out errors
+                            }
+
+                            Alert.alert(
+                                'Account Already Exists',
+                                `An account with the email ${googleUser?.email || 'this email'} already exists. Please sign in with your password, then link your Google account from Settings.`,
+                                [{ text: 'OK' }]
+                            );
+                            return;
+                        }
+
+                        // For other Supabase errors, throw to be handled below
+                        throw error;
+                    }
 
                     console.log('[Auth] Google Sign-In successful:', data.user?.email);
                 } else {
@@ -310,6 +342,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error: any) {
             console.error('[Auth] Google Sign-In error:', error);
 
+            // Handle Google Sign-In SDK errors
             if (isErrorWithCode(error)) {
                 switch (error.code) {
                     case statusCodes.SIGN_IN_CANCELLED:
@@ -323,9 +356,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         Alert.alert('Error', 'Google Play Services not available or outdated');
                         break;
                     default:
-                        Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+                        // Check if this is a DEVELOPER_ERROR
+                        if (error.message?.includes('DEVELOPER_ERROR')) {
+                            console.error('[Auth] DEVELOPER_ERROR - Check SHA-1 fingerprint and client IDs');
+                            Alert.alert(
+                                'Configuration Error',
+                                'Google Sign-In is not properly configured. Please contact support.',
+                                [{ text: 'OK' }]
+                            );
+                        } else {
+                            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+                        }
                 }
             } else {
+                // Handle Supabase or other errors
                 Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
             }
             throw error;
