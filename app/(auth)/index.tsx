@@ -11,6 +11,7 @@ import {
   isValidEmail,
   useAuthStyles,
 } from '@/components/auth';
+import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -18,8 +19,10 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
   const authStyles = useAuthStyles();
+  const { signInWithGoogle } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
 
   const checkUserExists = async (email: string): Promise<boolean> => {
     try {
@@ -68,8 +71,21 @@ export default function AuthScreen() {
     }
   };
 
-  const handleSocialAuth = (provider: string) => {
-    Alert.alert('Coming Soon', `${provider} login will be available soon!`);
+  const handleSocialAuth = async (provider: string) => {
+    if (provider === 'Google') {
+      try {
+        setSocialLoading(true);
+        await signInWithGoogle();
+        // Navigation happens automatically via auth state listener in _layout.tsx
+      } catch (error) {
+        // Error already handled in signInWithGoogle
+        console.log('[AuthScreen] Google sign-in failed:', error);
+      } finally {
+        setSocialLoading(false);
+      }
+    } else {
+      Alert.alert('Coming Soon', `${provider} login will be available soon!`);
+    }
   };
 
   return (
@@ -87,12 +103,12 @@ export default function AuthScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          editable={!loading}
+          editable={!loading && !socialLoading}
           containerStyle={styles.inputContainer}
         />
       </View>
 
-      <AuthButton title="Continue" onPress={handleContinue} loading={loading} />
+      <AuthButton title="Continue" onPress={handleContinue} loading={loading} disabled={socialLoading} />
 
       <AuthDivider />
 
