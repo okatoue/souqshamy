@@ -2,8 +2,9 @@ import { BORDER_RADIUS } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { MaterialIcons } from '@expo/vector-icons';
-import React from 'react';
-import { Image, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
+import React, { useState } from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 
 interface ListingImageProps {
   images?: string[];
@@ -13,11 +14,12 @@ interface ListingImageProps {
 
 /**
  * Reusable component for displaying listing images with placeholder fallback.
- * Handles loading states and missing images gracefully.
+ * Uses expo-image for better Android compatibility, caching, and performance.
  */
 export function ListingImage({ images, size = 80, style }: ListingImageProps) {
   const placeholderBg = useThemeColor({}, 'placeholder');
   const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
+  const [hasError, setHasError] = useState(false);
 
   const imageStyle = {
     width: size,
@@ -25,17 +27,7 @@ export function ListingImage({ images, size = 80, style }: ListingImageProps) {
     borderRadius: BORDER_RADIUS.sm,
   };
 
-  if (images && images.length > 0) {
-    return (
-      <Image
-        source={{ uri: getThumbnailUrl(images[0]) }}
-        style={[imageStyle, style]}
-        resizeMode="cover"
-      />
-    );
-  }
-
-  return (
+  const renderPlaceholder = () => (
     <View style={[styles.placeholder, imageStyle, { backgroundColor: placeholderBg }, style]}>
       <MaterialIcons
         name="image"
@@ -43,6 +35,23 @@ export function ListingImage({ images, size = 80, style }: ListingImageProps) {
         color={placeholderIconColor}
       />
     </View>
+  );
+
+  if (!images || images.length === 0 || hasError) {
+    return renderPlaceholder();
+  }
+
+  return (
+    <Image
+      source={{ uri: getThumbnailUrl(images[0]) }}
+      style={[imageStyle, style]}
+      contentFit="cover"
+      transition={200}
+      cachePolicy="memory-disk"
+      onError={() => setHasError(true)}
+      placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+      placeholderContentFit="cover"
+    />
   );
 }
 
