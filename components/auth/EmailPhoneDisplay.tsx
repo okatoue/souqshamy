@@ -7,6 +7,7 @@ import { useAuthColors } from './useAuthStyles';
 
 interface EmailPhoneDisplayProps {
   value: string;
+  /** @deprecated Phone support has been removed. This prop is ignored. */
   isPhone?: boolean;
   onChangePress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -14,7 +15,6 @@ interface EmailPhoneDisplayProps {
 
 export function EmailPhoneDisplay({
   value,
-  isPhone = false,
   onChangePress,
   style,
 }: EmailPhoneDisplayProps) {
@@ -23,7 +23,7 @@ export function EmailPhoneDisplay({
   return (
     <View style={[styles.container, { backgroundColor: colors.cardBackground }, style]}>
       <Ionicons
-        name={isPhone ? 'call-outline' : 'mail-outline'}
+        name="mail-outline"
         size={18}
         color={colors.textSecondary}
       />
