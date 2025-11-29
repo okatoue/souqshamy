@@ -8,7 +8,6 @@ import {
   AuthTitle,
   EmailPhoneDisplay,
   PasswordRequirements,
-  cleanPhoneNumber,
   useAuthStyles,
 } from '@/components/auth';
 import { useAuth } from '@/lib/auth_context';
@@ -32,8 +31,7 @@ export default function PasswordScreen() {
   const [loading, setLoading] = useState(false);
 
   const isNewUser = params.isNewUser === 'true';
-  const isPhone = params.isPhone === 'true';
-  const emailOrPhone = params.emailOrPhone || '';
+  const email = params.emailOrPhone || '';
 
   const handleSubmit = async () => {
     if (!password) {
@@ -62,27 +60,14 @@ export default function PasswordScreen() {
 
     try {
       if (isNewUser) {
-        if (isPhone) {
-          const cleanedPhone = cleanPhoneNumber(emailOrPhone);
-          await signUp(undefined, password, cleanedPhone, displayName.trim());
-          Alert.alert('Account Created!', 'Your account has been created successfully.', [
-            { text: 'OK', onPress: () => router.replace('/(tabs)') },
-          ]);
-        } else {
-          await signUp(emailOrPhone, password, undefined, displayName.trim());
-          Alert.alert(
-            'Check Your Email',
-            "We've sent you a verification email. Please verify your email to continue.",
-            [{ text: 'OK', onPress: () => router.replace('/(auth)') }]
-          );
-        }
+        await signUp(email, password, undefined, displayName.trim());
+        Alert.alert(
+          'Check Your Email',
+          "We've sent you a verification email. Please verify your email to continue.",
+          [{ text: 'OK', onPress: () => router.replace('/(auth)') }]
+        );
       } else {
-        if (isPhone) {
-          const cleanedPhone = cleanPhoneNumber(emailOrPhone);
-          await signIn(undefined, password, cleanedPhone);
-        } else {
-          await signIn(emailOrPhone, password);
-        }
+        await signIn(email, password);
         router.replace('/(tabs)');
       }
     } catch (error: any) {
@@ -100,8 +85,8 @@ export default function PasswordScreen() {
     router.push({
       pathname: '/(auth)/forgot-password',
       params: {
-        emailOrPhone: emailOrPhone,
-        isPhone: isPhone ? 'true' : 'false',
+        emailOrPhone: email,
+        isPhone: 'false',
       },
     });
   };
@@ -115,7 +100,7 @@ export default function PasswordScreen() {
         subtitle={isNewUser ? 'Set up your account to get started' : 'Enter your password to sign in'}
       />
 
-      <EmailPhoneDisplay value={emailOrPhone} isPhone={isPhone} onChangePress={handleBack} />
+      <EmailPhoneDisplay value={email} onChangePress={handleBack} />
 
       <View style={authStyles.formSection}>
         {isNewUser && (
