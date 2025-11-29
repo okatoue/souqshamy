@@ -70,7 +70,7 @@ function RootLayoutNav() {
   }
 
   return (
-    <Stack initialRouteName="(tabs)">
+    <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(test)/test-supabase" options={{
