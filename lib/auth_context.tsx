@@ -1,15 +1,30 @@
 // lib/auth_context.tsx
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+    GoogleSignin,
+    isErrorWithCode,
+    isSuccessResponse,
+    statusCodes,
+} from '@react-native-google-signin/google-signin';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
+
+// Configure Google Sign-In
+GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    offlineAccess: true,
+    scopes: ['profile', 'email'],
+});
 
 type AuthContextType = {
     user: User | null;
     session: Session | null;
     signUp: (emailOrPhone: string | undefined, password: string, phoneNumber?: string, displayName?: string) => Promise<void>;
     signIn: (emailOrPhone: string | undefined, password: string, phoneNumber?: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
     isPasswordResetInProgress: boolean;
@@ -257,6 +272,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signInWithGoogle = async () => {
+        try {
+            console.log('[Auth] Starting Google Sign-In...');
+
+            // Check if Google Play Services are available (Android only)
+            if (Platform.OS === 'android') {
+                await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+            }
+
+            // Trigger native Google Sign-In
+            const response = await GoogleSignin.signIn();
+
+            if (isSuccessResponse(response)) {
+                const { idToken } = response.data;
+
+                if (idToken) {
+                    console.log('[Auth] Got Google ID token, exchanging with Supabase...');
+
+                    // Exchange Google token with Supabase
+                    const { data, error } = await supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: idToken,
+                    });
+
+                    if (error) throw error;
+
+                    console.log('[Auth] Google Sign-In successful:', data.user?.email);
+                } else {
+                    throw new Error('No ID token received from Google');
+                }
+            } else {
+                // User cancelled the sign-in
+                console.log('[Auth] Google Sign-In cancelled by user');
+                return;
+            }
+        } catch (error: any) {
+            console.error('[Auth] Google Sign-In error:', error);
+
+            if (isErrorWithCode(error)) {
+                switch (error.code) {
+                    case statusCodes.SIGN_IN_CANCELLED:
+                        // User cancelled - don't show error
+                        console.log('[Auth] User cancelled Google Sign-In');
+                        return;
+                    case statusCodes.IN_PROGRESS:
+                        Alert.alert('Error', 'Sign in already in progress');
+                        break;
+                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+                        Alert.alert('Error', 'Google Play Services not available or outdated');
+                        break;
+                    default:
+                        Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+                }
+            } else {
+                Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+            }
+            throw error;
+        }
+    };
+
     const signOut = async () => {
         try {
             console.log('[Auth] Signing out...');
@@ -264,6 +339,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clear password reset flag on sign out
             await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             setIsPasswordResetInProgressState(false);
+
+            // Sign out from Google if signed in
+            try {
+                const isSignedIn = await GoogleSignin.getCurrentUser();
+                if (isSignedIn) {
+                    await GoogleSignin.signOut();
+                    console.log('[Auth] Signed out from Google');
+                }
+            } catch (googleError) {
+                // Ignore Google sign out errors - user might not have signed in with Google
+                console.log('[Auth] Google sign out skipped:', googleError);
+            }
 
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
@@ -281,6 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             session,
             signUp,
             signIn,
+            signInWithGoogle,
             signOut,
             loading,
             isPasswordResetInProgress,
