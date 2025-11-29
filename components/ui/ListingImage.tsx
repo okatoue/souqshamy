@@ -1,6 +1,5 @@
 import { BORDER_RADIUS } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { getThumbnailUrl } from '@/lib/imageUtils';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
@@ -43,7 +42,7 @@ export function ListingImage({ images, size = 80, style }: ListingImageProps) {
 
   return (
     <Image
-      source={{ uri: getThumbnailUrl(images[0]) }}
+      source={{ uri: images[0] }}
       style={[imageStyle, style]}
       contentFit="cover"
       transition={200}
