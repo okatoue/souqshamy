@@ -279,8 +279,8 @@ export default function ChatScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoid}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={0}
             >
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
@@ -396,8 +396,8 @@ export default function ChatScreen() {
                     )}
                 </View>
                 {/* Bottom safe area spacer - only when keyboard is hidden */}
-                {!isKeyboardVisible && insets.bottom > 0 && (
-                    <View style={{ height: insets.bottom, backgroundColor }} />
+                {!isKeyboardVisible && (
+                    <View style={{ height: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 0), backgroundColor }} />
                 )}
             </KeyboardAvoidingView>
         </SafeAreaView>
