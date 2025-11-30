@@ -260,8 +260,8 @@ export default function ChatScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoid}
-                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-                keyboardVerticalOffset={0}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
             >
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
