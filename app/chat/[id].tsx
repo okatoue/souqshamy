@@ -15,7 +15,6 @@ import {
     ActivityIndicator,
     FlatList,
     Image,
-    Keyboard,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -37,7 +36,6 @@ export default function ChatScreen() {
     const [messageText, setMessageText] = useState('');
     const [isRecordingActive, setIsRecordingActive] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -104,23 +102,6 @@ export default function ChatScreen() {
             }, 100);
         }
     }, [messages.length]);
-
-    useEffect(() => {
-        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-        const showSubscription = Keyboard.addListener(showEvent, () => {
-            setIsKeyboardVisible(true);
-        });
-        const hideSubscription = Keyboard.addListener(hideEvent, () => {
-            setIsKeyboardVisible(false);
-        });
-
-        return () => {
-            showSubscription.remove();
-            hideSubscription.remove();
-        };
-    }, []);
 
     const handleSend = async () => {
         if (!messageText.trim() || isSending) return;
@@ -395,9 +376,9 @@ export default function ChatScreen() {
                         </View>
                     )}
                 </View>
-                {/* Bottom safe area spacer - only when keyboard is hidden */}
-                {!isKeyboardVisible && (
-                    <View style={{ height: Math.max(insets.bottom, Platform.OS === 'android' ? 48 : 0), backgroundColor }} />
+                {/* Bottom safe area spacer for navigation bar */}
+                {Platform.OS === 'android' && (
+                    <View style={{ height: Math.max(insets.bottom, 48), backgroundColor }} />
                 )}
             </KeyboardAvoidingView>
         </SafeAreaView>
