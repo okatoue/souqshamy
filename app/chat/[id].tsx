@@ -15,7 +15,6 @@ import {
     ActivityIndicator,
     FlatList,
     Image,
-    Keyboard,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -37,7 +36,6 @@ export default function ChatScreen() {
     const [messageText, setMessageText] = useState('');
     const [isRecordingActive, setIsRecordingActive] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -104,23 +102,6 @@ export default function ChatScreen() {
             }, 100);
         }
     }, [messages.length]);
-
-    useEffect(() => {
-        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-        const showSubscription = Keyboard.addListener(showEvent, () => {
-            setIsKeyboardVisible(true);
-        });
-        const hideSubscription = Keyboard.addListener(hideEvent, () => {
-            setIsKeyboardVisible(false);
-        });
-
-        return () => {
-            showSubscription.remove();
-            hideSubscription.remove();
-        };
-    }, []);
 
     const handleSend = async () => {
         if (!messageText.trim() || isSending) return;
@@ -357,7 +338,7 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        paddingBottom: isKeyboardVisible ? 8 : Math.max(insets.bottom, 8)
+                        paddingBottom: Math.max(insets.bottom, 8)
                     }
                 ]}>
                     {/* TextInput - hidden when recording */}
