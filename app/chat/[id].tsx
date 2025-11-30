@@ -359,10 +359,10 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        // Android: Fixed 12px when keyboard open, safe area when closed
+                        // Android: Fixed 12px when keyboard open, insets.bottom + 8 when closed
                         // iOS: Always use safe area insets
                         paddingBottom: Platform.OS === 'android'
-                            ? (isKeyboardVisible ? 12 : Math.max(insets.bottom, 8))
+                            ? (isKeyboardVisible ? 12 : insets.bottom + 8)
                             : Math.max(insets.bottom, 8)
                     }
                 ]}>
