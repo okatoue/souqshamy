@@ -356,8 +356,7 @@ export default function ChatScreen() {
                     styles.inputContainer,
                     {
                         backgroundColor: cardBg,
-                        borderTopColor: borderColor,
-                        paddingBottom: isKeyboardVisible ? 8 : Math.max(insets.bottom, 8)
+                        borderTopColor: borderColor
                     }
                 ]}>
                     {/* TextInput - hidden when recording */}
@@ -396,6 +395,10 @@ export default function ChatScreen() {
                         </View>
                     )}
                 </View>
+                {/* Bottom safe area spacer - only when keyboard is hidden */}
+                {!isKeyboardVisible && insets.bottom > 0 && (
+                    <View style={{ height: insets.bottom, backgroundColor }} />
+                )}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
