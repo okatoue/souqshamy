@@ -1,22 +1,22 @@
 // lib/auth_context.tsx
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-    GoogleSignin,
-    isErrorWithCode,
-    isSuccessResponse,
-    statusCodes,
-} from '@react-native-google-signin/google-signin';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 
-// Configure Google Sign-In
-GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    offlineAccess: true,
-    scopes: ['profile', 'email'],
+// Required for web browser auth session
+WebBrowser.maybeCompleteAuthSession();
+
+// Google OAuth configuration
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+// Get the appropriate redirect URI for the platform
+const redirectUri = AuthSession.makeRedirectUri({
+    scheme: 'stickersmash',
 });
 
 type AuthContextType = {
@@ -274,104 +274,114 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signInWithGoogle = async () => {
         try {
-            console.log('[Auth] Starting Google Sign-In...');
+            console.log('[Auth] Starting Google Sign-In with expo-auth-session...');
+            console.log('[Auth] Redirect URI:', redirectUri);
 
-            // Check if Google Play Services are available (Android only)
-            if (Platform.OS === 'android') {
-                await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-            }
+            // Use Supabase's signInWithOAuth which handles the OAuth flow
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUri,
+                    skipBrowserRedirect: true,
+                },
+            });
 
-            // Trigger native Google Sign-In
-            const response = await GoogleSignin.signIn();
+            if (error) throw error;
 
-            if (isSuccessResponse(response)) {
-                const { idToken, user: googleUser } = response.data;
+            if (data?.url) {
+                console.log('[Auth] Opening auth URL...');
 
-                if (idToken) {
-                    console.log('[Auth] Got Google ID token, exchanging with Supabase...');
+                // Open the browser for authentication
+                const result = await WebBrowser.openAuthSessionAsync(
+                    data.url,
+                    redirectUri,
+                );
 
-                    // Exchange Google token with Supabase
-                    const { data, error } = await supabase.auth.signInWithIdToken({
-                        provider: 'google',
-                        token: idToken,
-                    });
+                console.log('[Auth] Browser result type:', result.type);
 
-                    if (error) {
-                        // Handle specific Supabase errors for existing accounts
-                        const errorMessage = error.message?.toLowerCase() || '';
-                        const errorCode = (error as any).code?.toLowerCase() || '';
+                if (result.type === 'success' && result.url) {
+                    console.log('[Auth] Processing auth callback...');
 
-                        // Check for "email already exists" or "user already registered" errors
-                        if (
-                            errorMessage.includes('already registered') ||
-                            errorMessage.includes('already exists') ||
-                            errorMessage.includes('user_already_exists') ||
-                            errorCode === 'user_already_exists' ||
-                            errorCode === 'email_exists'
-                        ) {
-                            console.log('[Auth] Email already exists with password auth:', googleUser?.email);
+                    // Extract the access token and refresh token from the URL
+                    const url = new URL(result.url);
 
-                            // Sign out from Google to allow retry
-                            try {
-                                await GoogleSignin.signOut();
-                            } catch (e) {
-                                // Ignore sign out errors
-                            }
+                    // Check for hash fragment (Supabase returns tokens in hash)
+                    const hashParams = new URLSearchParams(url.hash.substring(1));
+                    const accessToken = hashParams.get('access_token');
+                    const refreshToken = hashParams.get('refresh_token');
 
-                            Alert.alert(
-                                'Account Already Exists',
-                                `An account with the email ${googleUser?.email || 'this email'} already exists. Please sign in with your password, then link your Google account from Settings.`,
-                                [{ text: 'OK' }]
-                            );
-                            return;
+                    if (accessToken && refreshToken) {
+                        // Set the session with the tokens
+                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        });
+
+                        if (sessionError) {
+                            throw sessionError;
                         }
 
-                        // For other Supabase errors, throw to be handled below
-                        throw error;
-                    }
+                        console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
+                    } else {
+                        // Check for error in URL
+                        const errorParam = url.searchParams.get('error');
+                        const errorDescription = url.searchParams.get('error_description');
 
-                    console.log('[Auth] Google Sign-In successful:', data.user?.email);
-                } else {
-                    throw new Error('No ID token received from Google');
+                        if (errorParam) {
+                            throw new Error(errorDescription || errorParam);
+                        }
+
+                        // Check if we got a code instead (authorization code flow)
+                        const code = url.searchParams.get('code');
+                        if (code) {
+                            // Exchange the code for a session
+                            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+                            if (exchangeError) {
+                                throw exchangeError;
+                            }
+
+                            console.log('[Auth] Google Sign-In successful via code exchange:', exchangeData.user?.email);
+                        } else {
+                            console.log('[Auth] No tokens found in URL, checking hash:', url.hash);
+                            throw new Error('No authentication data received from Google');
+                        }
+                    }
+                } else if (result.type === 'cancel') {
+                    console.log('[Auth] User cancelled Google Sign-In');
+                    return;
+                } else if (result.type === 'dismiss') {
+                    console.log('[Auth] Google Sign-In dismissed');
+                    return;
                 }
             } else {
-                // User cancelled the sign-in
-                console.log('[Auth] Google Sign-In cancelled by user');
-                return;
+                throw new Error('Failed to get authentication URL');
             }
         } catch (error: any) {
             console.error('[Auth] Google Sign-In error:', error);
 
-            // Handle Google Sign-In SDK errors
-            if (isErrorWithCode(error)) {
-                switch (error.code) {
-                    case statusCodes.SIGN_IN_CANCELLED:
-                        // User cancelled - don't show error
-                        console.log('[Auth] User cancelled Google Sign-In');
-                        return;
-                    case statusCodes.IN_PROGRESS:
-                        Alert.alert('Error', 'Sign in already in progress');
-                        break;
-                    case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-                        Alert.alert('Error', 'Google Play Services not available or outdated');
-                        break;
-                    default:
-                        // Check if this is a DEVELOPER_ERROR
-                        if (error.message?.includes('DEVELOPER_ERROR')) {
-                            console.error('[Auth] DEVELOPER_ERROR - Check SHA-1 fingerprint and client IDs');
-                            Alert.alert(
-                                'Configuration Error',
-                                'Google Sign-In is not properly configured. Please contact support.',
-                                [{ text: 'OK' }]
-                            );
-                        } else {
-                            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
-                        }
-                }
-            } else {
-                // Handle Supabase or other errors
-                Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
+            // Handle specific error cases
+            const errorMessage = error.message?.toLowerCase() || '';
+
+            if (
+                errorMessage.includes('already registered') ||
+                errorMessage.includes('already exists') ||
+                errorMessage.includes('user_already_exists')
+            ) {
+                Alert.alert(
+                    'Account Already Exists',
+                    'An account with this email already exists. Please sign in with your password, then link your Google account from Settings.',
+                    [{ text: 'OK' }]
+                );
+                return;
             }
+
+            if (errorMessage.includes('cancel') || errorMessage.includes('dismiss')) {
+                // User cancelled - don't show error
+                return;
+            }
+
+            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
             throw error;
         }
     };
@@ -383,18 +393,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Clear password reset flag on sign out
             await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             setIsPasswordResetInProgressState(false);
-
-            // Sign out from Google if signed in
-            try {
-                const isSignedIn = await GoogleSignin.getCurrentUser();
-                if (isSignedIn) {
-                    await GoogleSignin.signOut();
-                    console.log('[Auth] Signed out from Google');
-                }
-            } catch (googleError) {
-                // Ignore Google sign out errors - user might not have signed in with Google
-                console.log('[Auth] Google sign out skipped:', googleError);
-            }
 
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
