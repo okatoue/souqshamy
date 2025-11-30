@@ -23,12 +23,13 @@ import {
     TextInput,
     View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
     const params = useLocalSearchParams<{ id: string }>();
     const conversationId = params.id;
     const { user } = useAuth();
+    const insets = useSafeAreaInsets();
 
     const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
     const [conversationLoading, setConversationLoading] = useState(true);
@@ -332,7 +333,14 @@ export default function ChatScreen() {
                 />
 
                 {/* Input - Single VoiceRecorder instance to prevent state reset */}
-                <View style={[styles.inputContainer, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
+                <View style={[
+                    styles.inputContainer,
+                    {
+                        backgroundColor: cardBg,
+                        borderTopColor: borderColor,
+                        paddingBottom: Math.max(insets.bottom, 8)
+                    }
+                ]}>
                     {/* TextInput - hidden when recording */}
                     {!isRecordingActive && (
                         <TextInput
@@ -518,7 +526,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-end',
         padding: 8,
-        paddingBottom: Platform.OS === 'ios' ? 24 : 8,
         borderTopWidth: 1,
     },
     textInput: {
