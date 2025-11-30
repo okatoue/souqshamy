@@ -15,7 +15,6 @@ import {
     ActivityIndicator,
     FlatList,
     Image,
-    Keyboard,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -37,7 +36,6 @@ export default function ChatScreen() {
     const [messageText, setMessageText] = useState('');
     const [isRecordingActive, setIsRecordingActive] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -104,23 +102,6 @@ export default function ChatScreen() {
             }, 100);
         }
     }, [messages.length]);
-
-    // Track keyboard visibility on Android for consistent spacing
-    useEffect(() => {
-        if (Platform.OS === 'android') {
-            const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-                setKeyboardVisible(true);
-            });
-            const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-                setKeyboardVisible(false);
-            });
-
-            return () => {
-                keyboardDidShowListener.remove();
-                keyboardDidHideListener.remove();
-            };
-        }
-    }, []);
 
     const handleSend = async () => {
         if (!messageText.trim() || isSending) return;
@@ -357,11 +338,7 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        // On Android with keyboard visible, use fixed padding to avoid variable gap
-                        // When keyboard is hidden, use safe area insets for gesture navigation
-                        paddingBottom: Platform.OS === 'android' && keyboardVisible
-                            ? 12
-                            : Math.max(insets.bottom, 8)
+                        paddingBottom: Math.max(insets.bottom, 8)
                     }
                 ]}>
                     {/* TextInput - hidden when recording */}
