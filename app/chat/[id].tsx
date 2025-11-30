@@ -359,10 +359,10 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        // Android: Fixed padding (no safe area needed - nav bar doesn't overlap content)
-                        // iOS: Use safe area insets for home indicator
+                        // Android: Fixed 12px when keyboard open, insets.bottom + 8 when closed
+                        // iOS: Always use safe area insets
                         paddingBottom: Platform.OS === 'android'
-                            ? (isKeyboardVisible ? 12 : 8)
+                            ? (isKeyboardVisible ? 12 : insets.bottom + 8)
                             : Math.max(insets.bottom, 8)
                     }
                 ]}>
