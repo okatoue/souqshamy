@@ -37,7 +37,7 @@ export default function ChatScreen() {
     const [messageText, setMessageText] = useState('');
     const [isRecordingActive, setIsRecordingActive] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
@@ -105,21 +105,23 @@ export default function ChatScreen() {
         }
     }, [messages.length]);
 
-    // Track keyboard visibility on Android for consistent spacing
+    // Track keyboard visibility for consistent spacing
     useEffect(() => {
-        if (Platform.OS === 'android') {
-            const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
-                setKeyboardVisible(true);
-            });
-            const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-                setKeyboardVisible(false);
-            });
+        // Use 'Will' events for iOS (smoother animation) and 'Did' events for Android
+        const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-            return () => {
-                keyboardDidShowListener.remove();
-                keyboardDidHideListener.remove();
-            };
-        }
+        const keyboardShowListener = Keyboard.addListener(showEvent, () => {
+            setIsKeyboardVisible(true);
+        });
+        const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+            setIsKeyboardVisible(false);
+        });
+
+        return () => {
+            keyboardShowListener.remove();
+            keyboardHideListener.remove();
+        };
     }, []);
 
     const handleSend = async () => {
@@ -357,10 +359,10 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        // On Android with keyboard visible, use fixed padding to avoid variable gap
-                        // When keyboard is hidden, use safe area insets for gesture navigation
-                        paddingBottom: Platform.OS === 'android' && keyboardVisible
-                            ? 12
+                        // Android: Fixed 12px when keyboard open, insets.bottom + 8 when closed
+                        // iOS: Always use safe area insets
+                        paddingBottom: Platform.OS === 'android'
+                            ? (isKeyboardVisible ? 12 : insets.bottom + 8)
                             : Math.max(insets.bottom, 8)
                     }
                 ]}>
