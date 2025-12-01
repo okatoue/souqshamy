@@ -177,6 +177,7 @@ export default function ProductDetailsScreen() {
 
           <LocationSection
             location={location}
+            coordinates={locationCoordinates}
             onPress={() => setShowMapModal(true)}
           />
 
