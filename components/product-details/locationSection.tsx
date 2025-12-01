@@ -8,41 +8,61 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import LocationPreviewCard from './LocationPreviewCard';
 
 interface LocationSectionProps {
     location: string;
+    coordinates?: {
+        latitude: number;
+        longitude: number;
+    };
+    radius?: number;
     onPress: () => void;
 }
 
-export default function LocationSection({ location, onPress }: LocationSectionProps) {
+export default function LocationSection({ location, coordinates, radius, onPress }: LocationSectionProps) {
     // Theme colors
     const textColor = useThemeColor({}, 'text');
     const inputBg = useThemeColor({}, 'inputBackground');
     const borderColor = useThemeColor({}, 'border');
     const mutedColor = useThemeColor({}, 'textMuted');
 
+    // Check if a location has been selected (has coordinates)
+    const hasSelectedLocation = coordinates && location;
+
     return (
         <View style={styles.container}>
             <Text style={[styles.label, { color: textColor }]}>Location</Text>
 
-            <TouchableOpacity
-                style={[styles.locationBox, { backgroundColor: inputBg, borderColor }]}
-                onPress={onPress}
-                activeOpacity={0.7}
-            >
-                <View style={styles.locationContent}>
-                    <Ionicons name="location" size={20} color={BRAND_COLOR} />
-                    <Text style={[styles.locationText, { color: textColor }]}>
-                        {location || 'Select location'}
+            {hasSelectedLocation ? (
+                <LocationPreviewCard
+                    location={location}
+                    coordinates={coordinates}
+                    radius={radius}
+                    onPress={onPress}
+                />
+            ) : (
+                <>
+                    <TouchableOpacity
+                        style={[styles.locationBox, { backgroundColor: inputBg, borderColor }]}
+                        onPress={onPress}
+                        activeOpacity={0.7}
+                    >
+                        <View style={styles.locationContent}>
+                            <Ionicons name="location" size={20} color={BRAND_COLOR} />
+                            <Text style={[styles.locationText, { color: textColor }]}>
+                                {location || 'Select location'}
+                            </Text>
+                        </View>
+
+                        <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+                    </TouchableOpacity>
+
+                    <Text style={[styles.helperText, { color: mutedColor }]}>
+                        Tap to select your location on the map
                     </Text>
-                </View>
-
-                <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
-            </TouchableOpacity>
-
-            <Text style={[styles.helperText, { color: mutedColor }]}>
-                Tap to select your location on the map
-            </Text>
+                </>
+            )}
         </View>
     );
 }
