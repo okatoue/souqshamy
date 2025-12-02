@@ -24,6 +24,7 @@ function RootLayoutNav() {
   // This prevents race condition where navigation runs before data providers update
   const previousUserIdRef = useRef<string | undefined>(undefined);
   const userJustChangedRef = useRef(false);
+  const dataLoadingStartedRef = useRef(false);
 
   // Detect user change - set flag immediately (synchronously)
   const currentUserId = user?.id;
@@ -32,14 +33,28 @@ function RootLayoutNav() {
     if (currentUserId && !previousUserIdRef.current) {
       // User just signed in - mark that data needs to load
       userJustChangedRef.current = true;
+      dataLoadingStartedRef.current = false; // Reset - wait for loading to start
       console.log('[Nav] User just signed in, waiting for data to load...');
+    } else {
+      // User signed out - reset flags
+      userJustChangedRef.current = false;
+      dataLoadingStartedRef.current = false;
     }
     previousUserIdRef.current = currentUserId;
   }
 
-  // Clear the "user just changed" flag once data loading is complete
-  if (userJustChangedRef.current && !isGlobalLoading && !favoritesLoading) {
+  // Track when data loading actually starts (isGlobalLoading becomes true)
+  if (userJustChangedRef.current && !dataLoadingStartedRef.current && isGlobalLoading) {
+    dataLoadingStartedRef.current = true;
+    console.log('[Nav] Data loading started...');
+  }
+
+  // Clear the "user just changed" flag only AFTER:
+  // 1. Loading has started (dataLoadingStartedRef is true)
+  // 2. AND loading has completed (isGlobalLoading and favoritesLoading are false)
+  if (userJustChangedRef.current && dataLoadingStartedRef.current && !isGlobalLoading && !favoritesLoading) {
     userJustChangedRef.current = false;
+    dataLoadingStartedRef.current = false;
     console.log('[Nav] Data loading complete after sign in');
   }
 
