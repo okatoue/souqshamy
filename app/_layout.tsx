@@ -32,21 +32,26 @@ function RootLayoutNav() {
     if (shouldShowLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
+    const inProtectedRoute = inTabsGroup || ['category', 'listing', 'chat', 'search', 'product-details', 'user', 'personal-details'].includes(segments[0] as string);
+
+    console.log('[Nav] Auth state check:', { user: !!user, segments: segments[0], inAuthGroup, inProtectedRoute });
 
     if (!user && !inAuthGroup) {
       // Redirect to auth screen if not authenticated
+      console.log('[Nav] Not authenticated, redirecting to auth');
       router.replace('/(auth)');
-    } else if (user && inAuthGroup) {
+    } else if (user && !inProtectedRoute) {
+      // User is authenticated but not on a protected route (e.g., on catch-all or auth)
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
-      // This is now a synchronous check from auth context state
       if (isPasswordResetInProgress) {
         // User is in password reset flow - DO NOT redirect to main app
-        // They need to complete the password reset process
-        console.log('[Auth] Password reset in progress, staying in auth group');
+        console.log('[Nav] Password reset in progress, staying in current route');
         return;
       }
 
       // Not in password reset flow, safe to redirect to main app
+      console.log('[Nav] Authenticated, redirecting to tabs');
       router.replace('/(tabs)');
     }
   }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
