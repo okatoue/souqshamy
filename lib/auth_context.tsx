@@ -18,9 +18,16 @@ const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
 
 // Get the appropriate redirect URI for the platform
+// Use 'native' option to ensure proper redirect for standalone builds with custom scheme
 const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'stickersmash',
+    // 'native' ensures the custom scheme is used in standalone builds
+    // For Expo Go, this returns exp:// based URI
+    native: 'stickersmash://',
 });
+
+// Log the configured redirect URI at module load for debugging
+console.log('[Auth] Configured redirect URI:', redirectUri);
 
 type AuthContextType = {
     user: User | null;
@@ -393,7 +400,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const signInWithFacebook = async () => {
         try {
             console.log('[Auth] Starting Facebook Sign-In with expo-auth-session...');
-            console.log('[Auth] Redirect URI:', redirectUri);
+            console.log('[Auth] Facebook redirect URI:', redirectUri);
+            console.log('[Auth] Platform:', Platform.OS);
 
             // Use Supabase's signInWithOAuth which handles the OAuth flow
             const { data, error } = await supabase.auth.signInWithOAuth({
@@ -408,7 +416,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
-                console.log('[Auth] Opening auth URL...');
+                console.log('[Auth] Opening Facebook auth URL:', data.url);
+                console.log('[Auth] Expected redirect back to:', redirectUri);
 
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
@@ -417,6 +426,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
 
                 console.log('[Auth] Browser result type:', result.type);
+                if (result.type === 'success') {
+                    console.log('[Auth] Received callback URL:', result.url);
+                }
 
                 if (result.type === 'success' && result.url) {
                     console.log('[Auth] Processing auth callback...');
