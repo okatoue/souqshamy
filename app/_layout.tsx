@@ -85,6 +85,7 @@ function RootLayoutNav() {
       <Stack.Screen name="user" options={{ headerShown: false }} />
       <Stack.Screen name="personal-details" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="[...unmatched]" options={{ headerShown: false }} />
     </Stack>
   );
 }
