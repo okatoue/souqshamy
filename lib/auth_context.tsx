@@ -14,6 +14,9 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
+// Facebook OAuth configuration
+const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
+
 // Get the appropriate redirect URI for the platform
 const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'stickersmash',
@@ -25,6 +28,7 @@ type AuthContextType = {
     signUp: (emailOrPhone: string | undefined, password: string, phoneNumber?: string, displayName?: string) => Promise<void>;
     signIn: (emailOrPhone: string | undefined, password: string, phoneNumber?: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
+    signInWithFacebook: () => Promise<void>;
     signOut: () => Promise<void>;
     loading: boolean;
     isPasswordResetInProgress: boolean;
@@ -386,6 +390,121 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const signInWithFacebook = async () => {
+        try {
+            console.log('[Auth] Starting Facebook Sign-In with expo-auth-session...');
+            console.log('[Auth] Redirect URI:', redirectUri);
+
+            // Use Supabase's signInWithOAuth which handles the OAuth flow
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'facebook',
+                options: {
+                    redirectTo: redirectUri,
+                    skipBrowserRedirect: true,
+                    scopes: 'email,public_profile',
+                },
+            });
+
+            if (error) throw error;
+
+            if (data?.url) {
+                console.log('[Auth] Opening auth URL...');
+
+                // Open the browser for authentication
+                const result = await WebBrowser.openAuthSessionAsync(
+                    data.url,
+                    redirectUri,
+                );
+
+                console.log('[Auth] Browser result type:', result.type);
+
+                if (result.type === 'success' && result.url) {
+                    console.log('[Auth] Processing auth callback...');
+
+                    // Extract the access token and refresh token from the URL
+                    const url = new URL(result.url);
+
+                    // Check for hash fragment (Supabase returns tokens in hash)
+                    const hashParams = new URLSearchParams(url.hash.substring(1));
+                    const accessToken = hashParams.get('access_token');
+                    const refreshToken = hashParams.get('refresh_token');
+
+                    if (accessToken && refreshToken) {
+                        // Set the session with the tokens
+                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: refreshToken,
+                        });
+
+                        if (sessionError) {
+                            throw sessionError;
+                        }
+
+                        console.log('[Auth] Facebook Sign-In successful:', sessionData.user?.email);
+                    } else {
+                        // Check for error in URL
+                        const errorParam = url.searchParams.get('error');
+                        const errorDescription = url.searchParams.get('error_description');
+
+                        if (errorParam) {
+                            throw new Error(errorDescription || errorParam);
+                        }
+
+                        // Check if we got a code instead (authorization code flow)
+                        const code = url.searchParams.get('code');
+                        if (code) {
+                            // Exchange the code for a session
+                            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+                            if (exchangeError) {
+                                throw exchangeError;
+                            }
+
+                            console.log('[Auth] Facebook Sign-In successful via code exchange:', exchangeData.user?.email);
+                        } else {
+                            console.log('[Auth] No tokens found in URL, checking hash:', url.hash);
+                            throw new Error('No authentication data received from Facebook');
+                        }
+                    }
+                } else if (result.type === 'cancel') {
+                    console.log('[Auth] User cancelled Facebook Sign-In');
+                    return;
+                } else if (result.type === 'dismiss') {
+                    console.log('[Auth] Facebook Sign-In dismissed');
+                    return;
+                }
+            } else {
+                throw new Error('Failed to get authentication URL');
+            }
+        } catch (error: any) {
+            console.error('[Auth] Facebook Sign-In error:', error);
+
+            // Handle specific error cases
+            const errorMessage = error.message?.toLowerCase() || '';
+
+            if (
+                errorMessage.includes('already registered') ||
+                errorMessage.includes('already exists') ||
+                errorMessage.includes('user_already_exists')
+            ) {
+                Alert.alert(
+                    'Account Already Exists',
+                    'An account with this email already exists. Please sign in with your password, then link your Facebook account from Settings.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            if (errorMessage.includes('cancel') || errorMessage.includes('dismiss')) {
+                // User cancelled - don't show error
+                return;
+            }
+
+            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Facebook');
+            throw error;
+        }
+    };
+
     const signOut = async () => {
         try {
             console.log('[Auth] Signing out...');
@@ -411,6 +530,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signUp,
             signIn,
             signInWithGoogle,
+            signInWithFacebook,
             signOut,
             loading,
             isPasswordResetInProgress,
