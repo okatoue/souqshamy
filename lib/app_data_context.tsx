@@ -575,11 +575,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // ========== GLOBAL DATA INITIALIZATION ==========
     useEffect(() => {
         const initializeAllData = async () => {
-            console.log('[AppData] initializeAllData called, user:', user?.id, 'initialLoadComplete:', initialLoadComplete.current);
-
             if (!user) {
                 // No user - clear everything and stop loading
-                console.log('[AppData] No user, clearing data');
                 setConversations([]);
                 setUserListings([]);
                 setRecentlyViewed([]);
@@ -591,11 +588,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (initialLoadComplete.current) {
-                console.log('[AppData] Initial load already complete, skipping');
                 return;
             }
-
-            console.log('[AppData] Starting data load...');
 
             // STEP 1: Load from cache first (instant, no network)
             const [
@@ -627,46 +621,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             // STEP 2: Fetch fresh data from network in parallel
-            // Helper to add timeout to prevent hanging fetches
-            const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, name: string): Promise<T | null> => {
-                return Promise.race([
-                    promise,
-                    new Promise<null>((resolve) => {
-                        setTimeout(() => {
-                            console.warn(`[AppData] ${name} fetch timed out after ${timeoutMs}ms`);
-                            resolve(null);
-                        }, timeoutMs);
-                    })
-                ]);
-            };
-
             const fetchPromises: Promise<void>[] = [];
 
             // Conversations fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Starting conversations fetch...');
                     try {
-                        const result = await withTimeout(
-                            supabase
-                                .from('conversations')
-                                .select(`
-                                    *,
-                                    listing:listings(id, title, price, currency, images, status)
-                                `)
-                                .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-                                .order('last_message_at', { ascending: false }),
-                            15000,
-                            'conversations'
-                        );
-
-                        if (!result) {
-                            console.log('[AppData] Conversations fetch timed out, skipping');
-                            return;
-                        }
-
-                        const { data: convData, error: convError } = result;
-                        console.log('[AppData] Conversations fetch complete');
+                        const { data: convData, error: convError } = await supabase
+                            .from('conversations')
+                            .select(`
+                                *,
+                                listing:listings(id, title, price, currency, images, status)
+                            `)
+                            .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+                            .order('last_message_at', { ascending: false });
 
                         if (convError) throw convError;
 
@@ -718,25 +686,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // User listings fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Starting user listings fetch...');
                     try {
-                        const result = await withTimeout(
-                            supabase
-                                .from('listings')
-                                .select('*')
-                                .eq('user_id', user.id)
-                                .order('created_at', { ascending: false }),
-                            15000,
-                            'user-listings'
-                        );
-
-                        if (!result) {
-                            console.log('[AppData] User listings fetch timed out, skipping');
-                            return;
-                        }
-
-                        const { data, error } = result;
-                        console.log('[AppData] User listings fetch complete');
+                        const { data, error } = await supabase
+                            .from('listings')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .order('created_at', { ascending: false });
 
                         if (error) throw error;
 
@@ -754,39 +709,24 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // Recently viewed fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Starting recently viewed fetch...');
                     try {
                         const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
                         if (!storedIds) {
-                            console.log('[AppData] No recently viewed IDs, skipping fetch');
                             setRecentlyViewed([]);
                             return;
                         }
 
                         const ids: number[] = JSON.parse(storedIds);
                         if (ids.length === 0) {
-                            console.log('[AppData] Empty recently viewed IDs, skipping fetch');
                             setRecentlyViewed([]);
                             return;
                         }
 
-                        const result = await withTimeout(
-                            supabase
-                                .from('listings')
-                                .select('*')
-                                .in('id', ids)
-                                .eq('status', 'active'),
-                            15000,
-                            'recently-viewed'
-                        );
-
-                        if (!result) {
-                            console.log('[AppData] Recently viewed fetch timed out, skipping');
-                            return;
-                        }
-
-                        const { data, error: fetchError } = result;
-                        console.log('[AppData] Recently viewed fetch complete');
+                        const { data, error: fetchError } = await supabase
+                            .from('listings')
+                            .select('*')
+                            .in('id', ids)
+                            .eq('status', 'active');
 
                         if (fetchError) throw fetchError;
 
@@ -805,18 +745,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             );
 
             // Wait for all fetches to complete
-            console.log('[AppData] Waiting for all fetches to complete...');
             await Promise.all(fetchPromises);
 
-            console.log('[AppData] All fetches complete, setting isGlobalLoading to false');
             initialLoadComplete.current = true;
             setIsGlobalLoading(false);
         };
 
-        initializeAllData().catch(err => {
-            console.error('[AppData] initializeAllData error:', err);
-            setIsGlobalLoading(false); // Ensure we don't get stuck
-        });
+        initializeAllData();
     }, [
         user,
         loadCachedConversations,
