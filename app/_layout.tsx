@@ -7,7 +7,7 @@ import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context'
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -20,9 +20,42 @@ function RootLayoutNav() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
+  // Track previous user to detect user changes
+  // This prevents race condition where navigation runs before data providers update
+  const previousUserIdRef = useRef<string | undefined>(undefined);
+  const userJustChangedRef = useRef(false);
+
+  // Detect user change - set flag immediately (synchronously)
+  const currentUserId = user?.id;
+  if (previousUserIdRef.current !== currentUserId) {
+    // User changed (sign in, sign out, or user switch)
+    if (currentUserId && !previousUserIdRef.current) {
+      // User just signed in - mark that data needs to load
+      userJustChangedRef.current = true;
+      console.log('[Nav] User just signed in, waiting for data to load...');
+    }
+    previousUserIdRef.current = currentUserId;
+  }
+
+  // Clear the "user just changed" flag once data loading is complete
+  if (userJustChangedRef.current && !isGlobalLoading && !favoritesLoading) {
+    userJustChangedRef.current = false;
+    console.log('[Nav] Data loading complete after sign in');
+  }
+
   // Determine if we should show loading screen
   // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
-  const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
+  // Also wait if user just changed and data providers haven't caught up yet
+  const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading || userJustChangedRef.current));
+
+  console.log('[Nav] Loading state:', {
+    authLoading,
+    isGlobalLoading,
+    favoritesLoading,
+    userJustChanged: userJustChangedRef.current,
+    shouldShowLoading,
+    hasUser: !!user
+  });
 
   // Handle auth state changes
   useEffect(() => {
