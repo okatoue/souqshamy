@@ -25,6 +25,7 @@ function RootLayoutNav() {
   const previousUserIdRef = useRef<string | undefined>(undefined);
   const userJustChangedRef = useRef(false);
   const dataLoadingStartedRef = useRef(false);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Detect user change - set flag immediately (synchronously)
   const currentUserId = user?.id;
@@ -35,10 +36,26 @@ function RootLayoutNav() {
       userJustChangedRef.current = true;
       dataLoadingStartedRef.current = false; // Reset - wait for loading to start
       console.log('[Nav] User just signed in, waiting for data to load...');
+
+      // Set a timeout failsafe - if loading takes too long, proceed anyway
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+      loadingTimeoutRef.current = setTimeout(() => {
+        if (userJustChangedRef.current) {
+          console.log('[Nav] Loading timeout - proceeding anyway');
+          userJustChangedRef.current = false;
+          dataLoadingStartedRef.current = false;
+        }
+      }, 10000); // 10 second timeout
     } else {
       // User signed out - reset flags
       userJustChangedRef.current = false;
       dataLoadingStartedRef.current = false;
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     }
     previousUserIdRef.current = currentUserId;
   }
@@ -55,6 +72,10 @@ function RootLayoutNav() {
   if (userJustChangedRef.current && dataLoadingStartedRef.current && !isGlobalLoading && !favoritesLoading) {
     userJustChangedRef.current = false;
     dataLoadingStartedRef.current = false;
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+      loadingTimeoutRef.current = null;
+    }
     console.log('[Nav] Data loading complete after sign in');
   }
 

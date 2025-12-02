@@ -575,8 +575,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // ========== GLOBAL DATA INITIALIZATION ==========
     useEffect(() => {
         const initializeAllData = async () => {
+            console.log('[AppData] initializeAllData called, user:', user?.id, 'initialLoadComplete:', initialLoadComplete.current);
+
             if (!user) {
                 // No user - clear everything and stop loading
+                console.log('[AppData] No user, clearing data');
                 setConversations([]);
                 setUserListings([]);
                 setRecentlyViewed([]);
@@ -588,8 +591,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (initialLoadComplete.current) {
+                console.log('[AppData] Initial load already complete, skipping');
                 return;
             }
+
+            console.log('[AppData] Starting data load...');
 
             // STEP 1: Load from cache first (instant, no network)
             const [
@@ -745,13 +751,18 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             );
 
             // Wait for all fetches to complete
+            console.log('[AppData] Waiting for all fetches to complete...');
             await Promise.all(fetchPromises);
 
+            console.log('[AppData] All fetches complete, setting isGlobalLoading to false');
             initialLoadComplete.current = true;
             setIsGlobalLoading(false);
         };
 
-        initializeAllData();
+        initializeAllData().catch(err => {
+            console.error('[AppData] initializeAllData error:', err);
+            setIsGlobalLoading(false); // Ensure we don't get stuck
+        });
     }, [
         user,
         loadCachedConversations,
