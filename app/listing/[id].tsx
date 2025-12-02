@@ -59,7 +59,6 @@ export default function ListingDetailScreen() {
     const borderColor = useThemeColor({}, 'border');
     const placeholderColor = useThemeColor({}, 'textSecondary');
     const mutedColor = useThemeColor({}, 'textMuted');
-    const paginationInactive = useThemeColor({}, 'borderSecondary');
 
     // Fetch listing data
     useEffect(() => {
@@ -265,7 +264,7 @@ export default function ListingDetailScreen() {
 
                 {/* Images */}
                 {listing.images && listing.images.length > 0 ? (
-                    <View>
+                    <View style={styles.imageCarouselContainer}>
                         <FlatList
                             data={listing.images}
                             renderItem={renderImageItem}
@@ -280,19 +279,19 @@ export default function ListingDetailScreen() {
                         />
                         {listing.images.length > 1 && (
                             <View style={styles.pagination}>
-                                {listing.images.map((_, index) => (
-                                    <View
-                                        key={index}
-                                        style={[
-                                            styles.paginationDot,
-                                            { backgroundColor: paginationInactive },
-                                            index === currentImageIndex && [
-                                                styles.paginationDotActive,
-                                                { backgroundColor: BRAND_COLOR }
-                                            ]
-                                        ]}
-                                    />
-                                ))}
+                                <View style={styles.paginationPill}>
+                                    {listing.images.map((_, index) => (
+                                        <View
+                                            key={index}
+                                            style={[
+                                                styles.paginationDot,
+                                                index === currentImageIndex
+                                                    ? styles.paginationDotActive
+                                                    : styles.paginationDotInactive
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
                             </View>
                         )}
                     </View>
@@ -489,22 +488,36 @@ const styles = StyleSheet.create({
         marginTop: SPACING.sm,
         fontSize: 14,
     },
+    imageCarouselContainer: {
+        position: 'relative',
+    },
     pagination: {
+        position: 'absolute',
+        bottom: 30,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        paddingVertical: SPACING.md,
+    },
+    paginationPill: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.xs,
+        borderRadius: BORDER_RADIUS.lg,
+        gap: SPACING.xs,
     },
     paginationDot: {
         width: 8,
         height: 8,
         borderRadius: 4,
-        marginHorizontal: SPACING.xs,
     },
     paginationDotActive: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
+        backgroundColor: '#FFFFFF',
+    },
+    paginationDotInactive: {
+        backgroundColor: 'rgba(255, 255, 255, 0.5)',
     },
     detailsContainer: {
         padding: SPACING.lg,
