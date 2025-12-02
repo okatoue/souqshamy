@@ -19,7 +19,7 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
   const authStyles = useAuthStyles();
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, signInWithFacebook } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -80,6 +80,17 @@ export default function AuthScreen() {
       } catch (error) {
         // Error already handled in signInWithGoogle
         console.log('[AuthScreen] Google sign-in failed:', error);
+      } finally {
+        setSocialLoading(false);
+      }
+    } else if (provider === 'Facebook') {
+      try {
+        setSocialLoading(true);
+        await signInWithFacebook();
+        // Navigation happens automatically via auth state listener in _layout.tsx
+      } catch (error) {
+        // Error already handled in signInWithFacebook
+        console.log('[AuthScreen] Facebook sign-in failed:', error);
       } finally {
         setSocialLoading(false);
       }
