@@ -21,9 +21,10 @@ const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
 // Use 'native' option to ensure proper redirect for standalone builds with custom scheme
 const redirectUri = AuthSession.makeRedirectUri({
     scheme: 'stickersmash',
+    path: 'auth/callback',
     // 'native' ensures the custom scheme is used in standalone builds
     // For Expo Go, this returns exp:// based URI
-    native: 'stickersmash://',
+    native: 'stickersmash://auth/callback',
 });
 
 // Log the configured redirect URI at module load for debugging
