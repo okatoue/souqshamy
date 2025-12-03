@@ -32,11 +32,13 @@ function RootLayoutNav() {
     if (shouldShowLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    // Check if user is on the OAuth callback route (auth/callback)
+    const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
 
-    if (!user && !inAuthGroup) {
+    if (!user && !inAuthGroup && !isOAuthCallback) {
       // Redirect to auth screen if not authenticated
       router.replace('/(auth)');
-    } else if (user && inAuthGroup) {
+    } else if (user && (inAuthGroup || isOAuthCallback)) {
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
       // This is now a synchronous check from auth context state
       if (isPasswordResetInProgress) {
