@@ -10,31 +10,31 @@ Copy-paste ready commands for Phase 1 setup. See `phase1-infrastructure-setup.md
 ```bash
 # Linux/Mac/WSL
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
-ssh-keygen -t ed25519 -C "souqshamy-admin" -f ~/.ssh/souqshamy_ed25519
-chmod 600 ~/.ssh/souqshamy_ed25519
-cat ~/.ssh/souqshamy_ed25519.pub
+ssh-keygen -t ed25519 -C "souqjari-admin" -f ~/.ssh/souqjari_ed25519
+chmod 600 ~/.ssh/souqjari_ed25519
+cat ~/.ssh/souqjari_ed25519.pub
 ```
 
 ### SSH Config (~/.ssh/config)
 ```
-Host souqshamy-db
+Host souqjari-db
     HostName DB_PUBLIC_IP_HERE
     User root
-    IdentityFile ~/.ssh/souqshamy_ed25519
+    IdentityFile ~/.ssh/souqjari_ed25519
     IdentitiesOnly yes
 
-Host souqshamy-app
+Host souqjari-app
     HostName APP_PUBLIC_IP_HERE
     User root
-    IdentityFile ~/.ssh/souqshamy_ed25519
+    IdentityFile ~/.ssh/souqjari_ed25519
     IdentitiesOnly yes
 ```
 
 ---
 
-## Database Server (souqshamy-db) Setup
+## Database Server (souqjari-db) Setup
 
-SSH in: `ssh souqshamy-db`
+SSH in: `ssh souqjari-db`
 
 ### Full Setup Script
 ```bash
@@ -99,7 +99,7 @@ sshd -t && systemctl restart sshd
 timedatectl set-timezone UTC
 
 # Create admin user
-adduser --disabled-password --gecos "SouqShamy Admin" souqadmin
+adduser --disabled-password --gecos "SouqJari Admin" souqadmin
 usermod -aG sudo souqadmin
 mkdir -p /home/souqadmin/.ssh
 cp /root/.ssh/authorized_keys /home/souqadmin/.ssh/
@@ -115,9 +115,9 @@ fail2ban-client status
 
 ---
 
-## App Server (souqshamy-app) Setup
+## App Server (souqjari-app) Setup
 
-SSH in: `ssh souqshamy-app`
+SSH in: `ssh souqjari-app`
 
 ### Full Setup Script
 ```bash
@@ -199,7 +199,7 @@ sshd -t && systemctl restart sshd
 timedatectl set-timezone UTC
 
 # Create admin user
-adduser --disabled-password --gecos "SouqShamy Admin" souqadmin
+adduser --disabled-password --gecos "SouqJari Admin" souqadmin
 usermod -aG sudo souqadmin
 mkdir -p /home/souqadmin/.ssh
 cp /root/.ssh/authorized_keys /home/souqadmin/.ssh/
@@ -222,28 +222,28 @@ Run from local machine:
 
 ```bash
 # Test SSH connectivity
-ssh souqshamy-db "hostname && uptime"
-ssh souqshamy-app "hostname && uptime"
+ssh souqjari-db "hostname && uptime"
+ssh souqjari-app "hostname && uptime"
 
 # Test private network
-ssh souqshamy-app "ping -c 3 10.0.0.2"
-ssh souqshamy-db "ping -c 3 10.0.0.1"
+ssh souqjari-app "ping -c 3 10.0.0.2"
+ssh souqjari-db "ping -c 3 10.0.0.3"
 
 # Check firewall status
-ssh souqshamy-db "ufw status numbered"
-ssh souqshamy-app "ufw status numbered"
+ssh souqjari-db "ufw status numbered"
+ssh souqjari-app "ufw status numbered"
 
 # Check fail2ban
-ssh souqshamy-db "fail2ban-client status sshd"
-ssh souqshamy-app "fail2ban-client status sshd"
+ssh souqjari-db "fail2ban-client status sshd"
+ssh souqjari-app "fail2ban-client status sshd"
 
 # Check services
-ssh souqshamy-app "systemctl status nginx --no-pager"
+ssh souqjari-app "systemctl status nginx --no-pager"
 
 # Test DNS (run locally)
-dig api.souqshamy.com +short
-dig studio.souqshamy.com +short
-curl -I https://api.souqshamy.com
+dig api.souqjari.com +short
+dig studio.souqjari.com +short
+curl -I https://api.souqjari.com
 ```
 
 ---
@@ -256,19 +256,19 @@ curl -Lo hcloud.tar.gz https://github.com/hetznercloud/cli/releases/latest/downl
 tar -xzf hcloud.tar.gz && sudo mv hcloud /usr/local/bin/ && rm hcloud.tar.gz
 
 # Setup context
-hcloud context create souqshamy
+hcloud context create souqjari
 
 # Create network
-hcloud network create --name souqshamy-internal --ip-range 10.0.0.0/16
-hcloud network add-subnet souqshamy-internal --type cloud --network-zone eu-central --ip-range 10.0.0.0/24
+hcloud network create --name souqjari-internal --ip-range 10.0.0.0/16
+hcloud network add-subnet souqjari-internal --type cloud --network-zone eu-central --ip-range 10.0.0.0/24
 
 # Create servers (replace SSH key name if different)
-hcloud server create --name souqshamy-db --type ccx33 --image ubuntu-24.04 --location fsn1 --ssh-key souqshamy-admin
-hcloud server create --name souqshamy-app --type cpx41 --image ubuntu-24.04 --location fsn1 --ssh-key souqshamy-admin
+hcloud server create --name souqjari-db --type ccx33 --image ubuntu-24.04 --location fsn1 --ssh-key souqjari-admin
+hcloud server create --name souqjari-app --type cpx41 --image ubuntu-24.04 --location fsn1 --ssh-key souqjari-admin
 
 # Attach to network
-hcloud server attach-to-network souqshamy-db --network souqshamy-internal --ip 10.0.0.2
-hcloud server attach-to-network souqshamy-app --network souqshamy-internal --ip 10.0.0.1
+hcloud server attach-to-network souqjari-db --network souqjari-internal --ip 10.0.0.2
+hcloud server attach-to-network souqjari-app --network souqjari-internal --ip 10.0.0.3
 
 # List servers
 hcloud server list
@@ -300,15 +300,15 @@ SSL/TLS Settings:
 # Use Hetzner Console's VNC/Console feature
 
 # Reset firewall (emergency)
-ssh souqshamy-app "ufw disable"
+ssh souqjari-app "ufw disable"
 # Then fix rules and re-enable
 
 # Check auth logs
-ssh souqshamy-app "tail -50 /var/log/auth.log"
+ssh souqjari-app "tail -50 /var/log/auth.log"
 
 # Check fail2ban bans
-ssh souqshamy-app "fail2ban-client status sshd"
-ssh souqshamy-app "fail2ban-client set sshd unbanip YOUR_IP"
+ssh souqjari-app "fail2ban-client status sshd"
+ssh souqjari-app "fail2ban-client set sshd unbanip YOUR_IP"
 ```
 
 ---

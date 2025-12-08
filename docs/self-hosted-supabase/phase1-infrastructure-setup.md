@@ -1,6 +1,6 @@
 # Phase 1: Infrastructure Setup - Self-Hosted Supabase
 
-Complete step-by-step guide for setting up Hetzner servers with private networking for SouqShamy.
+Complete step-by-step guide for setting up Hetzner servers with private networking for SouqJari.
 
 ## Table of Contents
 1. [Prerequisites](#prerequisites)
@@ -23,7 +23,7 @@ Complete step-by-step guide for setting up Hetzner servers with private networki
 Before starting, you need:
 - [ ] Hetzner Cloud account (https://console.hetzner.cloud)
 - [ ] Cloudflare account with your domain added (https://cloudflare.com)
-- [ ] Domain name (e.g., `souqshamy.com`)
+- [ ] Domain name (e.g., `souqjari.com`)
 - [ ] Credit card for Hetzner billing
 - [ ] Local machine with SSH client (Windows PowerShell, WSL, or terminal)
 
@@ -35,7 +35,7 @@ Before starting, you need:
 1. Go to https://console.hetzner.cloud/registration
 2. Complete registration with email verification
 3. Add payment method (credit card)
-4. Create a new project: **SouqShamy Production**
+4. Create a new project: **SouqJari Production**
 
 ### 1.2 Install Hetzner CLI (Optional but Recommended)
 
@@ -63,13 +63,13 @@ hcloud version
 ### 1.3 Create API Token
 1. In Hetzner Console, go to **Security** → **API Tokens**
 2. Click **Generate API Token**
-3. Name: `souqshamy-setup`
+3. Name: `souqjari-setup`
 4. Permission: **Read & Write**
 5. Copy the token immediately (shown only once!)
 
 ### 1.4 Configure CLI (if using)
 ```bash
-hcloud context create souqshamy
+hcloud context create souqjari
 # Paste your API token when prompted
 ```
 
@@ -87,7 +87,7 @@ Generate SSH keys on your local machine for secure server access.
 if (!(Test-Path "$env:USERPROFILE\.ssh")) { New-Item -ItemType Directory -Path "$env:USERPROFILE\.ssh" }
 
 # Generate ED25519 key (recommended)
-ssh-keygen -t ed25519 -C "souqshamy-admin" -f "$env:USERPROFILE\.ssh\souqshamy_ed25519"
+ssh-keygen -t ed25519 -C "souqjari-admin" -f "$env:USERPROFILE\.ssh\souqjari_ed25519"
 
 # When prompted for passphrase, enter a strong passphrase or leave empty for no passphrase
 ```
@@ -98,23 +98,23 @@ ssh-keygen -t ed25519 -C "souqshamy-admin" -f "$env:USERPROFILE\.ssh\souqshamy_e
 mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
 # Generate ED25519 key (recommended)
-ssh-keygen -t ed25519 -C "souqshamy-admin" -f ~/.ssh/souqshamy_ed25519
+ssh-keygen -t ed25519 -C "souqjari-admin" -f ~/.ssh/souqjari_ed25519
 
 # Set correct permissions
-chmod 600 ~/.ssh/souqshamy_ed25519
-chmod 644 ~/.ssh/souqshamy_ed25519.pub
+chmod 600 ~/.ssh/souqjari_ed25519
+chmod 644 ~/.ssh/souqjari_ed25519.pub
 ```
 
 ### 2.2 View Your Public Key
 
 **Windows PowerShell:**
 ```powershell
-Get-Content "$env:USERPROFILE\.ssh\souqshamy_ed25519.pub"
+Get-Content "$env:USERPROFILE\.ssh\souqjari_ed25519.pub"
 ```
 
 **WSL/Linux/Mac:**
 ```bash
-cat ~/.ssh/souqshamy_ed25519.pub
+cat ~/.ssh/souqjari_ed25519.pub
 ```
 
 Copy the entire output - you'll need it in the next steps.
@@ -124,13 +124,13 @@ Copy the entire output - you'll need it in the next steps.
 **Via Web Console:**
 1. Go to Hetzner Console → **Security** → **SSH Keys**
 2. Click **Add SSH Key**
-3. Name: `souqshamy-admin`
+3. Name: `souqjari-admin`
 4. Paste your public key from step 2.2
 5. Click **Add SSH Key**
 
 **Via CLI:**
 ```bash
-hcloud ssh-key create --name souqshamy-admin --public-key-from-file ~/.ssh/souqshamy_ed25519.pub
+hcloud ssh-key create --name souqjari-admin --public-key-from-file ~/.ssh/souqjari_ed25519.pub
 ```
 
 ---
@@ -145,20 +145,20 @@ Create a private network for secure communication between servers.
 1. Go to **Networks** in left sidebar
 2. Click **Create Network**
 3. Configure:
-   - Name: `souqshamy-internal`
+   - Name: `souqjari-internal`
    - IP Range: `10.0.0.0/16`
    - Network Zone: `eu-central`
 4. Click **Create Network**
 
 **Via CLI:**
 ```bash
-hcloud network create --name souqshamy-internal --ip-range 10.0.0.0/16
+hcloud network create --name souqjari-internal --ip-range 10.0.0.0/16
 ```
 
 ### 3.2 Create Subnet
 
 **Via Web Console:**
-1. Click on `souqshamy-internal` network
+1. Click on `souqjari-internal` network
 2. Go to **Subnets** tab
 3. Click **Add Subnet**
 4. Configure:
@@ -169,7 +169,7 @@ hcloud network create --name souqshamy-internal --ip-range 10.0.0.0/16
 
 **Via CLI:**
 ```bash
-hcloud network add-subnet souqshamy-internal --type cloud --network-zone eu-central --ip-range 10.0.0.0/24
+hcloud network add-subnet souqjari-internal --type cloud --network-zone eu-central --ip-range 10.0.0.0/24
 ```
 
 ---
@@ -189,10 +189,10 @@ The database server uses **dedicated vCPUs** for consistent PostgreSQL performan
    - **Networking:**
      - [x] Public IPv4
      - [x] Public IPv6
-     - Private networks: Select `souqshamy-internal`
+     - Private networks: Select `souqjari-internal`
      - IP: `10.0.0.2` (manually assign)
-   - **SSH Keys:** Select `souqshamy-admin`
-   - **Name:** `souqshamy-db`
+   - **SSH Keys:** Select `souqjari-admin`
+   - **Name:** `souqjari-db`
    - **Labels:** `role=database`, `env=production`
 3. Click **Create & Buy now**
 
@@ -203,11 +203,11 @@ NETWORK_ID=$(hcloud network list -o noheader -o columns=id | head -1)
 
 # Create database server
 hcloud server create \
-  --name souqshamy-db \
+  --name souqjari-db \
   --type ccx33 \
   --image ubuntu-24.04 \
   --location fsn1 \
-  --ssh-key souqshamy-admin \
+  --ssh-key souqjari-admin \
   --network $NETWORK_ID \
   --label role=database \
   --label env=production
@@ -236,10 +236,10 @@ The app server uses **shared vCPUs** which is sufficient for Supabase services.
    - **Networking:**
      - [x] Public IPv4
      - [x] Public IPv6
-     - Private networks: Select `souqshamy-internal`
-     - IP: `10.0.0.1` (manually assign)
-   - **SSH Keys:** Select `souqshamy-admin`
-   - **Name:** `souqshamy-app`
+     - Private networks: Select `souqjari-internal`
+     - IP: `10.0.0.3` (manually assign)
+   - **SSH Keys:** Select `souqjari-admin`
+   - **Name:** `souqjari-app`
    - **Labels:** `role=application`, `env=production`
 3. Click **Create & Buy now**
 
@@ -247,11 +247,11 @@ The app server uses **shared vCPUs** which is sufficient for Supabase services.
 ```bash
 # Create app server
 hcloud server create \
-  --name souqshamy-app \
+  --name souqjari-app \
   --type cpx41 \
   --image ubuntu-24.04 \
   --location fsn1 \
-  --ssh-key souqshamy-admin \
+  --ssh-key souqjari-admin \
   --network $NETWORK_ID \
   --label role=application \
   --label env=production
@@ -261,7 +261,7 @@ hcloud server create \
 After creation, note down:
 - **Public IPv4:** _____________ (e.g., 49.12.xxx.xxx)
 - **Public IPv6:** _____________
-- **Private IP:** 10.0.0.1 (we'll configure this)
+- **Private IP:** 10.0.0.3 (we'll configure this)
 
 ---
 
@@ -285,18 +285,18 @@ nano ~/.ssh/config
 Add the following (replace IP addresses with your actual IPs):
 
 ```
-# SouqShamy Database Server
-Host souqshamy-db
+# SouqJari Database Server
+Host souqjari-db
     HostName YOUR_DB_PUBLIC_IP
     User root
-    IdentityFile ~/.ssh/souqshamy_ed25519
+    IdentityFile ~/.ssh/souqjari_ed25519
     IdentitiesOnly yes
 
-# SouqShamy App Server
-Host souqshamy-app
+# SouqJari App Server
+Host souqjari-app
     HostName YOUR_APP_PUBLIC_IP
     User root
-    IdentityFile ~/.ssh/souqshamy_ed25519
+    IdentityFile ~/.ssh/souqjari_ed25519
     IdentitiesOnly yes
 ```
 
@@ -304,10 +304,10 @@ Host souqshamy-app
 
 ```bash
 # Test database server connection
-ssh souqshamy-db "echo 'DB Server Connected Successfully!'"
+ssh souqjari-db "echo 'DB Server Connected Successfully!'"
 
 # Test app server connection
-ssh souqshamy-app "echo 'App Server Connected Successfully!'"
+ssh souqjari-app "echo 'App Server Connected Successfully!'"
 ```
 
 If both commands succeed, proceed to the next step.
@@ -321,22 +321,22 @@ Hetzner automatically assigns private IPs, but we'll verify and configure static
 ### 7.1 Assign Static Private IPs via Hetzner Console
 
 **Via Web Console:**
-1. Go to **Servers** → `souqshamy-db`
+1. Go to **Servers** → `souqjari-db`
 2. Click **Networking** tab
 3. Under Private Networks, ensure IP is `10.0.0.2`
-4. Repeat for `souqshamy-app` with IP `10.0.0.1`
+4. Repeat for `souqjari-app` with IP `10.0.0.3`
 
 **Via CLI:**
 ```bash
 # Assign specific IPs (may need to detach/reattach)
-hcloud server attach-to-network souqshamy-db --network souqshamy-internal --ip 10.0.0.2
-hcloud server attach-to-network souqshamy-app --network souqshamy-internal --ip 10.0.0.1
+hcloud server attach-to-network souqjari-db --network souqjari-internal --ip 10.0.0.2
+hcloud server attach-to-network souqjari-app --network souqjari-internal --ip 10.0.0.3
 ```
 
 ### 7.2 Verify Private Network on Database Server
 
 ```bash
-ssh souqshamy-db
+ssh souqjari-db
 ```
 
 Then run:
@@ -348,7 +348,7 @@ ip addr show
 
 # Test if private network is working (ping app server)
 # Note: App server firewall might block ping initially
-ping -c 3 10.0.0.1 || echo "Ping blocked by firewall - this is OK for now"
+ping -c 3 10.0.0.3 || echo "Ping blocked by firewall - this is OK for now"
 
 # Exit back to local machine
 exit
@@ -357,7 +357,7 @@ exit
 ### 7.3 Verify Private Network on App Server
 
 ```bash
-ssh souqshamy-app
+ssh souqjari-app
 ```
 
 Then run:
@@ -365,7 +365,7 @@ Then run:
 # Check network interfaces
 ip addr show
 
-# You should see an interface with 10.0.0.1
+# You should see an interface with 10.0.0.3
 
 # Test connectivity to database server
 ping -c 3 10.0.0.2 || echo "Ping blocked by firewall - this is OK for now"
@@ -381,7 +381,7 @@ exit
 SSH into the database server and run these commands.
 
 ```bash
-ssh souqshamy-db
+ssh souqjari-db
 ```
 
 ### 8.1 System Update
@@ -528,7 +528,7 @@ timedatectl
 
 ```bash
 # Create admin user
-adduser --disabled-password --gecos "SouqShamy Admin" souqadmin
+adduser --disabled-password --gecos "SouqJari Admin" souqadmin
 
 # Add to sudo group
 usermod -aG sudo souqadmin
@@ -557,7 +557,7 @@ exit
 SSH into the app server and run these commands.
 
 ```bash
-ssh souqshamy-app
+ssh souqjari-app
 ```
 
 ### 9.1 System Update
@@ -728,7 +728,7 @@ timedatectl
 
 ```bash
 # Create admin user
-adduser --disabled-password --gecos "SouqShamy Admin" souqadmin
+adduser --disabled-password --gecos "SouqJari Admin" souqadmin
 
 # Add to sudo and docker groups (docker group will be created later)
 usermod -aG sudo souqadmin
@@ -767,7 +767,7 @@ exit
 
 1. Log into Cloudflare Dashboard: https://dash.cloudflare.com
 2. Click **Add a Site**
-3. Enter your domain: `souqshamy.com`
+3. Enter your domain: `souqjari.com`
 4. Select **Free** plan (sufficient for our needs)
 5. Update nameservers at your domain registrar to Cloudflare's nameservers
 
@@ -781,7 +781,7 @@ In Cloudflare Dashboard → DNS → Records, add the following:
 | A | `studio` | `YOUR_APP_SERVER_IP` | Proxied (orange cloud) | Auto |
 | A | `@` | `YOUR_APP_SERVER_IP` | Proxied (orange cloud) | Auto |
 
-**Replace `YOUR_APP_SERVER_IP` with the public IPv4 of souqshamy-app server.**
+**Replace `YOUR_APP_SERVER_IP` with the public IPv4 of souqjari-app server.**
 
 ### 10.3 Configure Cloudflare SSL/TLS Settings
 
@@ -808,19 +808,19 @@ To restrict Studio access to specific IPs:
 1. Go to **Security** → **WAF** → **Custom Rules**
 2. Create rule:
    - Name: `Restrict Studio Access`
-   - Expression: `(http.host eq "studio.souqshamy.com" and not ip.src in {YOUR_IP/32})`
+   - Expression: `(http.host eq "studio.souqjari.com" and not ip.src in {YOUR_IP/32})`
    - Action: **Block**
 
 ### 10.6 Verify DNS Propagation
 
 ```bash
 # Check DNS resolution (may take a few minutes to propagate)
-nslookup api.souqshamy.com
-nslookup studio.souqshamy.com
+nslookup api.souqjari.com
+nslookup studio.souqjari.com
 
 # Or using dig
-dig api.souqshamy.com +short
-dig studio.souqshamy.com +short
+dig api.souqjari.com +short
+dig studio.souqjari.com +short
 ```
 
 Both should resolve to Cloudflare IPs (not your server IP directly - that's correct, Cloudflare proxies the traffic).
@@ -835,52 +835,52 @@ Run these commands to verify Phase 1 is complete.
 
 ```bash
 # Test SSH to both servers
-ssh souqshamy-db "hostname && uname -a"
-ssh souqshamy-app "hostname && uname -a"
+ssh souqjari-db "hostname && uname -a"
+ssh souqjari-app "hostname && uname -a"
 ```
 
 ### 11.2 Private Network Connectivity
 
 ```bash
 # From app server, test database server connectivity
-ssh souqshamy-app "ping -c 3 10.0.0.2"
+ssh souqjari-app "ping -c 3 10.0.0.2"
 
 # From database server, test app server connectivity
-ssh souqshamy-db "ping -c 3 10.0.0.1"
+ssh souqjari-db "ping -c 3 10.0.0.3"
 ```
 
 ### 11.3 Firewall Status
 
 ```bash
 # Check firewall on both servers
-ssh souqshamy-db "ufw status verbose"
-ssh souqshamy-app "ufw status verbose"
+ssh souqjari-db "ufw status verbose"
+ssh souqjari-app "ufw status verbose"
 ```
 
 ### 11.4 Fail2Ban Status
 
 ```bash
 # Check fail2ban on both servers
-ssh souqshamy-db "fail2ban-client status"
-ssh souqshamy-app "fail2ban-client status"
+ssh souqjari-db "fail2ban-client status"
+ssh souqjari-app "fail2ban-client status"
 ```
 
 ### 11.5 DNS Resolution
 
 ```bash
 # Verify DNS is pointing to Cloudflare
-dig api.souqshamy.com +short
-dig studio.souqshamy.com +short
+dig api.souqjari.com +short
+dig studio.souqjari.com +short
 ```
 
 ### 11.6 HTTP Connectivity (Basic Test)
 
 ```bash
 # From app server, verify nginx is running
-ssh souqshamy-app "systemctl status nginx"
+ssh souqjari-app "systemctl status nginx"
 
 # Test from internet (should return nginx default page or 502)
-curl -I https://api.souqshamy.com
+curl -I https://api.souqjari.com
 ```
 
 ---
@@ -891,20 +891,20 @@ Fill in after completing setup:
 
 | Resource | Value |
 |----------|-------|
-| **App Server (souqshamy-app)** | |
+| **App Server (souqjari-app)** | |
 | Public IPv4 | |
 | Public IPv6 | |
-| Private IP | 10.0.0.1 |
-| **Database Server (souqshamy-db)** | |
+| Private IP | 10.0.0.3 |
+| **Database Server (souqjari-db)** | |
 | Public IPv4 | |
 | Public IPv6 | |
 | Private IP | 10.0.0.2 |
 | **Domains** | |
-| API | api.souqshamy.com |
-| Studio | studio.souqshamy.com |
+| API | api.souqjari.com |
+| Studio | studio.souqjari.com |
 | **SSH Access** | |
-| Command (App) | `ssh souqshamy-app` |
-| Command (DB) | `ssh souqshamy-db` |
+| Command (App) | `ssh souqjari-app` |
+| Command (DB) | `ssh souqjari-db` |
 
 ---
 
@@ -915,7 +915,7 @@ Fill in after completing setup:
 ```bash
 # Check if server is running in Hetzner Console
 # Try connecting with verbose output
-ssh -v souqshamy-app
+ssh -v souqjari-app
 ```
 
 ### Private Network Not Working
@@ -932,17 +932,17 @@ ip addr show
 
 ```bash
 # Temporarily disable firewall for testing
-ssh souqshamy-app "ufw disable"
+ssh souqjari-app "ufw disable"
 
 # Re-enable after testing
-ssh souqshamy-app "ufw enable"
+ssh souqjari-app "ufw enable"
 ```
 
 ### DNS Not Resolving
 
 1. Check Cloudflare DNS records are correct
 2. Wait 5-10 minutes for propagation
-3. Try different DNS resolver: `dig @8.8.8.8 api.souqshamy.com`
+3. Try different DNS resolver: `dig @8.8.8.8 api.souqjari.com`
 
 ---
 
@@ -969,7 +969,7 @@ After completing Phase 1, proceed to:
 
 ## Security Notes
 
-1. **Never share your SSH private key** (`souqshamy_ed25519`)
+1. **Never share your SSH private key** (`souqjari_ed25519`)
 2. **Store API tokens securely** - use a password manager
 3. **Regularly update servers** - automatic updates are configured but monitor for issues
 4. **Monitor fail2ban logs** for brute force attempts
@@ -979,4 +979,4 @@ After completing Phase 1, proceed to:
 
 *Document Version: 1.0*
 *Last Updated: December 2024*
-*Author: SouqShamy DevOps*
+*Author: SouqJari DevOps*
