@@ -22,20 +22,26 @@ Complete step-by-step guide for installing Docker, deploying Supabase services, 
 
 Before starting Phase 3, ensure Phase 2 is complete:
 - [ ] PostgreSQL 15 running on database server (`10.0.0.2`)
+- [ ] App server (`souqjari-app`) running at private IP `10.0.0.3`
 - [ ] Supabase database created with all roles and schemas
-- [ ] Remote connection from app server works
+- [ ] Remote connection from app server to database works
 - [ ] All database passwords saved securely
 - [ ] Cloudflare account set up with domain configured
-- [ ] DNS records pointing to app server
+- [ ] DNS records pointing to app server's public IP
 
 **Required credentials from Phase 2:**
-- `POSTGRES_PASSWORD`
-- `SUPABASE_ADMIN_PASSWORD`
-- `AUTHENTICATOR_PASSWORD`
-- `AUTH_ADMIN_PASSWORD`
-- `STORAGE_ADMIN_PASSWORD`
-- `REALTIME_ADMIN_PASSWORD`
-- `FUNCTIONS_ADMIN_PASSWORD`
+
+| Phase 2 Variable | Database Role | Used By (Phase 3) |
+|-----------------|---------------|-------------------|
+| `POSTGRES_PASSWORD` | postgres | Not used directly (superuser backup only) |
+| `SUPABASE_ADMIN_PASSWORD` | supabase_admin | Main DB connection, Meta, Studio |
+| `AUTHENTICATOR_PASSWORD` | authenticator | PostgREST (REST API) |
+| `AUTH_ADMIN_PASSWORD` | supabase_auth_admin | GoTrue (Auth service) |
+| `STORAGE_ADMIN_PASSWORD` | supabase_storage_admin | Storage API |
+| `REALTIME_ADMIN_PASSWORD` | supabase_realtime_admin | Realtime WebSocket |
+| `FUNCTIONS_ADMIN_PASSWORD` | supabase_functions_admin | Edge Functions |
+
+**Note:** In Phase 3, the `POSTGRES_USER` is set to `supabase_admin` (not `postgres`), so `POSTGRES_PASSWORD` in the Supabase `.env` file should use your `SUPABASE_ADMIN_PASSWORD` from Phase 2.
 
 ---
 

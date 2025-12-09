@@ -4,6 +4,16 @@ Copy-paste commands for Phase 3 - App Server Setup. Run these in sequence on the
 
 **Prerequisites:** Phase 1 and Phase 2 completed.
 
+**Required from Phase 2:**
+- Database server: `10.0.0.2` (souqjari-db)
+- App server: `10.0.0.3` (souqjari-app)
+- `SUPABASE_ADMIN_PASSWORD` → used as main POSTGRES_PASSWORD
+- `AUTHENTICATOR_PASSWORD` → PostgREST
+- `AUTH_ADMIN_PASSWORD` → GoTrue (Auth)
+- `STORAGE_ADMIN_PASSWORD` → Storage API
+- `REALTIME_ADMIN_PASSWORD` → Realtime
+- `FUNCTIONS_ADMIN_PASSWORD` → Edge Functions
+
 ---
 
 ## SSH Into App Server
