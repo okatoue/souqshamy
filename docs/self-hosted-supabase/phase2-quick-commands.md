@@ -629,6 +629,53 @@ SELECT 'Storage schema initialized!' AS status;
 EOSQL
 ```
 
+### Part 14: Initialize Realtime Schema (CRITICAL)
+
+**IMPORTANT:** Use `timestamp` NOT `timestamptz` for the schema_migrations table!
+
+```bash
+sudo -u postgres psql -d supabase << 'EOSQL'
+-- Realtime schema (CRITICAL: Use timestamp NOT timestamptz)
+-- Using timestamptz causes DateTime encoding errors in the Elixir Realtime service
+
+-- Grant basic permissions
+GRANT USAGE ON SCHEMA realtime TO authenticated, anon, service_role;
+GRANT ALL ON SCHEMA realtime TO supabase_realtime_admin;
+
+-- Create schema_migrations with CORRECT column type
+-- The Realtime service (Elixir/Ecto) expects 'timestamp' not 'timestamptz'
+CREATE TABLE IF NOT EXISTS realtime.schema_migrations (
+    version bigint PRIMARY KEY,
+    inserted_at timestamp(0) NOT NULL DEFAULT (now() AT TIME ZONE 'UTC')
+);
+
+-- Set ownership and permissions
+ALTER TABLE realtime.schema_migrations OWNER TO supabase_realtime_admin;
+GRANT ALL ON TABLE realtime.schema_migrations TO supabase_realtime_admin;
+GRANT ALL ON ALL TABLES IN SCHEMA realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA realtime TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA realtime GRANT ALL ON TABLES TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA realtime GRANT ALL ON SEQUENCES TO supabase_realtime_admin;
+
+-- Grant permissions on _realtime schema (internal state)
+GRANT USAGE ON SCHEMA _realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL TABLES IN SCHEMA _realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA _realtime TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA _realtime GRANT ALL ON TABLES TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA _realtime GRANT ALL ON SEQUENCES TO supabase_realtime_admin;
+
+-- Grant select to API roles
+GRANT SELECT ON ALL TABLES IN SCHEMA realtime TO authenticated, anon, service_role;
+
+-- Verify the column type is correct
+SELECT column_name, data_type FROM information_schema.columns
+WHERE table_schema = 'realtime' AND table_name = 'schema_migrations';
+-- Should show: inserted_at | timestamp without time zone
+
+SELECT 'Realtime schema initialized!' AS status;
+EOSQL
+```
+
 ---
 
 ## Verification Commands
@@ -745,6 +792,7 @@ postgresql://supabase_admin:<SUPABASE_ADMIN_PASSWORD>@10.0.0.2:5432/supabase
 - [ ] All roles created with secure passwords
 - [ ] supabase database created
 - [ ] Schemas initialized: auth, storage, realtime, extensions, graphql, etc.
+- [ ] **Realtime schema_migrations uses `timestamp` NOT `timestamptz`** (CRITICAL)
 - [ ] Remote connection from app server works
 - [ ] All passwords saved securely
 

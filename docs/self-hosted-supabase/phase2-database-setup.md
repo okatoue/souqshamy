@@ -1217,6 +1217,8 @@ cat > 02-realtime-schema.sql << 'EOSQL'
 -- =============================================================================
 -- Realtime Schema
 -- =============================================================================
+-- IMPORTANT: Supabase Realtime (Elixir/Phoenix) expects 'timestamp' NOT 'timestamptz'
+-- Using timestamptz causes DateTime encoding errors during migrations
 
 \c supabase
 
@@ -1224,13 +1226,32 @@ cat > 02-realtime-schema.sql << 'EOSQL'
 GRANT USAGE ON SCHEMA realtime TO authenticated, anon, service_role;
 GRANT ALL ON SCHEMA realtime TO supabase_realtime_admin;
 
--- Create realtime schema info table
+-- Create realtime schema_migrations table
+-- CRITICAL: Use 'timestamp' (NaiveDateTime) not 'timestamptz' (DateTime)
+-- The Realtime service uses Ecto which expects timestamp without timezone
 CREATE TABLE IF NOT EXISTS realtime.schema_migrations (
     version bigint PRIMARY KEY,
-    inserted_at timestamptz DEFAULT now()
+    inserted_at timestamp(0) NOT NULL DEFAULT (now() AT TIME ZONE 'UTC')
 );
 
--- Grant select on realtime tables
+-- Set ownership
+ALTER TABLE realtime.schema_migrations OWNER TO supabase_realtime_admin;
+
+-- Grant comprehensive permissions
+GRANT ALL ON TABLE realtime.schema_migrations TO supabase_realtime_admin;
+GRANT ALL ON ALL TABLES IN SCHEMA realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA realtime TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA realtime GRANT ALL ON TABLES TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA realtime GRANT ALL ON SEQUENCES TO supabase_realtime_admin;
+
+-- Grant permissions on _realtime schema (used for internal state)
+GRANT USAGE ON SCHEMA _realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL TABLES IN SCHEMA _realtime TO supabase_realtime_admin;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA _realtime TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA _realtime GRANT ALL ON TABLES TO supabase_realtime_admin;
+ALTER DEFAULT PRIVILEGES IN SCHEMA _realtime GRANT ALL ON SEQUENCES TO supabase_realtime_admin;
+
+-- Grant select on realtime tables to API roles
 GRANT SELECT ON ALL TABLES IN SCHEMA realtime TO authenticated, anon, service_role;
 
 SELECT 'Realtime schema initialized!' AS status;
