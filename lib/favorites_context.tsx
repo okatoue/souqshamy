@@ -127,8 +127,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Wait a short time for the Supabase session to be fully propagated after OAuth
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for the Supabase session to be fully propagated after OAuth
+      // A longer delay (500ms) is needed for the auth token to be properly set up
+      await new Promise(resolve => setTimeout(resolve, 500));
       console.log('[Favorites] Session propagation delay complete');
 
       console.log('[Favorites] Loading cached favorites...');
