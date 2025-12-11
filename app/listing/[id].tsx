@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     paginationDotActive: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: BRAND_COLOR,
     },
     paginationDotInactive: {
         backgroundColor: 'rgba(255, 255, 255, 0.5)',
