@@ -25,19 +25,45 @@ function RootLayoutNav() {
   const isDataLoading = user && (isGlobalLoading || favoritesLoading);
   const showLoadingOverlay = authLoading || isDataLoading;
 
+  // DEBUG: Log all relevant state on every render
+  console.log('[Layout] Render state:', {
+    authLoading,
+    hasUser: !!user,
+    isGlobalLoading,
+    favoritesLoading,
+    isDataLoading,
+    showLoadingOverlay,
+    segments: segments.join('/'),
+    isPasswordResetInProgress,
+  });
+
   // Handle auth state changes and navigation
   // NOTE: Navigation happens immediately based on auth state, independent of data loading.
   // The loading overlay will show on the destination route while data loads.
   useEffect(() => {
+    console.log('[Layout] useEffect triggered');
+
     // Don't navigate until auth is initialized
-    if (authLoading) return;
+    if (authLoading) {
+      console.log('[Layout] useEffect: authLoading is true, returning early');
+      return;
+    }
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
     const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
 
+    console.log('[Layout] useEffect: checking navigation', {
+      hasUser: !!user,
+      inAuthGroup,
+      isOAuthCallback,
+      segment0: segments[0],
+      segment1: segments[1],
+    });
+
     if (!user && !inAuthGroup && !isOAuthCallback) {
       // Redirect to auth screen if not authenticated
+      console.log('[Layout] useEffect: No user, redirecting to /(auth)');
       router.replace('/(auth)');
     } else if (user && (inAuthGroup || isOAuthCallback)) {
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
@@ -48,7 +74,10 @@ function RootLayoutNav() {
       }
 
       // Not in password reset flow, safe to redirect to main app
+      console.log('[Layout] useEffect: User authenticated, redirecting to /(tabs)');
       router.replace('/(tabs)');
+    } else {
+      console.log('[Layout] useEffect: No navigation needed (user on correct route)');
     }
   }, [user, segments, authLoading, isPasswordResetInProgress]);
 
