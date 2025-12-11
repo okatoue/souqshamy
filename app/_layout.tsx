@@ -26,11 +26,11 @@ function RootLayoutNav() {
   const showLoadingOverlay = authLoading || isDataLoading;
 
   // Handle auth state changes and navigation
+  // NOTE: Navigation happens immediately based on auth state, independent of data loading.
+  // The loading overlay will show on the destination route while data loads.
   useEffect(() => {
     // Don't navigate until auth is initialized
     if (authLoading) return;
-    // Don't navigate while user data is still loading
-    if (isDataLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
@@ -50,7 +50,7 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress, isDataLoading]);
+  }, [user, segments, authLoading, isPasswordResetInProgress]);
 
   // Always render the Stack navigator so navigation actions always have a target.
   // The loading overlay renders ON TOP of the Stack when needed, hiding content
