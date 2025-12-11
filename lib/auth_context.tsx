@@ -130,6 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             async (event, session) => {
                 console.log('[Auth] Auth state changed:', event, session ? `User: ${session.user.email}` : 'No session');
 
+                // For SIGNED_IN events (especially OAuth), ensure the session is fully ready
+                // before updating React state. This prevents data contexts from making
+                // queries before the Supabase client is properly initialized.
+                if (event === 'SIGNED_IN' && session) {
+                    console.log('[Auth] SIGNED_IN detected, refreshing session to ensure client readiness...');
+                    const { error: refreshError } = await supabase.auth.refreshSession();
+                    if (refreshError) {
+                        console.warn('[Auth] Session refresh warning:', refreshError.message);
+                    } else {
+                        console.log('[Auth] Session refreshed successfully, client ready for queries');
+                    }
+                }
+
                 setSession(session);
                 setUser(session?.user ?? null);
 
