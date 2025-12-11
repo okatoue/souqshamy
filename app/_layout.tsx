@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -20,45 +20,47 @@ function RootLayoutNav() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
-  // Check if navigation is ready (Stack navigator is mounted)
-  const navigationState = useRootNavigationState();
-  const isNavigationReady = navigationState?.key != null;
-
   // Determine if we should show loading screen
   // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
   const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
 
   // Handle auth state changes
   useEffect(() => {
-    // Don't run until auth loading is complete AND navigator is mounted
-    // (shouldShowLoading being true means we're showing the loading screen, not the Stack)
+    // Don't run until auth loading is complete
     if (authLoading) return;
+    // Don't navigate while showing loading screen (Stack isn't mounted)
     if (shouldShowLoading) return;
-    // Wait for navigation to be ready (Stack navigator must be mounted)
-    // This fixes the race condition where navigation is attempted before the Stack is rendered
-    if (!isNavigationReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
     const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
 
-    if (!user && !inAuthGroup && !isOAuthCallback) {
-      // Redirect to auth screen if not authenticated
-      router.replace('/(auth)');
-    } else if (user && (inAuthGroup || isOAuthCallback)) {
-      // CRITICAL: Check if we're in password reset flow BEFORE redirecting
-      // This is now a synchronous check from auth context state
-      if (isPasswordResetInProgress) {
-        // User is in password reset flow - DO NOT redirect to main app
-        // They need to complete the password reset process
-        console.log('[Auth] Password reset in progress, staying in auth group');
-        return;
-      }
+    // Use setTimeout to defer navigation to the next event loop tick.
+    // This ensures React has finished mounting the Stack navigator before
+    // we attempt to navigate. Without this, the navigation action fires
+    // during the same commit phase when shouldShowLoading becomes false,
+    // but before the Stack is actually in the DOM.
+    const timeoutId = setTimeout(() => {
+      if (!user && !inAuthGroup && !isOAuthCallback) {
+        // Redirect to auth screen if not authenticated
+        router.replace('/(auth)');
+      } else if (user && (inAuthGroup || isOAuthCallback)) {
+        // CRITICAL: Check if we're in password reset flow BEFORE redirecting
+        // This is now a synchronous check from auth context state
+        if (isPasswordResetInProgress) {
+          // User is in password reset flow - DO NOT redirect to main app
+          // They need to complete the password reset process
+          console.log('[Auth] Password reset in progress, staying in auth group');
+          return;
+        }
 
-      // Not in password reset flow, safe to redirect to main app
-      router.replace('/(tabs)');
-    }
-  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading, isNavigationReady]);
+        // Not in password reset flow, safe to redirect to main app
+        router.replace('/(tabs)');
+      }
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
 
   // Show loading screen while auth state OR global data is being loaded
   // This eliminates the "waterfall effect" where screens load data individually
