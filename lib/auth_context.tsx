@@ -334,7 +334,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             throw sessionError;
                         }
 
-                        console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
+                        console.log('[Auth] Google Sign-In session set:', sessionData.user?.email);
+
+                        // Force the Supabase client to refresh its internal state.
+                        // This ensures the auth token is properly set up for subsequent queries.
+                        // Without this, queries made immediately after OAuth may hang.
+                        console.log('[Auth] Refreshing session to ensure client state is ready...');
+                        const { error: refreshError } = await supabase.auth.refreshSession();
+                        if (refreshError) {
+                            console.warn('[Auth] Session refresh warning:', refreshError.message);
+                            // Don't throw - the session is already set, refresh is just to ensure readiness
+                        }
+
+                        console.log('[Auth] Google Sign-In successful, session ready');
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -454,7 +466,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             throw sessionError;
                         }
 
-                        console.log('[Auth] Facebook Sign-In successful:', sessionData.user?.email);
+                        console.log('[Auth] Facebook Sign-In session set:', sessionData.user?.email);
+
+                        // Force the Supabase client to refresh its internal state.
+                        // This ensures the auth token is properly set up for subsequent queries.
+                        console.log('[Auth] Refreshing session to ensure client state is ready...');
+                        const { error: refreshError } = await supabase.auth.refreshSession();
+                        if (refreshError) {
+                            console.warn('[Auth] Session refresh warning:', refreshError.message);
+                        }
+
+                        console.log('[Auth] Facebook Sign-In successful, session ready');
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
