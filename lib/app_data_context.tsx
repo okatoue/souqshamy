@@ -597,11 +597,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
             console.log('[AppData] Starting data initialization for user:', user.id);
 
-            // Wait a short time for the Supabase session to be fully propagated.
+            // Wait for the Supabase session to be fully propagated after OAuth.
             // After OAuth, setSession() triggers onAuthStateChange synchronously,
             // but the internal session state might not be fully ready for queries.
-            // This delay prevents getSession() and queries from hanging.
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // A longer delay (500ms) is needed for the auth token to be properly
+            // set up for authenticated database queries.
+            await new Promise(resolve => setTimeout(resolve, 500));
             console.log('[AppData] Session propagation delay complete');
 
             // STEP 1: Load from cache first (instant, no network)
