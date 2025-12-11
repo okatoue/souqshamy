@@ -597,6 +597,21 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
             console.log('[AppData] Starting data initialization for user:', user.id);
 
+            // Verify session is available before making authenticated queries
+            // This helps diagnose issues where the session might not be fully propagated
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            console.log('[AppData] Session check:', {
+                hasSession: !!session,
+                hasAccessToken: !!session?.access_token,
+                sessionError: sessionError?.message,
+                sessionUserId: session?.user?.id,
+                expectedUserId: user.id,
+            });
+
+            if (!session?.access_token) {
+                console.warn('[AppData] No valid session token, queries may fail');
+            }
+
             // STEP 1: Load from cache first (instant, no network)
             console.log('[AppData] Step 1: Loading from cache...');
             let cachedConversations, cachedUserListings, cachedRecentlyViewed;
