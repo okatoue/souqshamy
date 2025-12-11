@@ -1,6 +1,5 @@
 import { favoritesApi, listingsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth_context';
-import { supabase } from '@/lib/supabase';
 import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
 import { Listing } from '@/types/listing';
@@ -66,13 +65,6 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(true);
         }
 
-        // Verify session before making authenticated queries
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('[Favorites] Session check before query:', {
-            hasSession: !!session,
-            hasAccessToken: !!session?.access_token,
-        });
-
         console.log('[Favorites] Fetching favorite IDs...');
         const { data: listingIds, error: favoriteError } = await favoritesApi.getIds(user.id);
 
@@ -134,6 +126,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
         return;
       }
+
+      // Wait a short time for the Supabase session to be fully propagated after OAuth
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('[Favorites] Session propagation delay complete');
 
       console.log('[Favorites] Loading cached favorites...');
       const cached = await loadCachedFavorites();
