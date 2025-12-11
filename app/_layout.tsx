@@ -21,9 +21,10 @@ function RootLayoutNav() {
   const colors = Colors[colorScheme];
 
   // Determine if we should show loading overlay
-  // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
-  const isDataLoading = user && (isGlobalLoading || favoritesLoading);
-  const showLoadingOverlay = authLoading || isDataLoading;
+  // Only show loading during auth initialization, not during data loading.
+  // Individual screens will handle their own loading states for data.
+  // This prevents the infinite loading issue where Supabase queries hang after OAuth.
+  const showLoadingOverlay = authLoading;
 
   // DEBUG: Log all relevant state on every render
   console.log('[Layout] Render state:', {
@@ -31,10 +32,8 @@ function RootLayoutNav() {
     hasUser: !!user,
     isGlobalLoading,
     favoritesLoading,
-    isDataLoading,
     showLoadingOverlay,
     segments: segments.join('/'),
-    isPasswordResetInProgress,
   });
 
   // Handle auth state changes and navigation
