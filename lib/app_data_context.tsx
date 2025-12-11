@@ -597,20 +597,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
             console.log('[AppData] Starting data initialization for user:', user.id);
 
-            // Verify session is available before making authenticated queries
-            // This helps diagnose issues where the session might not be fully propagated
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            console.log('[AppData] Session check:', {
-                hasSession: !!session,
-                hasAccessToken: !!session?.access_token,
-                sessionError: sessionError?.message,
-                sessionUserId: session?.user?.id,
-                expectedUserId: user.id,
-            });
-
-            if (!session?.access_token) {
-                console.warn('[AppData] No valid session token, queries may fail');
-            }
+            // Wait a short time for the Supabase session to be fully propagated.
+            // After OAuth, setSession() triggers onAuthStateChange synchronously,
+            // but the internal session state might not be fully ready for queries.
+            // This delay prevents getSession() and queries from hanging.
+            await new Promise(resolve => setTimeout(resolve, 100));
+            console.log('[AppData] Session propagation delay complete');
 
             // STEP 1: Load from cache first (instant, no network)
             console.log('[AppData] Step 1: Loading from cache...');
