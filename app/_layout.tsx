@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -20,6 +20,10 @@ function RootLayoutNav() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
+  // Check if navigation is ready (Stack navigator is mounted)
+  const navigationState = useRootNavigationState();
+  const isNavigationReady = navigationState?.key != null;
+
   // Determine if we should show loading screen
   // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
   const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
@@ -30,6 +34,9 @@ function RootLayoutNav() {
     // (shouldShowLoading being true means we're showing the loading screen, not the Stack)
     if (authLoading) return;
     if (shouldShowLoading) return;
+    // Wait for navigation to be ready (Stack navigator must be mounted)
+    // This fixes the race condition where navigation is attempted before the Stack is rendered
+    if (!isNavigationReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
@@ -51,7 +58,7 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading]);
+  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading, isNavigationReady]);
 
   // Show loading screen while auth state OR global data is being loaded
   // This eliminates the "waterfall effect" where screens load data individually
