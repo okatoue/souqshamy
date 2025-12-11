@@ -6,9 +6,9 @@ import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function RootLayoutNav() {
@@ -20,23 +20,17 @@ function RootLayoutNav() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
-  // Check if navigation is ready (Stack navigator is mounted)
-  const navigationState = useRootNavigationState();
-  const isNavigationReady = navigationState?.key != null;
-
-  // Determine if we should show loading screen
+  // Determine if we should show loading overlay
   // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
-  const shouldShowLoading = authLoading || (user && (isGlobalLoading || favoritesLoading));
+  const isDataLoading = user && (isGlobalLoading || favoritesLoading);
+  const showLoadingOverlay = authLoading || isDataLoading;
 
-  // Handle auth state changes
+  // Handle auth state changes and navigation
   useEffect(() => {
-    // Don't run until auth loading is complete AND navigator is mounted
-    // (shouldShowLoading being true means we're showing the loading screen, not the Stack)
+    // Don't navigate until auth is initialized
     if (authLoading) return;
-    if (shouldShowLoading) return;
-    // Wait for navigation to be ready (Stack navigator must be mounted)
-    // This fixes the race condition where navigation is attempted before the Stack is rendered
-    if (!isNavigationReady) return;
+    // Don't navigate while user data is still loading
+    if (isDataLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
@@ -47,10 +41,8 @@ function RootLayoutNav() {
       router.replace('/(auth)');
     } else if (user && (inAuthGroup || isOAuthCallback)) {
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
-      // This is now a synchronous check from auth context state
       if (isPasswordResetInProgress) {
         // User is in password reset flow - DO NOT redirect to main app
-        // They need to complete the password reset process
         console.log('[Auth] Password reset in progress, staying in auth group');
         return;
       }
@@ -58,46 +50,54 @@ function RootLayoutNav() {
       // Not in password reset flow, safe to redirect to main app
       router.replace('/(tabs)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress, shouldShowLoading, isNavigationReady]);
+  }, [user, segments, authLoading, isPasswordResetInProgress, isDataLoading]);
 
-  // Show loading screen while auth state OR global data is being loaded
-  // This eliminates the "waterfall effect" where screens load data individually
-  if (shouldShowLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.background,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <AuthLogo size="large" containerStyle={{ marginBottom: 24 }} />
-        <ActivityIndicator size="large" color={BRAND_COLOR} />
-      </View>
-    );
-  }
-
+  // Always render the Stack navigator so navigation actions always have a target.
+  // The loading overlay renders ON TOP of the Stack when needed, hiding content
+  // until auth and data loading are complete. This eliminates the race condition
+  // where navigation was attempted before the Stack was mounted.
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
-      <Stack.Screen name="(test)/test-supabase" options={{
-        title: 'Test',
-        headerShown: true
-      }} />
-      <Stack.Screen name="category/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="listing/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="search" options={{ headerShown: false }} />
-      <Stack.Screen name="product-details" options={{ headerShown: false }} />
-      <Stack.Screen name="user" options={{ headerShown: false }} />
-      <Stack.Screen name="personal-details" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-    </Stack>
+    <View style={styles.container}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="auth/callback" />
+        <Stack.Screen name="(test)/test-supabase" options={{
+          title: 'Test',
+          headerShown: true
+        }} />
+        <Stack.Screen name="category/[id]" />
+        <Stack.Screen name="listing/[id]" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="product-details" />
+        <Stack.Screen name="user" />
+        <Stack.Screen name="personal-details" />
+        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+      </Stack>
+
+      {/* Loading overlay - covers the entire screen while loading */}
+      {showLoadingOverlay && (
+        <View style={[styles.loadingOverlay, { backgroundColor: colors.background }]}>
+          <AuthLogo size="large" containerStyle={{ marginBottom: 24 }} />
+          <ActivityIndicator size="large" color={BRAND_COLOR} />
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+});
 
 export default function RootLayout() {
   return (
