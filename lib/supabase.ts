@@ -7,6 +7,10 @@ import 'react-native-url-polyfill/auto';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
+// Debug logging for environment variables
+console.log('[Supabase] URL:', supabaseUrl);
+console.log('[Supabase] Key exists:', !!supabasePublishableKey);
+
 // Custom storage adapter for React Native
 // This properly implements the storage interface that Supabase expects
 const SupabaseAsyncStorage = {
