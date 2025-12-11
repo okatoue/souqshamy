@@ -301,7 +301,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
-                console.log('[Auth] Opening auth URL...');
+                console.log('[Auth] Opening auth URL:', data.url);
 
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
