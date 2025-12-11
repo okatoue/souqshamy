@@ -310,9 +310,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
 
                 console.log('[Auth] Browser result type:', result.type);
+                console.log('[Auth] Browser result:', JSON.stringify(result, null, 2));
 
                 if (result.type === 'success' && result.url) {
-                    console.log('[Auth] Processing auth callback...');
+                    console.log('[Auth] Processing auth callback, URL:', result.url);
 
                     // Extract the access token and refresh token from the URL
                     const url = new URL(result.url);
