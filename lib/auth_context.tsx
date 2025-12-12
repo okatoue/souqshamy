@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
+import * as Updates from 'expo-updates';
 
 // Required for web browser auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -129,22 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 console.log('[Auth] Auth state changed:', event, session ? `User: ${session.user.email}` : 'No session');
-
-                // For SIGNED_IN events (especially OAuth), wait for AsyncStorage to complete
-                // the session write before updating React state. This prevents data contexts
-                // from making queries before the Supabase client is properly initialized.
-                if (event === 'SIGNED_IN' && session) {
-                    console.log('[Auth] SIGNED_IN detected, waiting for session storage to complete...');
-                    // Give AsyncStorage time to persist the session from setSession()
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    // Verify the session is readable from storage
-                    const { data: { session: storedSession } } = await supabase.auth.getSession();
-                    if (storedSession) {
-                        console.log('[Auth] Session verified in storage, client ready for queries');
-                    } else {
-                        console.warn('[Auth] Session not found in storage after delay, proceeding anyway');
-                    }
-                }
 
                 setSession(session);
                 setUser(session?.user ?? null);
@@ -352,17 +337,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                         console.log('[Auth] Google Sign-In session set:', sessionData.user?.email);
 
-                        // Force the Supabase client to refresh its internal state.
-                        // This ensures the auth token is properly set up for subsequent queries.
-                        // Without this, queries made immediately after OAuth may hang.
-                        console.log('[Auth] Refreshing session to ensure client state is ready...');
-                        const { error: refreshError } = await supabase.auth.refreshSession();
-                        if (refreshError) {
-                            console.warn('[Auth] Session refresh warning:', refreshError.message);
-                            // Don't throw - the session is already set, refresh is just to ensure readiness
-                        }
-
-                        console.log('[Auth] Google Sign-In successful, session ready');
+                        // The Supabase client doesn't properly initialize after manual setSession().
+                        // Reload the app to force a fresh initialization where getSession() works normally.
+                        console.log('[Auth] Reloading app to complete sign-in...');
+                        await Updates.reloadAsync();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -484,15 +462,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                         console.log('[Auth] Facebook Sign-In session set:', sessionData.user?.email);
 
-                        // Force the Supabase client to refresh its internal state.
-                        // This ensures the auth token is properly set up for subsequent queries.
-                        console.log('[Auth] Refreshing session to ensure client state is ready...');
-                        const { error: refreshError } = await supabase.auth.refreshSession();
-                        if (refreshError) {
-                            console.warn('[Auth] Session refresh warning:', refreshError.message);
-                        }
-
-                        console.log('[Auth] Facebook Sign-In successful, session ready');
+                        // The Supabase client doesn't properly initialize after manual setSession().
+                        // Reload the app to force a fresh initialization where getSession() works normally.
+                        console.log('[Auth] Reloading app to complete sign-in...');
+                        await Updates.reloadAsync();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
