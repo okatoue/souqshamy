@@ -11,6 +11,7 @@ export interface Profile {
     phone_number: string | null;
     display_name: string | null;
     avatar_url: string | null;
+    email_verified: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -98,6 +99,7 @@ export function useProfile() {
                         phone_number: user.user_metadata?.phone_number || null,
                         display_name: null,
                         avatar_url: null,
+                        email_verified: false,
                         created_at: user.created_at || new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     };
@@ -113,6 +115,7 @@ export function useProfile() {
                 phone_number: data.phone_number || null,
                 display_name: data.display_name || null,
                 avatar_url: data.avatar_url || null,
+                email_verified: data.email_verified ?? false,
                 created_at: data.created_at || user.created_at || new Date().toISOString(),
                 updated_at: data.updated_at || new Date().toISOString()
             };
@@ -129,6 +132,7 @@ export function useProfile() {
                     phone_number: user.user_metadata?.phone_number || null,
                     display_name: null,
                     avatar_url: null,
+                    email_verified: false,
                     created_at: user.created_at || new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 });
