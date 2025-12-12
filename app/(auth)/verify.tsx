@@ -25,21 +25,23 @@ type Step = 'email' | 'code' | 'password' | 'success';
 const CONTENT = {
   'signup-verification': {
     codeTitle: 'Verify Your Email',
-    codeSubtitle: "We've sent an 8-digit verification code to",
+    codeSubtitle: "We've sent a 6-digit verification code to",
     codeIcon: 'mail-outline' as const,
     verifyButtonTitle: 'Verify Email',
     successTitle: 'Email Verified!',
     successSubtitle: 'Your email has been successfully verified. You can now start using SouqJari.',
     successButtonTitle: 'Get Started',
+    codeLength: 6,
   },
   'password-reset': {
     codeTitle: 'Enter Code',
-    codeSubtitle: "We've sent an 8-digit code to",
+    codeSubtitle: "We've sent a 6-digit code to",
     codeIcon: 'key-outline' as const,
     verifyButtonTitle: 'Verify Code',
     successTitle: 'Password Reset!',
     successSubtitle: 'Your password has been successfully reset. You can now sign in with your new password.',
     successButtonTitle: 'Sign In',
+    codeLength: 6,
   },
 };
 
@@ -64,7 +66,7 @@ export default function VerifyScreen() {
 
   const [step, setStep] = useState<Step>(getInitialStep());
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
+  const [code, setCode] = useState<string[]>(Array(content.codeLength).fill(''));
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,8 +117,8 @@ export default function VerifyScreen() {
   const handleVerifyCode = async () => {
     const fullCode = code.join('');
 
-    if (fullCode.length !== 8) {
-      Alert.alert('Error', 'Please enter the complete 8-digit code');
+    if (fullCode.length !== content.codeLength) {
+      Alert.alert('Error', `Please enter the complete ${content.codeLength}-digit code`);
       return;
     }
 
@@ -135,14 +137,14 @@ export default function VerifyScreen() {
 
       if (error) {
         Alert.alert('Error', 'Invalid or expired code. Please try again.');
-        setCode(['', '', '', '', '', '', '', '']);
+        setCode(Array(content.codeLength).fill(''));
       } else {
         // For password-reset, go to password step; for signup, go to success
         setStep(mode === 'password-reset' ? 'password' : 'success');
       }
     } catch (error: any) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
-      setCode(['', '', '', '', '', '', '', '']);
+      setCode(Array(content.codeLength).fill(''));
     } finally {
       setLoading(false);
     }
@@ -185,7 +187,7 @@ export default function VerifyScreen() {
 
   // Resend verification code
   const handleResendCode = async () => {
-    setCode(['', '', '', '', '', '', '', '']);
+    setCode(Array(content.codeLength).fill(''));
     setLoading(true);
 
     try {
@@ -193,7 +195,7 @@ export default function VerifyScreen() {
         // Use resend for signup verification
         const { error } = await supabase.auth.resend({
           type: 'signup',
-          email: email,
+          email: email.trim(),
         });
 
         if (error) {
@@ -202,8 +204,10 @@ export default function VerifyScreen() {
           Alert.alert('Success', 'A new verification code has been sent to your email.');
         }
       } else {
-        // Use signInWithOtp for password reset
+        // Use signInWithOtp for password reset - don't set loading again
+        setLoading(false);
         await handleSendCode();
+        return;
       }
     } catch (error: any) {
       Alert.alert('Error', 'Failed to resend verification code. Please try again.');
@@ -299,7 +303,7 @@ export default function VerifyScreen() {
             highlightedText={email}
           />
 
-          <OTPInput code={code} onCodeChange={setCode} disabled={loading} />
+          <OTPInput code={code} onCodeChange={setCode} length={content.codeLength} disabled={loading} />
 
           <AuthButton title={content.verifyButtonTitle} onPress={handleVerifyCode} loading={loading} />
 
