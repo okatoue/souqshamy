@@ -280,6 +280,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error('Email or phone number is required');
             }
         } catch (error: any) {
+            // Check if error is due to email not being confirmed
+            const errorMessage = error.message?.toLowerCase() || '';
+            if (errorMessage.includes('email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+                // Don't show alert - let the caller handle navigation to verification screen
+                throw error;
+            }
             Alert.alert('Sign In Error', error.message);
             throw error;
         }
