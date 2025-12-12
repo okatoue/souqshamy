@@ -575,8 +575,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // ========== GLOBAL DATA INITIALIZATION ==========
     useEffect(() => {
         const initializeAllData = async () => {
+            console.log('[AppData] initializeAllData called, user:', !!user, 'initialLoadComplete:', initialLoadComplete.current);
+
             if (!user) {
                 // No user - clear everything and stop loading
+                console.log('[AppData] No user, clearing data');
                 setConversations([]);
                 setUserListings([]);
                 setRecentlyViewed([]);
@@ -588,19 +591,36 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (initialLoadComplete.current) {
+                console.log('[AppData] Initial load already complete, skipping');
                 return;
             }
 
+            console.log('[AppData] Starting data initialization for user:', user.id);
+
+            // Wait for the Supabase session to be fully propagated after OAuth.
+            // After OAuth, setSession() triggers onAuthStateChange synchronously,
+            // but the internal session state might not be fully ready for queries.
+            // A longer delay (500ms) is needed for the auth token to be properly
+            // set up for authenticated database queries.
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log('[AppData] Session propagation delay complete');
+
             // STEP 1: Load from cache first (instant, no network)
-            const [
-                cachedConversations,
-                cachedUserListings,
-                cachedRecentlyViewed
-            ] = await Promise.all([
-                loadCachedConversations(),
-                loadCachedUserListings(),
-                loadCachedRecentlyViewed()
-            ]);
+            console.log('[AppData] Step 1: Loading from cache...');
+            let cachedConversations, cachedUserListings, cachedRecentlyViewed;
+            try {
+                [cachedConversations, cachedUserListings, cachedRecentlyViewed] = await Promise.all([
+                    loadCachedConversations(),
+                    loadCachedUserListings(),
+                    loadCachedRecentlyViewed()
+                ]);
+                console.log('[AppData] Cache loaded successfully');
+            } catch (cacheError) {
+                console.error('[AppData] Error loading cache:', cacheError);
+                cachedConversations = null;
+                cachedUserListings = null;
+                cachedRecentlyViewed = [];
+            }
 
             // Apply cached data immediately
             if (cachedConversations && cachedConversations.length > 0) {
@@ -621,11 +641,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             // STEP 2: Fetch fresh data from network in parallel
+            console.log('[AppData] Step 2: Starting network fetches...');
             const fetchPromises: Promise<void>[] = [];
 
             // Conversations fetch
             fetchPromises.push(
                 (async () => {
+                    console.log('[AppData] Fetching conversations...');
                     try {
                         const { data: convData, error: convError } = await supabase
                             .from('conversations')
@@ -676,8 +698,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                             setTotalUnreadCount(unread);
                         }
                     } catch (error) {
-                        console.error('Error fetching conversations during init:', error);
+                        console.error('[AppData] Error fetching conversations during init:', error);
                     } finally {
+                        console.log('[AppData] Conversations fetch complete');
                         setConversationsLoading(false);
                     }
                 })()
@@ -686,6 +709,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // User listings fetch
             fetchPromises.push(
                 (async () => {
+                    console.log('[AppData] Fetching user listings...');
                     try {
                         const { data, error } = await supabase
                             .from('listings')
@@ -699,8 +723,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                         setUserListings(fetchedListings);
                         await saveCachedUserListings(fetchedListings);
                     } catch (error) {
-                        console.error('Error fetching user listings during init:', error);
+                        console.error('[AppData] Error fetching user listings during init:', error);
                     } finally {
+                        console.log('[AppData] User listings fetch complete');
                         setUserListingsLoading(false);
                     }
                 })()
@@ -709,6 +734,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // Recently viewed fetch
             fetchPromises.push(
                 (async () => {
+                    console.log('[AppData] Fetching recently viewed...');
                     try {
                         const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
                         if (!storedIds) {
@@ -737,18 +763,26 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                         setRecentlyViewed(sortedListings);
                         await saveCachedRecentlyViewed(sortedListings);
                     } catch (error) {
-                        console.error('Error fetching recently viewed during init:', error);
+                        console.error('[AppData] Error fetching recently viewed during init:', error);
                     } finally {
+                        console.log('[AppData] Recently viewed fetch complete');
                         setRecentlyViewedLoading(false);
                     }
                 })()
             );
 
             // Wait for all fetches to complete
-            await Promise.all(fetchPromises);
+            console.log('[AppData] Waiting for all fetches to complete...');
+            try {
+                await Promise.all(fetchPromises);
+                console.log('[AppData] All fetches completed successfully');
+            } catch (fetchAllError) {
+                console.error('[AppData] Error in Promise.all:', fetchAllError);
+            }
 
             initialLoadComplete.current = true;
             setIsGlobalLoading(false);
+            console.log('[AppData] Global loading complete, isGlobalLoading set to false');
         };
 
         initializeAllData();

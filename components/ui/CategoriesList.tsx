@@ -193,8 +193,8 @@ const styles = StyleSheet.create({
         opacity: 0.7,
     },
     categoryImage: {
-        width: 70,
-        height: 70,
+        width: 100,
+        height: 100,
     },
     categoryName: {
         fontSize: 14,

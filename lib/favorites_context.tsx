@@ -47,7 +47,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const fetchFavorites = useCallback(
     async (refresh = false, showLoading = false) => {
+      console.log('[Favorites] fetchFavorites called, refresh:', refresh, 'showLoading:', showLoading);
+
       if (!user) {
+        console.log('[Favorites] No user in fetchFavorites, clearing');
         setFavorites([]);
         setFavoriteIds(new Set());
         setIsLoading(false);
@@ -62,28 +65,35 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(true);
         }
 
+        console.log('[Favorites] Fetching favorite IDs...');
         const { data: listingIds, error: favoriteError } = await favoritesApi.getIds(user.id);
 
         if (favoriteError) throw favoriteError;
 
         if (!listingIds || listingIds.length === 0) {
+          console.log('[Favorites] No favorites found');
           setFavorites([]);
           setFavoriteIds(new Set());
           await saveCachedFavorites([], []);
           return;
         }
 
+        console.log('[Favorites] Found', listingIds.length, 'favorite IDs');
         setFavoriteIds(new Set(listingIds));
 
+        console.log('[Favorites] Fetching listing details...');
         const { data: listings, error: listingsError } = await listingsApi.getByIds(listingIds);
 
         if (listingsError) throw listingsError;
 
         const listingData = listings || [];
+        console.log('[Favorites] Got', listingData.length, 'listings');
         setFavorites(listingData);
 
         await saveCachedFavorites(listingData, listingIds);
+        console.log('[Favorites] Favorites cached');
       } catch (error) {
+        console.error('[Favorites] Error in fetchFavorites:', error);
         if (refresh) {
           handleError(error, {
             context: 'FavoritesContext.fetchFavorites',
@@ -97,6 +107,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } finally {
+        console.log('[Favorites] fetchFavorites complete, setting isLoading to false');
         setIsLoading(false);
         setIsRefreshing(false);
       }
@@ -106,25 +117,38 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const initialize = async () => {
+      console.log('[Favorites] initialize called, user:', !!user);
+
       if (!user) {
+        console.log('[Favorites] No user, clearing favorites');
         setFavorites([]);
         setFavoriteIds(new Set());
         setIsLoading(false);
         return;
       }
 
+      // Wait for the Supabase session to be fully propagated after OAuth
+      // A longer delay (500ms) is needed for the auth token to be properly set up
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[Favorites] Session propagation delay complete');
+
+      console.log('[Favorites] Loading cached favorites...');
       const cached = await loadCachedFavorites();
 
       if (cached && cached.listings.length > 0) {
+        console.log('[Favorites] Cache found, applying cached data');
         setFavorites(cached.listings);
         setFavoriteIds(new Set(cached.ids));
         setIsLoading(false);
+        console.log('[Favorites] Fetching fresh data in background...');
         fetchFavorites(false, false);
       } else {
+        console.log('[Favorites] No cache, fetching with loading state...');
         await fetchFavorites(false, true);
       }
 
       isInitialLoad.current = false;
+      console.log('[Favorites] Initialization complete');
     };
 
     initialize();

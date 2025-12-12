@@ -21,23 +21,48 @@ function RootLayoutNav() {
   const colors = Colors[colorScheme];
 
   // Determine if we should show loading overlay
-  // Show loading until: auth is initialized AND (if authenticated) all global data is loaded
-  const isDataLoading = user && (isGlobalLoading || favoritesLoading);
-  const showLoadingOverlay = authLoading || isDataLoading;
+  // Only show loading during auth initialization, not during data loading.
+  // Individual screens will handle their own loading states for data.
+  // This prevents the infinite loading issue where Supabase queries hang after OAuth.
+  const showLoadingOverlay = authLoading;
+
+  // DEBUG: Log all relevant state on every render
+  console.log('[Layout] Render state:', {
+    authLoading,
+    hasUser: !!user,
+    isGlobalLoading,
+    favoritesLoading,
+    showLoadingOverlay,
+    segments: segments.join('/'),
+  });
 
   // Handle auth state changes and navigation
+  // NOTE: Navigation happens immediately based on auth state, independent of data loading.
+  // The loading overlay will show on the destination route while data loads.
   useEffect(() => {
+    console.log('[Layout] useEffect triggered');
+
     // Don't navigate until auth is initialized
-    if (authLoading) return;
-    // Don't navigate while user data is still loading
-    if (isDataLoading) return;
+    if (authLoading) {
+      console.log('[Layout] useEffect: authLoading is true, returning early');
+      return;
+    }
 
     const inAuthGroup = segments[0] === '(auth)';
     // Check if user is on the OAuth callback route (auth/callback)
     const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
 
+    console.log('[Layout] useEffect: checking navigation', {
+      hasUser: !!user,
+      inAuthGroup,
+      isOAuthCallback,
+      segment0: segments[0],
+      segment1: segments[1],
+    });
+
     if (!user && !inAuthGroup && !isOAuthCallback) {
       // Redirect to auth screen if not authenticated
+      console.log('[Layout] useEffect: No user, redirecting to /(auth)');
       router.replace('/(auth)');
     } else if (user && (inAuthGroup || isOAuthCallback)) {
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
@@ -48,9 +73,12 @@ function RootLayoutNav() {
       }
 
       // Not in password reset flow, safe to redirect to main app
+      console.log('[Layout] useEffect: User authenticated, redirecting to /(tabs)');
       router.replace('/(tabs)');
+    } else {
+      console.log('[Layout] useEffect: No navigation needed (user on correct route)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress, isDataLoading]);
+  }, [user, segments, authLoading, isPasswordResetInProgress]);
 
   // Always render the Stack navigator so navigation actions always have a target.
   // The loading overlay renders ON TOP of the Stack when needed, hiding content
