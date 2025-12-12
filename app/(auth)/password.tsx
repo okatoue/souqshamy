@@ -71,7 +71,16 @@ export default function PasswordScreen() {
         router.replace('/(tabs)');
       }
     } catch (error: any) {
-      // Error is handled in auth context
+      // Check if error is due to email not being confirmed
+      const errorMessage = error.message?.toLowerCase() || '';
+      if (errorMessage.includes('email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+        // Redirect to email verification screen
+        router.replace({
+          pathname: '/(auth)/verify',
+          params: { mode: 'signup-verification', email },
+        });
+      }
+      // Other errors are handled in auth context
     } finally {
       setLoading(false);
     }
