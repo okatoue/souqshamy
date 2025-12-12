@@ -130,16 +130,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             async (event, session) => {
                 console.log('[Auth] Auth state changed:', event, session ? `User: ${session.user.email}` : 'No session');
 
-                // For SIGNED_IN events (especially OAuth), ensure the session is fully ready
-                // before updating React state. This prevents data contexts from making
-                // queries before the Supabase client is properly initialized.
+                // For SIGNED_IN events (especially OAuth), wait for AsyncStorage to complete
+                // the session write before updating React state. This prevents data contexts
+                // from making queries before the Supabase client is properly initialized.
                 if (event === 'SIGNED_IN' && session) {
-                    console.log('[Auth] SIGNED_IN detected, refreshing session to ensure client readiness...');
-                    const { error: refreshError } = await supabase.auth.refreshSession();
-                    if (refreshError) {
-                        console.warn('[Auth] Session refresh warning:', refreshError.message);
+                    console.log('[Auth] SIGNED_IN detected, waiting for session storage to complete...');
+                    // Give AsyncStorage time to persist the session from setSession()
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // Verify the session is readable from storage
+                    const { data: { session: storedSession } } = await supabase.auth.getSession();
+                    if (storedSession) {
+                        console.log('[Auth] Session verified in storage, client ready for queries');
                     } else {
-                        console.log('[Auth] Session refreshed successfully, client ready for queries');
+                        console.warn('[Auth] Session not found in storage after delay, proceeding anyway');
                     }
                 }
 
