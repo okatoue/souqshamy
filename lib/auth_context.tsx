@@ -335,10 +335,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             throw sessionError;
                         }
 
-                        console.log('[Auth] Google Sign-In session set:', sessionData.user?.email);
+                        console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
 
-                        // The Supabase client doesn't properly initialize after manual setSession().
-                        // Reload the app to force a fresh initialization where getSession() works normally.
+                        // Reload the app to properly initialize the Supabase client with the new session
                         console.log('[Auth] Reloading app to complete sign-in...');
                         await Updates.reloadAsync();
                     } else {
