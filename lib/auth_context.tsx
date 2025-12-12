@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
+import * as Updates from 'expo-updates';
 
 // Required for web browser auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -335,6 +336,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         }
 
                         console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
+
+                        // Reload the app to properly initialize the Supabase client with the new session
+                        console.log('[Auth] Reloading app to complete sign-in...');
+                        await Updates.reloadAsync();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -455,6 +460,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         }
 
                         console.log('[Auth] Facebook Sign-In successful:', sessionData.user?.email);
+
+                        // Reload the app to properly initialize the Supabase client with the new session
+                        console.log('[Auth] Reloading app to complete sign-in...');
+                        await Updates.reloadAsync();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
