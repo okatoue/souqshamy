@@ -1,4 +1,5 @@
-// app/(auth)/forgot-password.tsx
+// app/(auth)/verify.tsx
+// Unified verification screen for email verification and password reset
 import {
   AuthButton,
   AuthInput,
@@ -17,24 +18,58 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+type Mode = 'signup-verification' | 'password-reset';
 type Step = 'email' | 'code' | 'password' | 'success';
 
-export default function ForgotPasswordScreen() {
+// Content configuration based on mode
+const CONTENT = {
+  'signup-verification': {
+    codeTitle: 'Verify Your Email',
+    codeSubtitle: "We've sent an 8-digit verification code to",
+    codeIcon: 'mail-outline' as const,
+    verifyButtonTitle: 'Verify Email',
+    successTitle: 'Email Verified!',
+    successSubtitle: 'Your email has been successfully verified. You can now start using SouqJari.',
+    successButtonTitle: 'Get Started',
+  },
+  'password-reset': {
+    codeTitle: 'Enter Code',
+    codeSubtitle: "We've sent an 8-digit code to",
+    codeIcon: 'key-outline' as const,
+    verifyButtonTitle: 'Verify Code',
+    successTitle: 'Password Reset!',
+    successSubtitle: 'Your password has been successfully reset. You can now sign in with your new password.',
+    successButtonTitle: 'Sign In',
+  },
+};
+
+export default function VerifyScreen() {
   const params = useLocalSearchParams<{
-    emailOrPhone: string;
-    isPhone: string;
+    mode: Mode;
+    email: string;
   }>();
 
   const { setPasswordResetInProgress } = useAuth();
 
-  const [step, setStep] = useState<Step>('email');
-  const [email, setEmail] = useState(params.emailOrPhone || '');
+  const mode: Mode = params.mode || 'signup-verification';
+  const initialEmail = params.email || '';
+  const content = CONTENT[mode];
+
+  // For password-reset, start at 'email' step if no email provided, otherwise 'code'
+  // For signup-verification, always start at 'code' step
+  const getInitialStep = (): Step => {
+    if (mode === 'signup-verification') return 'code';
+    return initialEmail ? 'code' : 'email';
+  };
+
+  const [step, setStep] = useState<Step>(getInitialStep());
+  const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState(['', '', '', '', '', '', '', '']);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Send verification code
+  // Step 1 (password-reset only): Send verification code
   const handleSendCode = async () => {
     const trimmedEmail = email.trim();
 
@@ -76,7 +111,7 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  // Step 2: Verify code
+  // Step 2: Verify OTP code
   const handleVerifyCode = async () => {
     const fullCode = code.join('');
 
@@ -88,19 +123,22 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      await setPasswordResetInProgress(true);
+      if (mode === 'password-reset') {
+        await setPasswordResetInProgress(true);
+      }
 
       const { error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: fullCode,
-        type: 'email',
+        type: mode === 'signup-verification' ? 'signup' : 'email',
       });
 
       if (error) {
         Alert.alert('Error', 'Invalid or expired code. Please try again.');
         setCode(['', '', '', '', '', '', '', '']);
       } else {
-        setStep('password');
+        // For password-reset, go to password step; for signup, go to success
+        setStep(mode === 'password-reset' ? 'password' : 'success');
       }
     } catch (error: any) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
@@ -110,7 +148,7 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  // Step 3: Set new password
+  // Step 3 (password-reset only): Set new password
   const handleResetPassword = async () => {
     if (!password) {
       Alert.alert('Error', 'Please enter a new password');
@@ -145,15 +183,52 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const handleBackToLogin = async () => {
-    await setPasswordResetInProgress(false);
-    await supabase.auth.signOut();
-    router.replace('/(auth)');
-  };
-
+  // Resend verification code
   const handleResendCode = async () => {
     setCode(['', '', '', '', '', '', '', '']);
-    await handleSendCode();
+    setLoading(true);
+
+    try {
+      if (mode === 'signup-verification') {
+        // Use resend for signup verification
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email: email,
+        });
+
+        if (error) {
+          Alert.alert('Error', error.message);
+        } else {
+          Alert.alert('Success', 'A new verification code has been sent to your email.');
+        }
+      } else {
+        // Use signInWithOtp for password reset
+        await handleSendCode();
+      }
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to resend verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle success button press
+  const handleSuccessAction = async () => {
+    if (mode === 'password-reset') {
+      await setPasswordResetInProgress(false);
+      await supabase.auth.signOut();
+      router.replace('/(auth)');
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
+  // Go back to sign in
+  const handleBackToSignIn = async () => {
+    if (mode === 'password-reset') {
+      await setPasswordResetInProgress(false);
+    }
+    router.replace('/(auth)');
   };
 
   const { styles: authStyles, colors } = useAuthTheme();
@@ -170,13 +245,13 @@ export default function ForgotPasswordScreen() {
           />
 
           <Text style={[styles.statusTitle, { color: colors.textPrimary }]}>
-            Password Reset!
+            {content.successTitle}
           </Text>
           <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>
-            Your password has been successfully reset. You can now sign in with your new password.
+            {content.successSubtitle}
           </Text>
 
-          <AuthButton title="Sign In" onPress={handleBackToLogin} />
+          <AuthButton title={content.successButtonTitle} onPress={handleSuccessAction} />
         </View>
       </SafeAreaView>
     );
@@ -184,11 +259,11 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthLayout>
-      <AuthLogo icon={step === 'password' ? 'lock-closed-outline' : 'key-outline'} />
-
-      {/* Step 1: Email Input */}
-      {step === 'email' && (
+      {/* Step 1: Email Input (password-reset only) */}
+      {step === 'email' && mode === 'password-reset' && (
         <>
+          <AuthLogo icon="key-outline" />
+
           <AuthTitle
             title="Forgot Password?"
             subtitle="Enter your email and we'll send you a verification code."
@@ -216,15 +291,17 @@ export default function ForgotPasswordScreen() {
       {/* Step 2: OTP Code Input */}
       {step === 'code' && (
         <>
+          <AuthLogo icon={content.codeIcon} />
+
           <AuthTitle
-            title="Enter Code"
-            subtitle="We've sent an 8-digit code to"
+            title={content.codeTitle}
+            subtitle={content.codeSubtitle}
             highlightedText={email}
           />
 
           <OTPInput code={code} onCodeChange={setCode} disabled={loading} />
 
-          <AuthButton title="Verify Code" onPress={handleVerifyCode} loading={loading} />
+          <AuthButton title={content.verifyButtonTitle} onPress={handleVerifyCode} loading={loading} />
 
           <AuthButton
             title="Didn't receive the code? Resend"
@@ -233,12 +310,22 @@ export default function ForgotPasswordScreen() {
             disabled={loading}
             style={styles.resendButton}
           />
+
+          <AuthButton
+            title="Back to Sign In"
+            variant="link"
+            onPress={handleBackToSignIn}
+            disabled={loading}
+            style={styles.backButton}
+          />
         </>
       )}
 
-      {/* Step 3: New Password */}
-      {step === 'password' && (
+      {/* Step 3: New Password (password-reset only) */}
+      {step === 'password' && mode === 'password-reset' && (
         <>
+          <AuthLogo icon="lock-closed-outline" />
+
           <AuthTitle
             title="New Password"
             subtitle="Create a strong password for your account."
@@ -278,6 +365,10 @@ const styles = StyleSheet.create({
   },
   resendButton: {
     marginTop: 16,
+    alignSelf: 'center',
+  },
+  backButton: {
+    marginTop: 8,
     alignSelf: 'center',
   },
   statusTitle: {

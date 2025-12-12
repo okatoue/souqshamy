@@ -63,8 +63,8 @@ export default function PasswordScreen() {
         await signUp(email, password, undefined, displayName.trim());
         // Navigate to email verification screen
         router.replace({
-          pathname: '/(auth)/verify-email',
-          params: { email },
+          pathname: '/(auth)/verify',
+          params: { mode: 'signup-verification', email },
         });
       } else {
         await signIn(email, password);
@@ -83,10 +83,10 @@ export default function PasswordScreen() {
 
   const handleForgotPassword = () => {
     router.push({
-      pathname: '/(auth)/forgot-password',
+      pathname: '/(auth)/verify',
       params: {
-        emailOrPhone: email,
-        isPhone: 'false',
+        mode: 'password-reset',
+        email: email,
       },
     });
   };
