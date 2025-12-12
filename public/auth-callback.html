@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to SouqJari...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .message {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .manual-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .manual-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .error-container {
+            display: none;
+        }
+        .error-container.show {
+            display: block;
+        }
+        .error-message {
+            background: rgba(255, 100, 100, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .success-icon {
+            color: #4CAF50;
+        }
+        .fallback-message {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="success-view">
+            <div class="icon">✅</div>
+            <h1>Email Verified!</h1>
+            <div class="spinner"></div>
+            <p class="message" id="status-message">Redirecting to SouqJari app...</p>
+            <a href="#" id="manual-link" class="manual-link">Open SouqJari App</a>
+            <div class="fallback-message">
+                <p>If the app doesn't open automatically, tap the button above.</p>
+            </div>
+        </div>
+
+        <div id="error-view" class="error-container">
+            <div class="icon">⚠️</div>
+            <h1>Verification Issue</h1>
+            <div class="error-message" id="error-message"></div>
+            <a href="stickersmash://auth/signin" class="manual-link">Go to Sign In</a>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Configuration
+            const APP_SCHEME = 'stickersmash';
+            const CALLBACK_PATH = 'auth/callback';
+
+            // Get URL parameters
+            const hash = window.location.hash;
+            const searchParams = new URLSearchParams(window.location.search);
+
+            // Elements
+            const successView = document.getElementById('success-view');
+            const errorView = document.getElementById('error-view');
+            const statusMessage = document.getElementById('status-message');
+            const manualLink = document.getElementById('manual-link');
+            const errorMessage = document.getElementById('error-message');
+
+            // Check for errors in URL
+            const error = searchParams.get('error');
+            const errorDescription = searchParams.get('error_description');
+
+            if (error) {
+                // Show error view
+                successView.style.display = 'none';
+                errorView.classList.add('show');
+                errorMessage.textContent = errorDescription || error || 'An error occurred during verification.';
+                return;
+            }
+
+            // Construct the deep link URL with the hash fragment (contains tokens)
+            let deepLink = APP_SCHEME + '://' + CALLBACK_PATH;
+
+            // If we have a hash (access_token, etc.), append it
+            if (hash) {
+                deepLink += hash;
+            }
+
+            // If we have search params (like type=recovery), append them
+            const type = searchParams.get('type');
+            if (type) {
+                deepLink += (hash ? '&' : '#') + 'type=' + type;
+            }
+
+            // Update manual link
+            manualLink.href = deepLink;
+
+            // Log for debugging (remove in production)
+            console.log('[Auth Callback] Deep link:', deepLink);
+            console.log('[Auth Callback] Hash:', hash);
+            console.log('[Auth Callback] Search params:', window.location.search);
+
+            // Try to open the app after a short delay
+            setTimeout(function() {
+                window.location.href = deepLink;
+            }, 500);
+
+            // Update message after 3 seconds if still on page
+            setTimeout(function() {
+                statusMessage.textContent = 'Tap the button below to open the app';
+                // Hide spinner
+                var spinner = document.querySelector('.spinner');
+                if (spinner) {
+                    spinner.style.display = 'none';
+                }
+            }, 3000);
+
+            // Final fallback message after 5 seconds
+            setTimeout(function() {
+                statusMessage.innerHTML = 'If the app is not installed, you can download it from the App Store or Play Store.';
+            }, 8000);
+        })();
+    </script>
+</body>
+</html>
