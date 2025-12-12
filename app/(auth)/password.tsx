@@ -61,11 +61,11 @@ export default function PasswordScreen() {
     try {
       if (isNewUser) {
         await signUp(email, password, undefined, displayName.trim());
-        Alert.alert(
-          'Check Your Email',
-          "We've sent you a verification email. Please verify your email to continue.",
-          [{ text: 'OK', onPress: () => router.replace('/(auth)') }]
-        );
+        // Navigate to email verification screen
+        router.replace({
+          pathname: '/(auth)/verify-email',
+          params: { email },
+        });
       } else {
         await signIn(email, password);
         router.replace('/(tabs)');
