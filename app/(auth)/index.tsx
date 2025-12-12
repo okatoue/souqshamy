@@ -24,40 +24,17 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
 
-  const checkUserStatus = async (email: string): Promise<{
-    exists: boolean;
-    isEmailConfirmed: boolean;
-  }> => {
+  const checkUserExists = async (email: string): Promise<boolean> => {
     try {
-      // Try to sign in with a dummy password to check if user exists
-      // and get error details about email confirmation status
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: '__CHECK_USER_EXISTS__', // Intentionally wrong password
-      });
-
-      if (!error) {
-        // Unlikely but handle it - user exists and somehow this matched
-        return { exists: true, isEmailConfirmed: true };
-      }
-
-      const errorMsg = error.message.toLowerCase();
-
-      // "Invalid login credentials" = user exists, email is confirmed, wrong password
-      if (errorMsg.includes('invalid login credentials') || errorMsg.includes('invalid_credentials')) {
-        return { exists: true, isEmailConfirmed: true };
-      }
-
-      // "Email not confirmed" = user exists but hasn't verified email
-      if (errorMsg.includes('email not confirmed') || errorMsg.includes('email_not_confirmed')) {
-        return { exists: true, isEmailConfirmed: false };
-      }
-
-      // Any other error (including "user not found" patterns) = new user
-      return { exists: false, isEmailConfirmed: false };
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+      return !!data;
     } catch (error) {
-      console.error('Error checking user status:', error);
-      return { exists: false, isEmailConfirmed: false };
+      console.error('Error checking user existence:', error);
+      return false;
     }
   };
 
@@ -77,31 +54,16 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      const { exists, isEmailConfirmed } = await checkUserStatus(trimmedInput);
+      const userExists = await checkUserExists(trimmedInput);
 
-      if (exists && !isEmailConfirmed) {
-        // User exists but email not verified - go to verification screen
-        // Also resend the verification code
-        await supabase.auth.resend({
-          type: 'signup',
-          email: trimmedInput,
-        });
-
-        router.push({
-          pathname: '/(auth)/verify',
-          params: { mode: 'signup-verification', email: trimmedInput },
-        });
-      } else {
-        // Either new user or existing verified user - go to password screen
-        router.push({
-          pathname: '/(auth)/password',
-          params: {
-            emailOrPhone: trimmedInput,
-            isPhone: 'false',
-            isNewUser: exists ? 'false' : 'true',
-          },
-        });
-      }
+      router.push({
+        pathname: '/(auth)/password',
+        params: {
+          emailOrPhone: trimmedInput,
+          isPhone: 'false',
+          isNewUser: userExists ? 'false' : 'true',
+        },
+      });
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
