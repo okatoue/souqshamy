@@ -129,7 +129,7 @@ export default function VerifyScreen() {
         await setPasswordResetInProgress(true);
       }
 
-      const { error } = await supabase.auth.verifyOtp({
+      const { data, error } = await supabase.auth.verifyOtp({
         email: email.trim(),
         token: fullCode,
         type: mode === 'signup-verification' ? 'signup' : 'email',
@@ -139,6 +139,16 @@ export default function VerifyScreen() {
         Alert.alert('Error', 'Invalid or expired code. Please try again.');
         setCode(Array(content.codeLength).fill(''));
       } else {
+        // SUCCESS - For signup verification, update the profile's email_verified flag
+        if (mode === 'signup-verification' && data?.user) {
+          // Update profile to mark email as verified
+          // (This is a backup in case the database trigger doesn't fire)
+          await supabase
+            .from('profiles')
+            .update({ email_verified: true, updated_at: new Date().toISOString() })
+            .eq('id', data.user.id);
+        }
+
         // For password-reset, go to password step; for signup, go to success
         setStep(mode === 'password-reset' ? 'password' : 'success');
       }

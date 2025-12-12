@@ -24,17 +24,31 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
 
-  const checkUserExists = async (email: string): Promise<boolean> => {
+  type UserStatus = 'new' | 'unverified' | 'verified';
+
+  const checkUserStatus = async (email: string): Promise<UserStatus> => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, email_verified')
         .eq('email', email)
         .maybeSingle();
-      return !!data;
+
+      if (error) {
+        console.error('Error checking user status:', error);
+        return 'new'; // Default to new user on error
+      }
+
+      if (!data) {
+        // No profile exists - new user
+        return 'new';
+      }
+
+      // Profile exists - check if verified
+      return data.email_verified ? 'verified' : 'unverified';
     } catch (error) {
-      console.error('Error checking user existence:', error);
-      return false;
+      console.error('Error checking user status:', error);
+      return 'new';
     }
   };
 
@@ -54,16 +68,48 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      const userExists = await checkUserExists(trimmedInput);
+      const status = await checkUserStatus(trimmedInput);
 
-      router.push({
-        pathname: '/(auth)/password',
-        params: {
-          emailOrPhone: trimmedInput,
-          isPhone: 'false',
-          isNewUser: userExists ? 'false' : 'true',
-        },
-      });
+      if (status === 'new') {
+        // New user - go to signup (password creation) screen
+        router.push({
+          pathname: '/(auth)/password',
+          params: {
+            emailOrPhone: trimmedInput,
+            isPhone: 'false',
+            isNewUser: 'true',
+          },
+        });
+      } else if (status === 'unverified') {
+        // Existing but unverified - resend code and go to verification screen
+        try {
+          await supabase.auth.resend({
+            type: 'signup',
+            email: trimmedInput,
+          });
+        } catch (resendError) {
+          console.log('Could not resend verification code:', resendError);
+          // Continue to verification screen anyway - they can request resend there
+        }
+
+        router.push({
+          pathname: '/(auth)/verify',
+          params: {
+            mode: 'signup-verification',
+            email: trimmedInput,
+          },
+        });
+      } else {
+        // Verified user - go to login screen
+        router.push({
+          pathname: '/(auth)/password',
+          params: {
+            emailOrPhone: trimmedInput,
+            isPhone: 'false',
+            isNewUser: 'false',
+          },
+        });
+      }
     } catch (error) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {

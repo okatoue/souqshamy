@@ -11,6 +11,7 @@ import {
   useAuthStyles,
 } from '@/components/auth';
 import { useAuth } from '@/lib/auth_context';
+import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
@@ -74,6 +75,16 @@ export default function PasswordScreen() {
       // Check if error is due to email not being confirmed
       const errorMessage = error.message?.toLowerCase() || '';
       if (errorMessage.includes('email not confirmed') || errorMessage.includes('email_not_confirmed')) {
+        // Resend verification code before redirecting
+        try {
+          await supabase.auth.resend({
+            type: 'signup',
+            email: email,
+          });
+        } catch (resendError) {
+          console.log('Could not resend verification code:', resendError);
+        }
+
         // Redirect to email verification screen
         router.replace({
           pathname: '/(auth)/verify',
