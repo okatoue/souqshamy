@@ -7,7 +7,7 @@ import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context'
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -20,11 +20,28 @@ function RootLayoutNav() {
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
 
-  // Determine if we should show loading overlay
-  // Only show loading during auth initialization, not during data loading.
-  // Individual screens will handle their own loading states for data.
-  // This prevents the infinite loading issue where Supabase queries hang after OAuth.
-  const showLoadingOverlay = authLoading;
+  // Minimum loading delay to prevent flickering if auth resolves very quickly
+  const [minLoadingComplete, setMinLoadingComplete] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setMinLoadingComplete(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Determine current route context
+  const inAuthGroup = segments[0] === '(auth)';
+  const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
+
+  // Show loading overlay while:
+  // 1. Auth is still loading, OR
+  // 2. Minimum loading time hasn't elapsed (prevents flickering), OR
+  // 3. User is not authenticated AND not yet on auth screens (about to redirect)
+  // 4. User IS authenticated AND still on auth screens (about to redirect to tabs)
+  const needsRedirect =
+    (!user && !inAuthGroup && !isOAuthCallback) ||  // Unauthenticated user not on auth screen
+    (user && (inAuthGroup || isOAuthCallback) && !isPasswordResetInProgress);  // Authenticated user still on auth screen
+
+  const showLoadingOverlay = authLoading || !minLoadingComplete || needsRedirect;
 
   // DEBUG: Log all relevant state on every render
   console.log('[Layout] Render state:', {
@@ -32,6 +49,8 @@ function RootLayoutNav() {
     hasUser: !!user,
     isGlobalLoading,
     favoritesLoading,
+    minLoadingComplete,
+    needsRedirect,
     showLoadingOverlay,
     segments: segments.join('/'),
   });
@@ -47,10 +66,6 @@ function RootLayoutNav() {
       console.log('[Layout] useEffect: authLoading is true, returning early');
       return;
     }
-
-    const inAuthGroup = segments[0] === '(auth)';
-    // Check if user is on the OAuth callback route (auth/callback)
-    const isOAuthCallback = segments[0] === 'auth' && segments[1] === 'callback';
 
     console.log('[Layout] useEffect: checking navigation', {
       hasUser: !!user,
@@ -78,7 +93,7 @@ function RootLayoutNav() {
     } else {
       console.log('[Layout] useEffect: No navigation needed (user on correct route)');
     }
-  }, [user, segments, authLoading, isPasswordResetInProgress]);
+  }, [user, segments, authLoading, isPasswordResetInProgress, inAuthGroup, isOAuthCallback]);
 
   // Always render the Stack navigator so navigation actions always have a target.
   // The loading overlay renders ON TOP of the Stack when needed, hiding content
