@@ -163,17 +163,37 @@ export function useMessages(conversationId: string | null) {
 
             // Get signed URL for the uploaded audio (private bucket)
             // Using 1 year expiry for voice messages
-            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                .from('voice-messages')
-                .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365); // 1 year
+            // Add retry logic with delay to handle R2 eventual consistency
+            let audioUrl: string | null = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                console.log(`[VoiceMessage] Creating signed URL (attempt ${attempt}/3)...`);
 
-            if (signedUrlError) {
-                console.error('[VoiceMessage] Signed URL error:', signedUrlError);
-                throw signedUrlError;
+                // Small delay to allow R2 to propagate the upload
+                if (attempt > 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * attempt));
+                }
+
+                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                    .from('voice-messages')
+                    .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365); // 1 year
+
+                if (!signedUrlError && signedUrlData) {
+                    audioUrl = signedUrlData.signedUrl;
+                    console.log('[VoiceMessage] Signed URL generated');
+                    break;
+                }
+
+                console.warn(`[VoiceMessage] Signed URL attempt ${attempt} failed:`, signedUrlError?.message);
+
+                if (attempt === 3) {
+                    console.error('[VoiceMessage] All signed URL attempts failed');
+                    throw signedUrlError;
+                }
             }
 
-            const audioUrl = signedUrlData.signedUrl;
-            console.log('[VoiceMessage] Signed URL generated');
+            if (!audioUrl) {
+                throw new Error('Failed to generate signed URL');
+            }
 
             // Insert message record
             console.log('[VoiceMessage] Inserting message record...');
