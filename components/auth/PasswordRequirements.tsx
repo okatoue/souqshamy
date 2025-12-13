@@ -2,54 +2,36 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { AUTH_COLORS, isSmallScreen } from './constants';
-import { authStyles } from './styles';
-
-interface Requirement {
-  label: string;
-  met: boolean;
-}
+import { isSmallScreen } from './constants';
+import { useAuthStyles, useAuthColors } from './useAuthStyles';
 
 interface PasswordRequirementsProps {
   password: string;
-  confirmPassword?: string;
-  showMatch?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 export function PasswordRequirements({
   password,
-  confirmPassword = '',
-  showMatch = true,
   style,
 }: PasswordRequirementsProps) {
-  const requirements: Requirement[] = [
-    {
-      label: 'Be at least 6 characters',
-      met: password.length >= 6,
-    },
-  ];
+  const authStyles = useAuthStyles();
+  const colors = useAuthColors();
 
-  if (showMatch) {
-    requirements.push({
-      label: 'Passwords match',
-      met: password === confirmPassword && password.length > 0,
-    });
-  }
+  const meetsLengthRequirement = password.length >= 6;
 
   return (
     <View style={[authStyles.card, styles.container, style]}>
-      <Text style={styles.title}>Password must:</Text>
-      {requirements.map((req, index) => (
-        <View key={index} style={styles.item}>
-          <Ionicons
-            name={req.met ? 'checkmark-circle' : 'ellipse-outline'}
-            size={16}
-            color={req.met ? AUTH_COLORS.success : AUTH_COLORS.textMuted}
-          />
-          <Text style={[styles.text, req.met && styles.textMet]}>{req.label}</Text>
-        </View>
-      ))}
+      <Text style={[styles.title, { color: colors.textSecondary }]}>Password must:</Text>
+      <View style={styles.item}>
+        <Ionicons
+          name={meetsLengthRequirement ? 'checkmark-circle' : 'ellipse-outline'}
+          size={16}
+          color={meetsLengthRequirement ? colors.success : colors.textMuted}
+        />
+        <Text style={[styles.text, { color: meetsLengthRequirement ? colors.success : colors.textMuted }]}>
+          Be at least 6 characters
+        </Text>
+      </View>
     </View>
   );
 }
@@ -61,7 +43,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 12,
     fontWeight: '500',
-    color: AUTH_COLORS.textSecondary,
     marginBottom: 8,
   },
   item: {
@@ -72,9 +53,5 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    color: AUTH_COLORS.textMuted,
-  },
-  textMet: {
-    color: AUTH_COLORS.success,
   },
 });

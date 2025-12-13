@@ -27,7 +27,6 @@ export default function PasswordScreen() {
   const { signIn, signUp } = useAuth();
 
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -48,11 +47,6 @@ export default function PasswordScreen() {
     if (isNewUser) {
       if (!displayName.trim()) {
         Alert.alert('Error', 'Please enter your name');
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        Alert.alert('Error', 'Passwords do not match');
         return;
       }
     }
@@ -143,16 +137,6 @@ export default function PasswordScreen() {
           editable={!loading}
         />
 
-        {isNewUser && (
-          <AuthPasswordInput
-            label="Confirm Password"
-            placeholder="Confirm your password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            editable={!loading}
-          />
-        )}
-
         {!isNewUser && <AuthButton title="Forgot password?" variant="link" onPress={handleForgotPassword} />}
       </View>
 
@@ -162,7 +146,7 @@ export default function PasswordScreen() {
         loading={loading}
       />
 
-      {isNewUser && <PasswordRequirements password={password} confirmPassword={confirmPassword} />}
+      {isNewUser && <PasswordRequirements password={password} />}
     </AuthLayout>
   );
 }
