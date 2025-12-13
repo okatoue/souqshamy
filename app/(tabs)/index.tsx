@@ -7,6 +7,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { UserIcon } from '@/components/ui/userIcon';
 import { SPACING } from '@/constants/theme';
+import { useAutoLocationDetection } from '@/hooks/useAutoLocationDetection';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -17,6 +18,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Auto-detect location on first launch (when no saved preference exists)
+  useAutoLocationDetection();
 
   const backgroundColor = useThemeColor({}, 'background');
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');

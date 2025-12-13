@@ -62,6 +62,7 @@ export function calculateBoundingBox(
 export function useLocationFilter() {
     const [locationFilter, setLocationFilter] = useState<LocationFilter>(DEFAULT_LOCATION);
     const [isLoading, setIsLoading] = useState(true);
+    const [hasCustomLocation, setHasCustomLocation] = useState(false);
     const hasLoadedCache = useRef(false);
 
     // Load saved location on mount - instant cache read
@@ -78,6 +79,7 @@ export function useLocationFilter() {
                     // Validate the parsed data has required fields
                     if (parsed.name && parsed.coordinates && typeof parsed.radius === 'number') {
                         setLocationFilter(parsed);
+                        setHasCustomLocation(true);
                     }
                 }
             } catch (error) {
@@ -99,6 +101,7 @@ export function useLocationFilter() {
 
         // Update state immediately (optimistic)
         setLocationFilter(newFilter);
+        setHasCustomLocation(true);
 
         // Persist to storage in background
         try {
@@ -157,6 +160,7 @@ export function useLocationFilter() {
     return {
         locationFilter,
         isLoading,
+        hasCustomLocation,
         updateLocationFilter,
         clearLocationFilter,
         isWithinRadius,
