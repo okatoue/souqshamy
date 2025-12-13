@@ -3,7 +3,11 @@
 /**
  * Converts a Supabase Storage image URL to a thumbnail URL with lower resolution
  * Supabase Storage supports image transformations via the render endpoint
- * 
+ *
+ * Supports both:
+ * - Supabase Cloud: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+ * - Self-hosted: https://api.souqjari.com/storage/v1/object/public/[bucket]/[path]
+ *
  * @param imageUrl - The original image URL from Supabase Storage
  * @param width - Desired width (default: 200)
  * @param height - Desired height (default: 200)
@@ -19,11 +23,11 @@ export function getThumbnailUrl(
     if (!imageUrl) return imageUrl;
 
     try {
-        // Check if it's a Supabase Storage URL
-        // Format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
-        if (imageUrl.includes('supabase.co/storage/v1/object/public/')) {
+        // Check if it's a Supabase Storage URL (cloud or self-hosted)
+        // Matches: /storage/v1/object/public/ pattern
+        if (imageUrl.includes('/storage/v1/object/public/')) {
             // Transform to render endpoint for image transformations
-            // New format: https://[project].supabase.co/storage/v1/render/image/public/[bucket]/[path]?width=X&height=Y&quality=Z
+            // New format: .../storage/v1/render/image/public/[bucket]/[path]?width=X&height=Y&quality=Z
             const transformedUrl = imageUrl.replace(
                 '/storage/v1/object/public/',
                 '/storage/v1/render/image/public/'
