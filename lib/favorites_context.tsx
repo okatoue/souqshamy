@@ -2,6 +2,7 @@ import { favoritesApi, listingsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth_context';
 import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
+import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
@@ -58,11 +59,37 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Set loading states at the very beginning
+      if (refresh) {
+        setIsRefreshing(true);
+      } else if (showLoading) {
+        setIsLoading(true);
+      }
+
       try {
-        if (refresh) {
-          setIsRefreshing(true);
-        } else if (showLoading) {
-          setIsLoading(true);
+        // Verify session is valid before making API calls
+        // This prevents hanging when the session token isn't fully propagated
+        console.log('[Favorites] Verifying session...');
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[Favorites] Current session:', {
+          hasSession: !!session,
+          userId: session?.user?.id,
+          expiresAt: session?.expires_at
+        });
+
+        if (!session) {
+          console.log('[Favorites] No valid session, clearing favorites');
+          setFavorites([]);
+          setFavoriteIds(new Set());
+          return;
+        }
+
+        // Verify session user matches the expected user
+        if (session.user.id !== user.id) {
+          console.warn('[Favorites] Session user mismatch, clearing favorites');
+          setFavorites([]);
+          setFavoriteIds(new Set());
+          return;
         }
 
         console.log('[Favorites] Fetching favorite IDs...');
@@ -71,7 +98,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         if (favoriteError) throw favoriteError;
 
         if (!listingIds || listingIds.length === 0) {
-          console.log('[Favorites] No favorites found');
+          console.log('[Favorites] No favorites found (success with empty data)');
           setFavorites([]);
           setFavoriteIds(new Set());
           await saveCachedFavorites([], []);
@@ -94,6 +121,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         console.log('[Favorites] Favorites cached');
       } catch (error) {
         console.error('[Favorites] Error in fetchFavorites:', error);
+        // On error, set empty state to prevent stale data
+        setFavorites([]);
+        setFavoriteIds(new Set());
         if (refresh) {
           handleError(error, {
             context: 'FavoritesContext.fetchFavorites',
@@ -107,6 +137,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } finally {
+        // ALWAYS reset loading states - this is critical
         console.log('[Favorites] fetchFavorites complete, setting isLoading to false');
         setIsLoading(false);
         setIsRefreshing(false);
@@ -127,10 +158,41 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Wait for the Supabase session to be fully propagated after OAuth
-      // A longer delay (500ms) is needed for the auth token to be properly set up
-      await new Promise(resolve => setTimeout(resolve, 500));
-      console.log('[Favorites] Session propagation delay complete');
+      // Wait for the Supabase session to be fully established
+      // This is especially important for OAuth flows where the session takes time to propagate
+      const waitForSession = async (maxAttempts = 5, delayMs = 500): Promise<boolean> => {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          console.log(`[Favorites] Session check attempt ${attempt}/${maxAttempts}`);
+
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (session && session.user?.id === user.id) {
+            console.log('[Favorites] Valid session found');
+            return true;
+          }
+
+          if (attempt < maxAttempts) {
+            console.log(`[Favorites] No valid session yet, waiting ${delayMs}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            // Increase delay for subsequent attempts (exponential backoff capped at 2s)
+            delayMs = Math.min(delayMs * 1.5, 2000);
+          }
+        }
+
+        console.warn('[Favorites] Could not establish valid session after all attempts');
+        return false;
+      };
+
+      // Try to get a valid session
+      const hasValidSession = await waitForSession();
+
+      if (!hasValidSession) {
+        console.log('[Favorites] No valid session, showing empty state');
+        setFavorites([]);
+        setFavoriteIds(new Set());
+        setIsLoading(false);
+        return;
+      }
 
       console.log('[Favorites] Loading cached favorites...');
       const cached = await loadCachedFavorites();
