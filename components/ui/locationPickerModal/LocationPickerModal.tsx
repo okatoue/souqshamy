@@ -1,5 +1,7 @@
+import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    Alert,
     Keyboard,
     Modal,
     StyleSheet,
@@ -12,6 +14,7 @@ import { WebView } from 'react-native-webview';
 import {
     CloseButton,
     ConfirmButton,
+    CurrentLocationButton,
     RadiusSlider,
     SearchBar,
     SearchResults
@@ -42,6 +45,7 @@ export default function LocationPickerModal({
     const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const [selectedCoordinate, setSelectedCoordinate] = useState<Coordinates>({
         latitude: currentCoordinates?.latitude || DEFAULT_COORDINATES.latitude,
@@ -74,6 +78,7 @@ export default function LocationPickerModal({
             isSlidingRef.current = false;
             setIsMapReady(false);
             setIsConfirming(false);
+            setIsFetchingLocation(false);
             clearSearch();
             setIsSearchFocused(false);
             if (currentCoordinates) {
@@ -192,6 +197,54 @@ export default function LocationPickerModal({
         webViewRef.current?.injectJavaScript(`getCenter(); true;`);
     }, []);
 
+    const handleUseCurrentLocation = useCallback(async () => {
+        setIsFetchingLocation(true);
+
+        try {
+            // Request location permission
+            const { status } = await Location.requestForegroundPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert(
+                    'الإذن مطلوب',
+                    'يرجى السماح بالوصول إلى موقعك لاستخدام هذه الميزة',
+                    [{ text: 'حسناً' }]
+                );
+                setIsFetchingLocation(false);
+                return;
+            }
+
+            // Get current position
+            const position = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+
+            const { latitude, longitude } = position.coords;
+
+            // Update coordinate state
+            setSelectedCoordinate({ latitude, longitude });
+
+            // Move map to new location with zoom level 14 for closer view
+            webViewRef.current?.injectJavaScript(`
+                moveToLocation(${latitude}, ${longitude}, 14);
+                true;
+            `);
+
+            // Reverse geocode to get readable location name
+            const locationName = await reverseGeocode(latitude, longitude);
+            setSelectedLocationName(locationName);
+        } catch (error) {
+            console.error('Error getting current location:', error);
+            Alert.alert(
+                'خطأ',
+                'تعذر الحصول على موقعك الحالي. يرجى المحاولة مرة أخرى.',
+                [{ text: 'حسناً' }]
+            );
+        } finally {
+            setIsFetchingLocation(false);
+        }
+    }, [reverseGeocode]);
+
     return (
         <Modal
             visible={visible}
@@ -239,6 +292,14 @@ export default function LocationPickerModal({
                     )}
                 </View>
 
+                {/* Current Location Button */}
+                <View style={styles.currentLocationContainer} pointerEvents="box-none">
+                    <CurrentLocationButton
+                        onPress={handleUseCurrentLocation}
+                        loading={isFetchingLocation}
+                    />
+                </View>
+
                 {/* Bottom Floating Elements */}
                 <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 12 }]} pointerEvents="box-none">
                     <RadiusSlider
@@ -281,6 +342,12 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: 16,
+        zIndex: 10,
+    },
+    currentLocationContainer: {
+        position: 'absolute',
+        right: 16,
+        bottom: 220,
         zIndex: 10,
     },
 });
