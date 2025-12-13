@@ -4,92 +4,132 @@
 
 import { supabase } from '@/lib/supabase';
 import { BRAND_COLOR } from '@/constants/theme';
+import * as Linking from 'expo-linking';
 import { useURL } from 'expo-linking';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 
 export default function AuthCallback() {
   const url = useURL();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const hasProcessedUrl = useRef(false); // Prevent double processing
 
-  useEffect(() => {
-    if (!url) {
-      console.log('[AuthCallback] No URL yet, waiting...');
+  // Process the auth callback URL
+  const processAuthUrl = async (authUrl: string) => {
+    // Prevent processing the same URL twice
+    if (hasProcessedUrl.current) {
+      console.log('[AuthCallback] URL already processed, skipping');
       return;
     }
+    hasProcessedUrl.current = true;
 
-    console.log('[AuthCallback] Processing URL:', url);
+    console.log('[AuthCallback] Processing URL:', authUrl);
 
-    const handleCallback = async () => {
-      try {
-        // Parse the URL to extract the fragment (hash)
-        const urlObj = new URL(url);
-        const fragment = urlObj.hash.substring(1); // Remove the # prefix
+    try {
+      const urlObj = new URL(authUrl);
+      const fragment = urlObj.hash.substring(1);
 
-        if (!fragment) {
-          console.log('[AuthCallback] No fragment in URL, checking for error...');
-          // Check for error in query params
-          const errorParam = urlObj.searchParams.get('error');
-          const errorDescription = urlObj.searchParams.get('error_description');
-          if (errorParam) {
-            throw new Error(errorDescription || errorParam);
-          }
-          // No tokens and no error - might be initial load
-          return;
+      if (!fragment) {
+        console.log('[AuthCallback] No fragment in URL, checking for error...');
+        const errorParam = urlObj.searchParams.get('error');
+        const errorDescription = urlObj.searchParams.get('error_description');
+        if (errorParam) {
+          throw new Error(errorDescription || errorParam);
         }
+        // No tokens and no error - redirect to auth
+        console.log('[AuthCallback] No tokens found, redirecting to auth');
+        router.replace('/(auth)');
+        return;
+      }
 
-        // Parse the fragment as URL search params
-        const params = new URLSearchParams(fragment);
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+      const params = new URLSearchParams(fragment);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
 
-        console.log('[AuthCallback] Tokens found:', {
-          hasAccessToken: !!accessToken,
-          hasRefreshToken: !!refreshToken,
+      console.log('[AuthCallback] Tokens found:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+      });
+
+      if (accessToken && refreshToken) {
+        console.log('[AuthCallback] Setting session with tokens...');
+        const { data, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
         });
 
-        if (accessToken && refreshToken) {
-          // Set the session with the tokens
-          console.log('[AuthCallback] Setting session with tokens...');
-          const { data, error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-
-          if (sessionError) {
-            console.error('[AuthCallback] Session error:', sessionError);
-            throw sessionError;
-          }
-
-          console.log('[AuthCallback] Session set successfully:', data.user?.email);
-
-          // The _layout.tsx will detect the user and navigate to (tabs)
-          // But we can also explicitly navigate to ensure it happens
-          router.replace('/(tabs)');
-        } else {
-          console.log('[AuthCallback] No tokens in fragment');
-          // Check for error in fragment
-          const errorParam = params.get('error');
-          const errorDescription = params.get('error_description');
-          if (errorParam) {
-            throw new Error(errorDescription || errorParam);
-          }
+        if (sessionError) {
+          console.error('[AuthCallback] Session error:', sessionError);
+          throw sessionError;
         }
-      } catch (err: any) {
-        console.error('[AuthCallback] Error:', err);
-        setError(err.message || 'An error occurred during authentication');
 
-        // Redirect to auth screen after a delay
-        setTimeout(() => {
-          router.replace('/(auth)');
-        }, 3000);
+        console.log('[AuthCallback] Session set successfully:', data.user?.email);
+
+        // Reload the app to properly initialize Supabase client with new session
+        // This is the same approach used by Google OAuth
+        try {
+          const Updates = require('expo-updates');
+          if (Updates.reloadAsync) {
+            console.log('[AuthCallback] Reloading app via expo-updates...');
+            await Updates.reloadAsync();
+          }
+        } catch (reloadError) {
+          // expo-updates not available (dev mode) - use navigation instead
+          console.log('[AuthCallback] expo-updates not available, using navigation');
+          router.replace('/(tabs)');
+        }
+      } else {
+        console.log('[AuthCallback] Missing tokens in fragment');
+        throw new Error('Authentication tokens not found');
+      }
+    } catch (err: any) {
+      console.error('[AuthCallback] Error:', err);
+      setError(err.message || 'An error occurred during authentication');
+      hasProcessedUrl.current = false; // Allow retry
+
+      setTimeout(() => {
+        router.replace('/(auth)');
+      }, 3000);
+    }
+  };
+
+  // Check for initial URL on mount (cold start)
+  useEffect(() => {
+    const checkInitialUrl = async () => {
+      console.log('[AuthCallback] Checking for initial URL...');
+      const initialUrl = await Linking.getInitialURL();
+      console.log('[AuthCallback] Initial URL:', initialUrl);
+
+      if (initialUrl && initialUrl.includes('auth/callback')) {
+        await processAuthUrl(initialUrl);
       }
     };
 
-    handleCallback();
-  }, [url, router]);
+    checkInitialUrl();
+  }, []);
+
+  // Listen for URL changes (app already open)
+  useEffect(() => {
+    if (url) {
+      console.log('[AuthCallback] useURL received:', url);
+      processAuthUrl(url);
+    }
+  }, [url]);
+
+  // Timeout fallback
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!hasProcessedUrl.current) {
+        console.log('[AuthCallback] Timeout - no URL received after 10s');
+        setError('Timed out waiting for authentication data');
+        setTimeout(() => router.replace('/(auth)'), 2000);
+      }
+    }, 10000);
+
+    return () => clearTimeout(timeout);
+  }, []);
 
   if (error) {
     return (
