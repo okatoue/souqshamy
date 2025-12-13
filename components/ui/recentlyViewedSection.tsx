@@ -91,11 +91,21 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                         >
                             {/* Image */}
                             {listing.images && listing.images.length > 0 ? (
-                                <Image
-                                    source={{ uri: getThumbnailUrl(listing.images[0], 150, 100) }}
-                                    style={styles.image}
-                                    resizeMode="cover"
-                                />
+                                (() => {
+                                    const thumbnailUrl = getThumbnailUrl(listing.images[0], 150, 100);
+                                    console.log('[RecentlyViewed] Image URLs:', {
+                                        original: listing.images[0],
+                                        thumbnail: thumbnailUrl
+                                    });
+                                    return (
+                                        <Image
+                                            source={{ uri: thumbnailUrl }}
+                                            style={styles.image}
+                                            resizeMode="cover"
+                                            onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error, 'URL:', thumbnailUrl)}
+                                        />
+                                    );
+                                })()
                             ) : (
                                 <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
                                     <MaterialIcons name="image" size={30} color={placeholderIconColor} />
