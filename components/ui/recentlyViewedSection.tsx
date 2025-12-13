@@ -49,6 +49,18 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     }
 
     if (listings.length > 0) {
+        // Debug: Log listing data to diagnose image issues
+        console.log('[RecentlyViewed] Rendering listings:', JSON.stringify(
+            listings.map(l => ({
+                id: l.id,
+                title: l.title?.substring(0, 20),
+                images: l.images,
+                hasImages: !!(l.images && l.images.length > 0)
+            })),
+            null,
+            2
+        ));
+
         return (
             <View style={styles.container}>
                 {/* Header */}
