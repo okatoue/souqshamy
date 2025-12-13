@@ -1,16 +1,16 @@
 // app/_layout.tsx
 import { AuthLogo } from '@/components/auth/AuthLogo';
-import { Colors, BRAND_COLOR } from '@/constants/theme';
+import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
-import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { setInitialUrl } from '@/lib/initialUrl';
+import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Linking from 'expo-linking';
 import { useURL } from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
