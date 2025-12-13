@@ -6,7 +6,24 @@ import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import * as Updates from 'expo-updates';
+
+// Safe reload function that works in both development and production
+const safeReloadApp = async () => {
+    try {
+        // Only attempt to use expo-updates in production builds
+        // In development (Expo Go), this module doesn't exist
+        const Updates = require('expo-updates');
+        if (Updates.reloadAsync) {
+            console.log('[Auth] Reloading app via expo-updates...');
+            await Updates.reloadAsync();
+        }
+    } catch (error) {
+        // expo-updates not available (development mode)
+        // The session is already set, so navigation will handle the redirect
+        console.log('[Auth] expo-updates not available (dev mode), skipping reload');
+        console.log('[Auth] Session was set successfully - navigation should handle redirect');
+    }
+};
 
 // Required for web browser auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -344,8 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
 
                         // Reload the app to properly initialize the Supabase client with the new session
-                        console.log('[Auth] Reloading app to complete sign-in...');
-                        await Updates.reloadAsync();
+                        await safeReloadApp();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -469,8 +485,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                         // The Supabase client doesn't properly initialize after manual setSession().
                         // Reload the app to force a fresh initialization where getSession() works normally.
-                        console.log('[Auth] Reloading app to complete sign-in...');
-                        await Updates.reloadAsync();
+                        await safeReloadApp();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
