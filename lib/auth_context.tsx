@@ -6,10 +6,31 @@ import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
-import * as Updates from 'expo-updates';
+
+// Safe reload function that works in both development and production
+const safeReloadApp = async () => {
+    try {
+        // Only attempt to use expo-updates in production builds
+        // In development (Expo Go), this module doesn't exist
+        const Updates = require('expo-updates');
+        if (Updates.reloadAsync) {
+            console.log('[Auth] Reloading app via expo-updates...');
+            await Updates.reloadAsync();
+        }
+    } catch (error) {
+        // expo-updates not available (development mode)
+        // The session is already set, so navigation will handle the redirect
+        console.log('[Auth] expo-updates not available (dev mode), skipping reload');
+        console.log('[Auth] Session was set successfully - navigation should handle redirect');
+    }
+};
 
 // Required for web browser auth session
+// This completes any pending auth session from a previous redirect
 WebBrowser.maybeCompleteAuthSession();
+
+// Track if an auth session is in progress to prevent duplicate attempts
+let isAuthSessionInProgress = false;
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
@@ -292,7 +313,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signInWithGoogle = async () => {
+        // Prevent duplicate auth sessions
+        if (isAuthSessionInProgress) {
+            console.log('[Auth] Auth session already in progress, ignoring');
+            return;
+        }
+
         try {
+            isAuthSessionInProgress = true;
+
+            // Dismiss any existing auth session to prevent invalid state
+            await WebBrowser.dismissAuthSession();
+
             console.log('[Auth] Starting Google Sign-In with expo-auth-session...');
             console.log('[Auth] Redirect URI:', redirectUri);
 
@@ -344,8 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
 
                         // Reload the app to properly initialize the Supabase client with the new session
-                        console.log('[Auth] Reloading app to complete sign-in...');
-                        await Updates.reloadAsync();
+                        await safeReloadApp();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -407,11 +438,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
             throw error;
+        } finally {
+            isAuthSessionInProgress = false;
         }
     };
 
     const signInWithFacebook = async () => {
+        // Prevent duplicate auth sessions
+        if (isAuthSessionInProgress) {
+            console.log('[Auth] Auth session already in progress, ignoring');
+            return;
+        }
+
         try {
+            isAuthSessionInProgress = true;
+
+            // Dismiss any existing auth session to prevent invalid state
+            await WebBrowser.dismissAuthSession();
+
             console.log('[Auth] Starting Facebook Sign-In with expo-auth-session...');
             console.log('[Auth] Facebook redirect URI:', redirectUri);
             console.log('[Auth] Platform:', Platform.OS);
@@ -469,8 +513,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                         // The Supabase client doesn't properly initialize after manual setSession().
                         // Reload the app to force a fresh initialization where getSession() works normally.
-                        console.log('[Auth] Reloading app to complete sign-in...');
-                        await Updates.reloadAsync();
+                        await safeReloadApp();
                     } else {
                         // Check for error in URL
                         const errorParam = url.searchParams.get('error');
@@ -532,6 +575,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             Alert.alert('Sign In Error', error.message || 'Failed to sign in with Facebook');
             throw error;
+        } finally {
+            isAuthSessionInProgress = false;
         }
     };
 
