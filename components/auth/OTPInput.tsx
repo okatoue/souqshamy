@@ -1,5 +1,5 @@
 // components/auth/OTPInput.tsx
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { StyleProp, StyleSheet, TextInput, View, ViewStyle } from 'react-native';
 import { BRAND_COLOR, isSmallScreen } from './constants';
 import { useAuthColors } from './useAuthStyles';
@@ -21,25 +21,40 @@ export function OTPInput({
 }: OTPInputProps) {
   const colors = useAuthColors();
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
   const handleChange = (text: string, index: number) => {
     // Only allow numbers
     const cleanText = text.replace(/[^0-9]/g, '');
 
-    if (cleanText.length <= 1) {
+    if (cleanText.length === 0) {
+      // Clearing the current input
+      const newCode = [...code];
+      newCode[index] = '';
+      onCodeChange(newCode);
+    } else if (cleanText.length === 1) {
+      // Single digit entered
       const newCode = [...code];
       newCode[index] = cleanText;
       onCodeChange(newCode);
 
       // Auto-focus next input
-      if (cleanText.length === 1 && index < length - 1) {
+      if (index < length - 1) {
         inputRefs.current[index + 1]?.focus();
       }
-    } else if (cleanText.length === length) {
-      // Handle paste of full code
-      const newCode = cleanText.split('');
+    } else {
+      // Multiple digits = paste detected
+      // Take up to `length` digits and distribute them starting from index 0
+      const digits = cleanText.slice(0, length).split('');
+      const newCode = Array(length).fill('');
+      digits.forEach((digit, i) => {
+        newCode[i] = digit;
+      });
       onCodeChange(newCode);
-      inputRefs.current[length - 1]?.focus();
+
+      // Focus the last filled input or the next empty one
+      const lastFilledIndex = Math.min(digits.length - 1, length - 1);
+      inputRefs.current[lastFilledIndex]?.focus();
     }
   };
 
@@ -67,19 +82,19 @@ export function OTPInput({
           ref={(ref) => (inputRefs.current[index] = ref)}
           style={[
             styles.input,
-            {
-              borderColor: colors.border,
-              backgroundColor: colors.cardBackground,
-              color: colors.textPrimary,
-            },
+            { borderBottomColor: colors.border, color: colors.textPrimary },
             digit !== '' && styles.inputFilled,
+            focusedIndex === index && styles.inputFocused,
           ]}
           value={digit}
           onChangeText={(text) => handleChange(text, index)}
           onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
-          onFocus={() => handleFocus(index)}
+          onFocus={() => {
+            setFocusedIndex(index);
+            handleFocus(index);
+          }}
+          onBlur={() => setFocusedIndex(null)}
           keyboardType="number-pad"
-          maxLength={1}
           selectTextOnFocus
           editable={!disabled}
         />
@@ -92,20 +107,25 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    gap: isSmallScreen ? 8 : 12,
     marginBottom: isSmallScreen ? 24 : 32,
   },
   input: {
-    width: isSmallScreen ? 36 : 40,
+    width: isSmallScreen ? 36 : 42,
     height: isSmallScreen ? 46 : 52,
-    borderWidth: 2,
-    borderRadius: 8,
-    fontSize: 18,
-    fontWeight: 'bold',
+    borderWidth: 0,
+    borderBottomWidth: 2,
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    fontSize: isSmallScreen ? 22 : 26,
+    fontWeight: '600',
     textAlign: 'center',
   },
   inputFilled: {
-    borderColor: BRAND_COLOR,
-    backgroundColor: `${BRAND_COLOR}08`,
+    borderBottomColor: BRAND_COLOR,
+  },
+  inputFocused: {
+    borderBottomColor: BRAND_COLOR,
+    borderBottomWidth: 3,
   },
 });
