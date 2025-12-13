@@ -112,6 +112,10 @@ export function useMessages(conversationId: string | null) {
     const sendAudioMessage = useCallback(async (uri: string, duration: number): Promise<boolean> => {
         if (!conversationId || !user) return false;
 
+        console.log('[VoiceMessage] Starting send process...');
+        console.log('[VoiceMessage] URI:', uri);
+        console.log('[VoiceMessage] Duration:', duration);
+
         // Create optimistic message to show immediately
         const optimisticMessage: Message = {
             id: `temp-${Date.now()}`,
@@ -132,14 +136,18 @@ export function useMessages(conversationId: string | null) {
             setIsSending(true);
 
             // Read file as base64
+            console.log('[VoiceMessage] Reading file as base64...');
             const base64 = await FileSystem.readAsStringAsync(uri, {
                 encoding: FileSystem.EncodingType.Base64,
             });
+            console.log('[VoiceMessage] Base64 length:', base64.length);
 
             // Generate unique filename
             const filename = `${conversationId}/${user.id}_${Date.now()}.m4a`;
+            console.log('[VoiceMessage] Filename:', filename);
 
             // Upload to Supabase Storage
+            console.log('[VoiceMessage] Starting upload to voice-messages bucket...');
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('voice-messages')
                 .upload(filename, decode(base64), {
@@ -147,16 +155,28 @@ export function useMessages(conversationId: string | null) {
                     upsert: false,
                 });
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+                console.error('[VoiceMessage] Upload error:', uploadError);
+                throw uploadError;
+            }
+            console.log('[VoiceMessage] Upload successful:', uploadData.path);
 
-            // Get public URL for the uploaded audio
-            const { data: urlData } = supabase.storage
+            // Get signed URL for the uploaded audio (private bucket)
+            // Using 1 year expiry for voice messages
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
                 .from('voice-messages')
-                .getPublicUrl(uploadData.path);
+                .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365); // 1 year
 
-            const audioUrl = urlData.publicUrl;
+            if (signedUrlError) {
+                console.error('[VoiceMessage] Signed URL error:', signedUrlError);
+                throw signedUrlError;
+            }
+
+            const audioUrl = signedUrlData.signedUrl;
+            console.log('[VoiceMessage] Signed URL generated');
 
             // Insert message record
+            console.log('[VoiceMessage] Inserting message record...');
             const { data, error } = await supabase
                 .from('messages')
                 .insert({
@@ -170,7 +190,11 @@ export function useMessages(conversationId: string | null) {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('[VoiceMessage] Message insert error:', error);
+                throw error;
+            }
+            console.log('[VoiceMessage] Message inserted successfully:', data.id);
 
             // Replace optimistic message with real message from server
             if (data) {
@@ -188,9 +212,10 @@ export function useMessages(conversationId: string | null) {
                 // Ignore cleanup errors
             }
 
+            console.log('[VoiceMessage] Send complete!');
             return true;
         } catch (error) {
-            console.error('Error sending audio message:', error);
+            console.error('[VoiceMessage] Error sending audio message:', error);
             // Remove optimistic message on failure
             setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
             return false;
