@@ -16,6 +16,39 @@ export interface ApiResponse<T> {
     error: Error | null;
 }
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Wraps a promise with a timeout.
+ * If the promise doesn't resolve within the timeout, it rejects with a timeout error.
+ */
+async function withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    operationName: string
+): Promise<T> {
+    let timeoutId: NodeJS.Timeout;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+            reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+    });
+
+    try {
+        const result = await Promise.race([promise, timeoutPromise]);
+        clearTimeout(timeoutId!);
+        return result;
+    } catch (error) {
+        clearTimeout(timeoutId!);
+        throw error;
+    }
+}
+
+const API_TIMEOUT_MS = 10000; // 10 second timeout for API calls
+
 export interface PaginationParams {
     page?: number;
     limit?: number;
@@ -189,17 +222,33 @@ export const listingsApi = {
 export const favoritesApi = {
     /**
      * Fetches a user's favorite listing IDs.
+     * Includes timeout protection to prevent infinite hanging.
      */
     async getIds(userId: string): Promise<ApiResponse<string[]>> {
+        console.log('[FavoritesApi] getIds starting for user:', userId);
         try {
-            const { data, error } = await supabase
+            console.log('[FavoritesApi] getIds query executing...');
+
+            const queryPromise = supabase
                 .from('favorites')
                 .select('listing_id')
                 .eq('user_id', userId);
 
+            const { data, error } = await withTimeout(
+                queryPromise,
+                API_TIMEOUT_MS,
+                'favoritesApi.getIds'
+            );
+
+            console.log('[FavoritesApi] getIds response:', {
+                dataLength: data?.length ?? 0,
+                error: error?.message ?? null
+            });
+
             if (error) throw error;
             return { data: data?.map(f => f.listing_id) || [], error: null };
         } catch (error) {
+            console.error('[FavoritesApi] getIds error:', error);
             return { data: null, error: error as Error };
         }
     },
