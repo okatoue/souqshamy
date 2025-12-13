@@ -35,11 +35,16 @@ export function useCreateListing(): UseCreateListingResult {
                 images: uploadedImageUrls,
             };
 
+            console.log('[CreateListing] Inserting listing with data:', JSON.stringify(listingWithCloudImages, null, 2));
+
             const { data, error: supabaseError } = await supabase
                 .from('listings')
                 .insert([listingWithCloudImages])
                 .select()
                 .single();
+
+            console.log('[CreateListing] Insert result - data:', JSON.stringify(data, null, 2));
+            console.log('[CreateListing] Insert result - error:', supabaseError);
 
             if (supabaseError) {
                 throw new Error(supabaseError.message);
