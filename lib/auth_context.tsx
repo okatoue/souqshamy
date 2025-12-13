@@ -2,9 +2,10 @@
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as AuthSession from 'expo-auth-session';
+import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { Session, User } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Alert, Platform } from 'react-native';
 
 // Safe reload function that works in both development and production
@@ -70,6 +71,113 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPasswordResetInProgress, setIsPasswordResetInProgressState] = useState(false);
+    const hasProcessedDeepLink = useRef(false);
+
+    // Process auth callback URL and extract tokens
+    const processAuthCallbackUrl = async (url: string): Promise<boolean> => {
+        if (!url.includes('auth/callback')) {
+            return false;
+        }
+
+        if (hasProcessedDeepLink.current) {
+            console.log('[Auth] Deep link already processed, skipping');
+            return false;
+        }
+
+        console.log('[Auth] Processing auth callback URL:', url);
+
+        try {
+            const urlObj = new URL(url);
+            const fragment = urlObj.hash.substring(1);
+
+            let accessToken: string | null = null;
+            let refreshToken: string | null = null;
+
+            if (fragment) {
+                const params = new URLSearchParams(fragment);
+                accessToken = params.get('access_token');
+                refreshToken = params.get('refresh_token');
+            }
+
+            // Also check query params (some flows use this)
+            if (!accessToken || !refreshToken) {
+                accessToken = accessToken || urlObj.searchParams.get('access_token');
+                refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
+            }
+
+            console.log('[Auth] Tokens found in URL:', {
+                hasAccessToken: !!accessToken,
+                hasRefreshToken: !!refreshToken,
+            });
+
+            if (accessToken && refreshToken) {
+                hasProcessedDeepLink.current = true;
+
+                console.log('[Auth] Setting session from deep link tokens...');
+                const { data, error: sessionError } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                });
+
+                if (sessionError) {
+                    console.error('[Auth] Session error from deep link:', sessionError);
+                    hasProcessedDeepLink.current = false;
+                    return false;
+                }
+
+                console.log('[Auth] Session set successfully from deep link:', data.user?.email);
+
+                // Reload the app to properly initialize Supabase client
+                await safeReloadApp();
+                return true;
+            }
+
+            // Check for error in URL
+            const errorParam = urlObj.searchParams.get('error');
+            if (errorParam) {
+                console.error('[Auth] Error in callback URL:', errorParam);
+            }
+
+            return false;
+        } catch (error) {
+            console.error('[Auth] Error processing auth callback URL:', error);
+            return false;
+        }
+    };
+
+    // Global deep link handler - captures auth callback URLs before expo-router consumes them
+    useEffect(() => {
+        console.log('[Auth] Setting up global deep link handler...');
+
+        // Check for initial URL immediately (cold start)
+        const checkInitialUrl = async () => {
+            try {
+                console.log('[Auth] Checking for initial deep link URL...');
+                const initialUrl = await Linking.getInitialURL();
+                console.log('[Auth] Initial URL:', initialUrl);
+
+                if (initialUrl) {
+                    await processAuthCallbackUrl(initialUrl);
+                }
+            } catch (error) {
+                console.error('[Auth] Error checking initial URL:', error);
+            }
+        };
+
+        checkInitialUrl();
+
+        // Listen for URL events (warm start / app already open)
+        const subscription = Linking.addEventListener('url', async (event) => {
+            console.log('[Auth] URL event received:', event.url);
+            if (event.url) {
+                await processAuthCallbackUrl(event.url);
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, []);
 
     // Load initial password reset state
     useEffect(() => {

@@ -38,6 +38,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withDeepLinkHandler",
       "expo-router",
       [
         "expo-splash-screen",

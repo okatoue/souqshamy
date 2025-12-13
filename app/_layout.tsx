@@ -5,7 +5,10 @@ import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
+import { setInitialUrl } from '@/lib/initialUrl';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import * as Linking from 'expo-linking';
+import { useURL } from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -142,9 +145,62 @@ const styles = StyleSheet.create({
   },
 });
 
+// Component to capture URLs at the earliest possible moment
+function UrlCapture() {
+  const url = useURL();
+  const hasCaptured = useRef(false);
+
+  // Capture URL from useURL hook (might work for warm starts)
+  useEffect(() => {
+    if (url && !hasCaptured.current) {
+      console.log('[UrlCapture] useURL captured:', url);
+      if (url.includes('auth/callback')) {
+        setInitialUrl(url);
+        hasCaptured.current = true;
+      }
+    }
+  }, [url]);
+
+  // Also try to capture initial URL on mount
+  useEffect(() => {
+    const captureInitial = async () => {
+      try {
+        console.log('[UrlCapture] Attempting to capture initial URL...');
+
+        // Try getInitialURL
+        const initialUrl = await Linking.getInitialURL();
+        console.log('[UrlCapture] getInitialURL:', initialUrl);
+
+        if (initialUrl && initialUrl.includes('auth/callback') && !hasCaptured.current) {
+          setInitialUrl(initialUrl);
+          hasCaptured.current = true;
+        }
+      } catch (e) {
+        console.log('[UrlCapture] Error:', e);
+      }
+    };
+
+    captureInitial();
+
+    // Also listen for URL events
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log('[UrlCapture] URL event:', event.url);
+      if (event.url && event.url.includes('auth/callback') && !hasCaptured.current) {
+        setInitialUrl(event.url);
+        hasCaptured.current = true;
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <UrlCapture />
       <ThemeProvider>
         <BottomSheetModalProvider>
           <AuthProvider>

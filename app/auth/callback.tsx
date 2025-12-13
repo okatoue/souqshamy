@@ -4,6 +4,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { BRAND_COLOR } from '@/constants/theme';
+import { getCapturedInitialUrl, waitForCapturedUrl, clearCapturedUrl } from '@/lib/initialUrl';
 import * as Linking from 'expo-linking';
 import { useRouter, useLocalSearchParams, useGlobalSearchParams } from 'expo-router';
 import { useEffect, useState, useRef } from 'react';
@@ -21,6 +22,10 @@ export default function AuthCallback() {
     console.log('[AuthCallback] Component mounted');
     console.log('[AuthCallback] Local params:', JSON.stringify(localParams));
     console.log('[AuthCallback] Global params:', JSON.stringify(globalParams));
+
+    // Check for captured URL from initialUrl module
+    const capturedUrl = getCapturedInitialUrl();
+    console.log('[AuthCallback] Captured URL from module:', capturedUrl);
   }, []);
 
   // Process the auth callback URL or tokens
@@ -47,6 +52,9 @@ export default function AuthCallback() {
 
       console.log('[AuthCallback] Session set successfully:', data.user?.email);
 
+      // Clear the captured URL since we've processed it
+      clearCapturedUrl();
+
       // Reload the app to properly initialize Supabase client with new session
       try {
         const Updates = require('expo-updates');
@@ -70,36 +78,27 @@ export default function AuthCallback() {
   };
 
   // Process URL string to extract tokens
-  const processAuthUrl = async (authUrl: string) => {
+  const processAuthUrl = async (authUrl: string): Promise<boolean> => {
     console.log('[AuthCallback] Processing URL:', authUrl);
 
     try {
       const urlObj = new URL(authUrl);
       const fragment = urlObj.hash.substring(1);
 
-      if (!fragment) {
-        console.log('[AuthCallback] No fragment in URL, checking query params...');
-        // Check for tokens in query params (some OAuth flows use this)
-        const accessToken = urlObj.searchParams.get('access_token');
-        const refreshToken = urlObj.searchParams.get('refresh_token');
+      let accessToken: string | null = null;
+      let refreshToken: string | null = null;
 
-        if (accessToken && refreshToken) {
-          await processAuthTokens(accessToken, refreshToken);
-          return;
-        }
-
-        const errorParam = urlObj.searchParams.get('error');
-        const errorDescription = urlObj.searchParams.get('error_description');
-        if (errorParam) {
-          throw new Error(errorDescription || errorParam);
-        }
-        console.log('[AuthCallback] No tokens found in URL');
-        return false;
+      if (fragment) {
+        const params = new URLSearchParams(fragment);
+        accessToken = params.get('access_token');
+        refreshToken = params.get('refresh_token');
       }
 
-      const params = new URLSearchParams(fragment);
-      const accessToken = params.get('access_token');
-      const refreshToken = params.get('refresh_token');
+      // Also check query params (some flows use this)
+      if (!accessToken || !refreshToken) {
+        accessToken = accessToken || urlObj.searchParams.get('access_token');
+        refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
+      }
 
       console.log('[AuthCallback] Tokens found:', {
         hasAccessToken: !!accessToken,
@@ -109,18 +108,11 @@ export default function AuthCallback() {
       if (accessToken && refreshToken) {
         await processAuthTokens(accessToken, refreshToken);
         return true;
-      } else {
-        console.log('[AuthCallback] Missing tokens in fragment');
-        return false;
       }
+
+      return false;
     } catch (err: any) {
       console.error('[AuthCallback] Error processing URL:', err);
-      setError(err.message || 'An error occurred during authentication');
-      hasProcessedUrl.current = false;
-
-      setTimeout(() => {
-        router.replace('/(auth)');
-      }, 3000);
       return false;
     }
   };
@@ -143,7 +135,17 @@ export default function AuthCallback() {
         return;
       }
 
-      // Method 2: Try getInitialURL (for cold start)
+      // Method 2: Check captured URL from initialUrl module
+      console.log('[AuthCallback] Checking captured URL...');
+      const capturedUrl = await waitForCapturedUrl();
+      console.log('[AuthCallback] Captured URL result:', capturedUrl);
+
+      if (capturedUrl && capturedUrl.includes('auth/callback')) {
+        const processed = await processAuthUrl(capturedUrl);
+        if (processed) return;
+      }
+
+      // Method 3: Try getInitialURL (for cold start)
       console.log('[AuthCallback] Checking getInitialURL...');
       try {
         const initialUrl = await Linking.getInitialURL();
@@ -157,7 +159,7 @@ export default function AuthCallback() {
         console.log('[AuthCallback] getInitialURL error:', e);
       }
 
-      // Method 3: Parse current URL from Linking
+      // Method 4: Parse current URL from Linking
       console.log('[AuthCallback] Checking Linking.parseInitialURLAsync...');
       try {
         const parsedUrl = await Linking.parseInitialURLAsync();
