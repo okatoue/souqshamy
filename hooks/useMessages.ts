@@ -161,13 +161,19 @@ export function useMessages(conversationId: string | null) {
             }
             console.log('[VoiceMessage] Upload successful:', uploadData.path);
 
-            // Get public URL for the uploaded audio
-            const { data: urlData } = supabase.storage
+            // Get signed URL for the uploaded audio (private bucket)
+            // Using 1 year expiry for voice messages
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
                 .from('voice-messages')
-                .getPublicUrl(uploadData.path);
+                .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365); // 1 year
 
-            const audioUrl = urlData.publicUrl;
-            console.log('[VoiceMessage] Public URL:', audioUrl);
+            if (signedUrlError) {
+                console.error('[VoiceMessage] Signed URL error:', signedUrlError);
+                throw signedUrlError;
+            }
+
+            const audioUrl = signedUrlData.signedUrl;
+            console.log('[VoiceMessage] Signed URL generated');
 
             // Insert message record
             console.log('[VoiceMessage] Inserting message record...');
