@@ -68,7 +68,6 @@ export default function VerifyScreen() {
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState<string[]>(Array(content.codeLength).fill(''));
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   // Step 1 (password-reset only): Send verification code
@@ -169,11 +168,6 @@ export default function VerifyScreen() {
 
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -351,14 +345,6 @@ export default function VerifyScreen() {
               placeholder="Enter new password"
               value={password}
               onChangeText={setPassword}
-              editable={!loading}
-            />
-
-            <AuthPasswordInput
-              label="Confirm Password"
-              placeholder="Confirm new password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
               editable={!loading}
             />
           </View>
