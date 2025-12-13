@@ -26,7 +26,11 @@ const safeReloadApp = async () => {
 };
 
 // Required for web browser auth session
+// This completes any pending auth session from a previous redirect
 WebBrowser.maybeCompleteAuthSession();
+
+// Track if an auth session is in progress to prevent duplicate attempts
+let isAuthSessionInProgress = false;
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
@@ -309,7 +313,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const signInWithGoogle = async () => {
+        // Prevent duplicate auth sessions
+        if (isAuthSessionInProgress) {
+            console.log('[Auth] Auth session already in progress, ignoring');
+            return;
+        }
+
         try {
+            isAuthSessionInProgress = true;
+
+            // Dismiss any existing auth session to prevent invalid state
+            await WebBrowser.dismissAuthSession();
+
             console.log('[Auth] Starting Google Sign-In with expo-auth-session...');
             console.log('[Auth] Redirect URI:', redirectUri);
 
@@ -423,11 +438,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
             throw error;
+        } finally {
+            isAuthSessionInProgress = false;
         }
     };
 
     const signInWithFacebook = async () => {
+        // Prevent duplicate auth sessions
+        if (isAuthSessionInProgress) {
+            console.log('[Auth] Auth session already in progress, ignoring');
+            return;
+        }
+
         try {
+            isAuthSessionInProgress = true;
+
+            // Dismiss any existing auth session to prevent invalid state
+            await WebBrowser.dismissAuthSession();
+
             console.log('[Auth] Starting Facebook Sign-In with expo-auth-session...');
             console.log('[Auth] Facebook redirect URI:', redirectUri);
             console.log('[Auth] Platform:', Platform.OS);
@@ -547,6 +575,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             Alert.alert('Sign In Error', error.message || 'Failed to sign in with Facebook');
             throw error;
+        } finally {
+            isAuthSessionInProgress = false;
         }
     };
 
