@@ -1,7 +1,6 @@
 import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
-import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -49,18 +48,6 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     }
 
     if (listings.length > 0) {
-        // Debug: Log listing data to diagnose image issues
-        console.log('[RecentlyViewed] Rendering listings:', JSON.stringify(
-            listings.map(l => ({
-                id: l.id,
-                title: l.title?.substring(0, 20),
-                images: l.images,
-                hasImages: !!(l.images && l.images.length > 0)
-            })),
-            null,
-            2
-        ));
-
         return (
             <View style={styles.container}>
                 {/* Header */}
@@ -91,21 +78,12 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                         >
                             {/* Image */}
                             {listing.images && listing.images.length > 0 ? (
-                                (() => {
-                                    const thumbnailUrl = getThumbnailUrl(listing.images[0], 150, 100);
-                                    console.log('[RecentlyViewed] Image URLs:', {
-                                        original: listing.images[0],
-                                        thumbnail: thumbnailUrl
-                                    });
-                                    return (
-                                        <Image
-                                            source={{ uri: thumbnailUrl }}
-                                            style={styles.image}
-                                            resizeMode="cover"
-                                            onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error, 'URL:', thumbnailUrl)}
-                                        />
-                                    );
-                                })()
+                                <Image
+                                    source={{ uri: listing.images[0] }}
+                                    style={styles.image}
+                                    resizeMode="cover"
+                                    onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error)}
+                                />
                             ) : (
                                 <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
                                     <MaterialIcons name="image" size={30} color={placeholderIconColor} />
