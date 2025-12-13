@@ -267,7 +267,13 @@ export default function LocationPickerModal({
                 {/* Top Bar */}
                 <View style={[styles.topBar, { paddingTop: insets.top + 12 }]} pointerEvents="box-none">
                     <View style={styles.topBarRow}>
-                        <CloseButton onPress={onClose} />
+                        <View style={styles.leftButtonsColumn}>
+                            <CloseButton onPress={onClose} />
+                            <CurrentLocationButton
+                                onPress={handleUseCurrentLocation}
+                                loading={isFetchingLocation}
+                            />
+                        </View>
 
                         <SearchBar
                             searchQuery={searchQuery}
@@ -290,14 +296,6 @@ export default function LocationPickerModal({
                             onClose={handleCloseSearchResults}
                         />
                     )}
-                </View>
-
-                {/* Current Location Button */}
-                <View style={styles.currentLocationContainer} pointerEvents="box-none">
-                    <CurrentLocationButton
-                        onPress={handleUseCurrentLocation}
-                        loading={isFetchingLocation}
-                    />
                 </View>
 
                 {/* Bottom Floating Elements */}
@@ -333,8 +331,12 @@ const styles = StyleSheet.create({
     },
     topBarRow: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         gap: 12,
+    },
+    leftButtonsColumn: {
+        flexDirection: 'column',
+        gap: 8,
     },
     bottomContainer: {
         position: 'absolute',
@@ -342,12 +344,6 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         paddingHorizontal: 16,
-        zIndex: 10,
-    },
-    currentLocationContainer: {
-        position: 'absolute',
-        right: 16,
-        bottom: 220,
         zIndex: 10,
     },
 });
