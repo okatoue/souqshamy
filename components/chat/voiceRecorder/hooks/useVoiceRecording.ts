@@ -335,9 +335,23 @@ export function useVoiceRecording({
         setRecordingState('sending');
 
         if (audioRecorder.isRecording) {
-            console.log('[VoiceRecording] Setting pendingAction to send and stopping recorder');
-            pendingAction.current = 'send';
+            console.log('[VoiceRecording] Stopping recorder and waiting...');
+            // Don't rely on useEffect - stop and process directly
+            // This works around expo-audio bug where isRecording doesn't update
             audioRecorder.stop();
+
+            // Small delay to ensure file is written
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            console.log('[VoiceRecording] Recorder stopped, URI:', audioRecorder.uri);
+            if (audioRecorder.uri) {
+                await processRecordedFile(audioRecorder.uri, 'send');
+            } else {
+                console.error('[VoiceRecording] No URI after stopping');
+                if (isMounted.current) {
+                    setRecordingState('paused');
+                }
+            }
         } else if (audioRecorder.uri) {
             console.log('[VoiceRecording] Already stopped, processing immediately');
             await processRecordedFile(audioRecorder.uri, 'send');
