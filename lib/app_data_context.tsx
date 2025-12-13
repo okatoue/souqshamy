@@ -17,6 +17,10 @@ const RECENTLY_VIEWED_KEY = '@recently_viewed_listings';
 const RECENTLY_VIEWED_CACHE_KEY = '@recently_viewed_cache';
 const MAX_RECENTLY_VIEWED = 20;
 
+// Cache version - increment this to invalidate old caches
+// v2: Added version field and images validation
+const RECENTLY_VIEWED_CACHE_VERSION = 2;
+
 // Cache types
 interface CachedConversations {
     conversations: ConversationWithDetails[];
@@ -27,6 +31,11 @@ interface CachedConversations {
 interface CachedUserListings {
     listings: Listing[];
     userId: string;
+}
+
+interface CachedRecentlyViewed {
+    listings: Listing[];
+    version: number;
 }
 
 // Helper to get user-specific storage keys for recently viewed
@@ -160,11 +169,48 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // ========== RECENTLY VIEWED CACHE HELPERS ==========
     const storageKeys = getRecentlyViewedKeys(user?.id);
 
+    // Helper to check if a listing has valid images
+    const hasValidImages = (listing: Listing): boolean => {
+        return !!(listing.images && listing.images.length > 0 && listing.images[0]);
+    };
+
+    // Helper to check if cache appears stale (most listings missing images)
+    const isCacheStale = (listings: Listing[]): boolean => {
+        if (listings.length === 0) return false;
+        // If more than 50% of listings are missing images, consider cache stale
+        const listingsWithImages = listings.filter(hasValidImages);
+        return listingsWithImages.length < listings.length * 0.5;
+    };
+
     const loadCachedRecentlyViewed = useCallback(async (): Promise<Listing[]> => {
         try {
             const cachedData = await AsyncStorage.getItem(storageKeys.cacheKey);
             if (cachedData) {
-                return JSON.parse(cachedData);
+                const parsed = JSON.parse(cachedData);
+
+                // Handle versioned cache format
+                if (parsed && typeof parsed === 'object' && 'version' in parsed) {
+                    const versionedCache = parsed as CachedRecentlyViewed;
+                    // Check if cache version matches current version
+                    if (versionedCache.version !== RECENTLY_VIEWED_CACHE_VERSION) {
+                        console.log('[RecentlyViewed] Cache version mismatch, clearing stale cache');
+                        await AsyncStorage.removeItem(storageKeys.cacheKey);
+                        return [];
+                    }
+                    // Check if cached listings have valid images
+                    if (isCacheStale(versionedCache.listings)) {
+                        console.log('[RecentlyViewed] Cache appears stale (missing images), will refresh');
+                        // Return empty to force fresh fetch, but don't delete cache yet
+                        // The fresh fetch will update the cache
+                        return [];
+                    }
+                    return versionedCache.listings;
+                } else {
+                    // Old format (plain array) - clear and return empty
+                    console.log('[RecentlyViewed] Old cache format detected, clearing');
+                    await AsyncStorage.removeItem(storageKeys.cacheKey);
+                    return [];
+                }
             }
         } catch (err) {
             console.error('Error loading cached recently viewed:', err);
@@ -174,7 +220,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     const saveCachedRecentlyViewed = useCallback(async (listingsToCache: Listing[]) => {
         try {
-            await AsyncStorage.setItem(storageKeys.cacheKey, JSON.stringify(listingsToCache));
+            const cacheData: CachedRecentlyViewed = {
+                listings: listingsToCache,
+                version: RECENTLY_VIEWED_CACHE_VERSION
+            };
+            await AsyncStorage.setItem(storageKeys.cacheKey, JSON.stringify(cacheData));
         } catch (err) {
             console.error('Error saving cached recently viewed:', err);
         }

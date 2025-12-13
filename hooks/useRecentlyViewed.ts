@@ -8,11 +8,33 @@ const RECENTLY_VIEWED_KEY = '@recently_viewed_listings';
 const RECENTLY_VIEWED_CACHE_KEY = '@recently_viewed_cache';
 const MAX_RECENTLY_VIEWED = 20;
 
+// Cache version - increment this to invalidate old caches
+// v2: Added version field and images validation
+const RECENTLY_VIEWED_CACHE_VERSION = 2;
+
+interface CachedRecentlyViewed {
+    listings: Listing[];
+    version: number;
+}
+
 // Helper to get user-specific storage keys
 const getStorageKeys = (userId: string | undefined) => ({
     idsKey: userId ? `${RECENTLY_VIEWED_KEY}_${userId}` : RECENTLY_VIEWED_KEY,
     cacheKey: userId ? `${RECENTLY_VIEWED_CACHE_KEY}_${userId}` : RECENTLY_VIEWED_CACHE_KEY,
 });
+
+// Helper to check if a listing has valid images
+const hasValidImages = (listing: Listing): boolean => {
+    return !!(listing.images && listing.images.length > 0 && listing.images[0]);
+};
+
+// Helper to check if cache appears stale (most listings missing images)
+const isCacheStale = (listings: Listing[]): boolean => {
+    if (listings.length === 0) return false;
+    // If more than 50% of listings are missing images, consider cache stale
+    const listingsWithImages = listings.filter(hasValidImages);
+    return listingsWithImages.length < listings.length * 0.5;
+};
 
 export function useRecentlyViewed() {
     const { user } = useAuth();
@@ -30,7 +52,29 @@ export function useRecentlyViewed() {
         try {
             const cachedData = await AsyncStorage.getItem(storageKeys.cacheKey);
             if (cachedData) {
-                return JSON.parse(cachedData);
+                const parsed = JSON.parse(cachedData);
+
+                // Handle versioned cache format
+                if (parsed && typeof parsed === 'object' && 'version' in parsed) {
+                    const versionedCache = parsed as CachedRecentlyViewed;
+                    // Check if cache version matches current version
+                    if (versionedCache.version !== RECENTLY_VIEWED_CACHE_VERSION) {
+                        console.log('[RecentlyViewed] Cache version mismatch, clearing stale cache');
+                        await AsyncStorage.removeItem(storageKeys.cacheKey);
+                        return [];
+                    }
+                    // Check if cached listings have valid images
+                    if (isCacheStale(versionedCache.listings)) {
+                        console.log('[RecentlyViewed] Cache appears stale (missing images), will refresh');
+                        return [];
+                    }
+                    return versionedCache.listings;
+                } else {
+                    // Old format (plain array) - clear and return empty
+                    console.log('[RecentlyViewed] Old cache format detected, clearing');
+                    await AsyncStorage.removeItem(storageKeys.cacheKey);
+                    return [];
+                }
             }
         } catch (err) {
             console.error('Error loading cached listings:', err);
@@ -38,10 +82,14 @@ export function useRecentlyViewed() {
         return [];
     }, [storageKeys.cacheKey]);
 
-    // Save listings to cache
+    // Save listings to cache with version
     const saveCachedListings = useCallback(async (listingsToCache: Listing[]) => {
         try {
-            await AsyncStorage.setItem(storageKeys.cacheKey, JSON.stringify(listingsToCache));
+            const cacheData: CachedRecentlyViewed = {
+                listings: listingsToCache,
+                version: RECENTLY_VIEWED_CACHE_VERSION
+            };
+            await AsyncStorage.setItem(storageKeys.cacheKey, JSON.stringify(cacheData));
         } catch (err) {
             console.error('Error saving cached listings:', err);
         }
