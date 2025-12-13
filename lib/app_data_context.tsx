@@ -672,21 +672,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                 cachedRecentlyViewed = [];
             }
 
-            // Debug: Log cached recently viewed data
-            console.log('[AppData] Cached recently viewed count:', cachedRecentlyViewed.length);
-            if (cachedRecentlyViewed.length > 0) {
-                console.log('[AppData] Cached recently viewed data:', JSON.stringify(
-                    cachedRecentlyViewed.map(l => ({
-                        id: l.id,
-                        title: l.title?.substring(0, 20),
-                        images: l.images,
-                        hasImages: !!(l.images && l.images.length > 0)
-                    })),
-                    null,
-                    2
-                ));
-            }
-
             // Apply cached data immediately
             if (cachedConversations && cachedConversations.length > 0) {
                 setConversations(cachedConversations);
@@ -821,23 +806,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
                         if (fetchError) throw fetchError;
 
-                        // Debug: Log raw data from Supabase
-                        console.log('[AppData] Recently viewed raw Supabase data:', JSON.stringify(
-                            data?.map(l => ({
-                                id: l.id,
-                                title: l.title?.substring(0, 20),
-                                images: l.images,
-                                hasImages: !!(l.images && l.images.length > 0)
-                            })),
-                            null,
-                            2
-                        ));
-
                         const sortedListings = ids
                             .map(id => data?.find(listing => listing.id === id))
                             .filter((listing): listing is Listing => listing !== undefined);
 
-                        console.log('[AppData] Recently viewed sorted listings count:', sortedListings.length);
                         setRecentlyViewed(sortedListings);
                         await saveCachedRecentlyViewed(sortedListings);
                     } catch (error) {
