@@ -4,6 +4,7 @@ import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth_context';
+import { useProfile } from '@/hooks/userProfile';
 import { ThemePreference, useThemeContext } from '@/lib/theme_context';
 import {
     Feather,
@@ -101,6 +102,7 @@ function Section({ title, children }: SectionProps) {
 
 export default function UserScreen() {
     const { user, signOut } = useAuth();
+    const { getDisplayName } = useProfile();
     const router = useRouter();
     const backgroundColor = useThemeColor({}, 'background');
     const iconColor = useThemeColor({}, 'icon');
@@ -200,8 +202,8 @@ export default function UserScreen() {
                         <MaterialCommunityIcons name="account-circle" size={70} color={iconColor} />
                     </View>
                     <View style={styles.userInfo}>
-                        <Text style={[styles.userEmail, { color: textColor }]}>
-                            {user.email || 'User'}
+                        <Text style={[styles.userName, { color: textColor }]}>
+                            {getDisplayName()}
                         </Text>
                         <Text style={[styles.userSince, { color: subtitleColor }]}>
                             Member since {new Date(user.created_at || Date.now()).toLocaleDateString()}
@@ -343,7 +345,7 @@ const styles = StyleSheet.create({
     userInfo: {
         flex: 1,
     },
-    userEmail: {
+    userName: {
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 4,
