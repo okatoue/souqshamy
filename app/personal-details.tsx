@@ -3,12 +3,16 @@ import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
-import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/lib/auth_context';
+import { deleteAvatar, uploadAvatar } from '@/lib/avatarUpload';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Image,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -21,6 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PersonalDetailsScreen() {
+    const { user } = useAuth();
     const { profile, isLoading, updateProfile } = useProfile();
 
     // Local state for form fields
@@ -29,6 +34,10 @@ export default function PersonalDetailsScreen() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+
+    // Avatar state
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
 
     // Track whether form has been initialized to prevent overwriting user input on background refreshes
     const hasInitialized = useRef(false);
@@ -100,6 +109,103 @@ export default function PersonalDetailsScreen() {
         }
     };
 
+    const handlePickImage = async () => {
+        if (!user) return;
+
+        try {
+            // Request permission
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Permission Required',
+                    'Please allow access to your photo library to upload a profile picture.',
+                    [{ text: 'OK' }]
+                );
+                return;
+            }
+
+            // Launch image picker
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+
+            if (result.canceled || !result.assets[0]) {
+                return;
+            }
+
+            const selectedImage = result.assets[0];
+            setLocalAvatarUri(selectedImage.uri);
+            setIsUploadingAvatar(true);
+
+            try {
+                // Upload to Supabase
+                const publicUrl = await uploadAvatar(
+                    selectedImage.uri,
+                    user.id,
+                    profile?.avatar_url
+                );
+
+                // Update profile with new avatar URL
+                const success = await updateProfile({ avatar_url: publicUrl });
+
+                if (success) {
+                    setLocalAvatarUri(null); // Clear local URI, profile will have the new URL
+                } else {
+                    setLocalAvatarUri(null);
+                    Alert.alert('Error', 'Failed to update profile with new avatar.');
+                }
+            } catch (uploadError) {
+                setLocalAvatarUri(null);
+                const message = uploadError instanceof Error ? uploadError.message : 'Failed to upload avatar';
+                Alert.alert('Upload Failed', message);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+        } finally {
+            setIsUploadingAvatar(false);
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        if (!profile?.avatar_url) return;
+
+        Alert.alert(
+            'Remove Photo',
+            'Are you sure you want to remove your profile photo?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Remove',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setIsUploadingAvatar(true);
+                        try {
+                            // Delete from storage
+                            await deleteAvatar(profile.avatar_url!);
+
+                            // Update profile to remove avatar URL
+                            const success = await updateProfile({ avatar_url: null });
+
+                            if (!success) {
+                                Alert.alert('Error', 'Failed to update profile.');
+                            }
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to remove photo. Please try again.');
+                        } finally {
+                            setIsUploadingAvatar(false);
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+    // Get the current avatar to display
+    const currentAvatarUri = localAvatarUri || profile?.avatar_url;
+
     if (isLoading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
@@ -133,6 +239,58 @@ export default function PersonalDetailsScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
+                    {/* Avatar Section */}
+                    <View style={styles.avatarSection}>
+                        <Pressable
+                            style={styles.avatarContainer}
+                            onPress={handlePickImage}
+                            disabled={isUploadingAvatar}
+                        >
+                            {currentAvatarUri ? (
+                                <Image
+                                    source={{ uri: currentAvatarUri }}
+                                    style={styles.avatarImage}
+                                />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: inputBackground }]}>
+                                    <MaterialCommunityIcons
+                                        name="account-circle"
+                                        size={100}
+                                        color={iconColor}
+                                    />
+                                </View>
+                            )}
+                            {isUploadingAvatar && (
+                                <View style={styles.avatarLoadingOverlay}>
+                                    <ActivityIndicator size="large" color="white" />
+                                </View>
+                            )}
+                            <View style={[styles.cameraButton, { backgroundColor: BRAND_COLOR }]}>
+                                <Ionicons name="camera" size={16} color="white" />
+                            </View>
+                        </Pressable>
+                        <Pressable
+                            style={styles.changePhotoButton}
+                            onPress={handlePickImage}
+                            disabled={isUploadingAvatar}
+                        >
+                            <Text style={[styles.changePhotoText, { color: BRAND_COLOR }]}>
+                                Change Photo
+                            </Text>
+                        </Pressable>
+                        {profile?.avatar_url && !localAvatarUri && (
+                            <Pressable
+                                style={styles.removePhotoButton}
+                                onPress={handleRemoveAvatar}
+                                disabled={isUploadingAvatar}
+                            >
+                                <Text style={styles.removePhotoText}>
+                                    Remove Photo
+                                </Text>
+                            </Pressable>
+                        )}
+                    </View>
+
                     {/* Form Fields */}
                     <ThemedView style={styles.formContainer}>
                         {/* Display Name */}
@@ -326,5 +484,62 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+    },
+    // Avatar styles
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: SPACING.xl,
+    },
+    avatarContainer: {
+        position: 'relative',
+        width: 120,
+        height: 120,
+        marginBottom: SPACING.md,
+    },
+    avatarImage: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+    },
+    avatarPlaceholder: {
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    avatarLoadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cameraButton: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 3,
+        borderColor: 'white',
+    },
+    changePhotoButton: {
+        paddingVertical: SPACING.sm,
+    },
+    changePhotoText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    removePhotoButton: {
+        paddingVertical: SPACING.xs,
+    },
+    removePhotoText: {
+        fontSize: 14,
+        color: '#FF3B30',
     },
 });

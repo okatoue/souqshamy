@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
 import {
     Alert,
+    Image,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -102,7 +103,7 @@ function Section({ title, children }: SectionProps) {
 
 export default function UserScreen() {
     const { user, signOut } = useAuth();
-    const { getDisplayName } = useProfile();
+    const { profile, getDisplayName } = useProfile();
     const router = useRouter();
     const backgroundColor = useThemeColor({}, 'background');
     const iconColor = useThemeColor({}, 'icon');
@@ -199,7 +200,14 @@ export default function UserScreen() {
                 {/* User Info Card */}
                 <View style={styles.userCard}>
                     <View style={styles.avatarContainer}>
-                        <MaterialCommunityIcons name="account-circle" size={70} color={iconColor} />
+                        {profile?.avatar_url ? (
+                            <Image
+                                source={{ uri: profile.avatar_url }}
+                                style={styles.avatarImage}
+                            />
+                        ) : (
+                            <MaterialCommunityIcons name="account-circle" size={70} color={iconColor} />
+                        )}
                     </View>
                     <View style={styles.userInfo}>
                         <Text style={[styles.userName, { color: textColor }]}>
@@ -341,6 +349,11 @@ const styles = StyleSheet.create({
     },
     avatarContainer: {
         marginRight: 15,
+    },
+    avatarImage: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
     },
     userInfo: {
         flex: 1,
