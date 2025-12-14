@@ -5,7 +5,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -30,6 +30,9 @@ export default function PersonalDetailsScreen() {
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
+    // Track whether form has been initialized to prevent overwriting user input on background refreshes
+    const hasInitialized = useRef(false);
+
     // Theme colors
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
@@ -39,12 +42,13 @@ export default function PersonalDetailsScreen() {
     const labelColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
     const disabledBg = useThemeColor({ light: '#f0f0f0', dark: '#2a2a2a' }, 'background');
 
-    // Initialize form fields when profile loads
+    // Initialize form fields when profile loads (only once to prevent overwriting user input)
     useEffect(() => {
-        if (profile) {
+        if (profile && !hasInitialized.current) {
             setDisplayName(profile.display_name || '');
             setEmail(profile.email || '');
             setPhoneNumber(profile.phone_number || '');
+            hasInitialized.current = true;
         }
     }, [profile]);
 
