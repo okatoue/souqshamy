@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth_context';
 import { formatPrice, getDisplayName } from '@/lib/formatters';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails, Message } from '@/types/chat';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -268,26 +268,26 @@ export default function ChatScreen() {
                         <Ionicons name="chevron-back" size={28} color="#007AFF" />
                     </Pressable>
 
-                    <Pressable style={styles.headerContent} onPress={handleListingPress}>
-                        {conversation.listing?.images?.[0] ? (
+                    <View style={styles.headerContent}>
+                        {conversation.other_user.avatar_url ? (
                             <Image
-                                source={{ uri: conversation.listing.images[0] }}
-                                style={styles.headerImage}
+                                source={{ uri: conversation.other_user.avatar_url }}
+                                style={styles.headerAvatar}
                             />
                         ) : (
-                            <View style={[styles.headerImagePlaceholder, { backgroundColor: borderColor }]}>
-                                <Ionicons name="image-outline" size={20} color={secondaryTextColor} />
+                            <View style={styles.headerAvatarPlaceholder}>
+                                <MaterialCommunityIcons name="account-circle" size={44} color={secondaryTextColor} />
                             </View>
                         )}
-                        <View style={styles.headerTextContainer}>
+                        <Pressable style={styles.headerTextContainer} onPress={handleListingPress}>
                             <Text style={[styles.headerName, { color: textColor }]} numberOfLines={1}>
                                 {conversation.other_user.display_name}
                             </Text>
                             <Text style={[styles.headerListing, { color: secondaryTextColor }]} numberOfLines={1}>
                                 {conversation.listing?.title}
                             </Text>
-                        </View>
-                    </Pressable>
+                        </Pressable>
+                    </View>
                 </View>
 
                 {/* Listing Preview */}
@@ -426,15 +426,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginLeft: 4,
     },
-    headerImage: {
+    headerAvatar: {
         width: 40,
         height: 40,
         borderRadius: 20,
     },
-    headerImagePlaceholder: {
+    headerAvatarPlaceholder: {
         width: 40,
         height: 40,
-        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
     },
