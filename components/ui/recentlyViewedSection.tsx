@@ -1,7 +1,6 @@
 import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
-import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -80,7 +79,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                             {/* Image */}
                             {listing.images && listing.images.length > 0 ? (
                                 <Image
-                                    source={{ uri: getThumbnailUrl(listing.images[0], 200, 200, 60) }}
+                                    source={{ uri: listing.images[0] }}
                                     style={styles.image}
                                     resizeMode="cover"
                                     onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error)}

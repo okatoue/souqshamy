@@ -4,7 +4,6 @@ import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
-import { getThumbnailUrl } from '@/lib/imageUtils';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -178,7 +177,7 @@ export default function ChatsScreen() {
             <View style={styles.imageContainer}>
                 {item.listing?.images && item.listing.images.length > 0 ? (
                     <Image
-                        source={{ uri: getThumbnailUrl(item.listing.images[0], 100, 100, 60) }}
+                        source={{ uri: item.listing.images[0] }}
                         style={styles.listingImage}
                     />
                 ) : (
