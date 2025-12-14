@@ -15,14 +15,11 @@ const safeReloadApp = async () => {
         // In development (Expo Go), this module doesn't exist
         const Updates = require('expo-updates');
         if (Updates.reloadAsync) {
-            console.log('[Auth] Reloading app via expo-updates...');
             await Updates.reloadAsync();
         }
     } catch (error) {
         // expo-updates not available (development mode)
         // The session is already set, so navigation will handle the redirect
-        console.log('[Auth] expo-updates not available (dev mode), skipping reload');
-        console.log('[Auth] Session was set successfully - navigation should handle redirect');
     }
 };
 
@@ -46,8 +43,6 @@ const redirectUri = AuthSession.makeRedirectUri({
     native: 'stickersmash://auth/callback',
 });
 
-// Log the configured redirect URI at module load for debugging
-console.log('[Auth] Configured redirect URI:', redirectUri);
 
 type AuthContextType = {
     user: User | null;
@@ -80,11 +75,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (hasProcessedDeepLink.current) {
-            console.log('[Auth] Deep link already processed, skipping');
             return false;
         }
-
-        console.log('[Auth] Processing auth callback URL:', url);
 
         try {
             const urlObj = new URL(url);
@@ -105,15 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
             }
 
-            console.log('[Auth] Tokens found in URL:', {
-                hasAccessToken: !!accessToken,
-                hasRefreshToken: !!refreshToken,
-            });
-
             if (accessToken && refreshToken) {
                 hasProcessedDeepLink.current = true;
-
-                console.log('[Auth] Setting session from deep link tokens...');
                 const { data, error: sessionError } = await supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken,
@@ -124,8 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     hasProcessedDeepLink.current = false;
                     return false;
                 }
-
-                console.log('[Auth] Session set successfully from deep link:', data.user?.email);
 
                 // Reload the app to properly initialize Supabase client
                 await safeReloadApp();
@@ -147,14 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Global deep link handler - captures auth callback URLs before expo-router consumes them
     useEffect(() => {
-        console.log('[Auth] Setting up global deep link handler...');
-
         // Check for initial URL immediately (cold start)
         const checkInitialUrl = async () => {
             try {
-                console.log('[Auth] Checking for initial deep link URL...');
                 const initialUrl = await Linking.getInitialURL();
-                console.log('[Auth] Initial URL:', initialUrl);
 
                 if (initialUrl) {
                     await processAuthCallbackUrl(initialUrl);
@@ -168,7 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Listen for URL events (warm start / app already open)
         const subscription = Linking.addEventListener('url', async (event) => {
-            console.log('[Auth] URL event received:', event.url);
             if (event.url) {
                 await processAuthCallbackUrl(event.url);
             }
@@ -207,18 +185,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     useEffect(() => {
-        console.log('[Auth] Initializing auth context...');
-
         // Initialize auth - check for existing session
         const initializeAuth = async () => {
             try {
-                console.log('[Auth] Calling getSession()...');
                 const { data: { session }, error } = await supabase.auth.getSession();
 
                 if (error) {
                     console.error('[Auth] getSession error:', error);
-                } else {
-                    console.log('[Auth] getSession result:', session ? `User: ${session.user.email}` : 'No session');
                 }
 
                 setSession(session);
@@ -229,7 +202,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (session?.user) {
                     const isResetting = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
                     if (isResetting === 'true') {
-                        console.log('[Auth] Clearing stuck password reset flag - user has valid session');
                         await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
                         setIsPasswordResetInProgressState(false);
                     }
@@ -254,8 +226,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                console.log('[Auth] Auth state changed:', event, session ? `User: ${session.user.email}` : 'No session');
-
                 setSession(session);
                 setUser(session?.user ?? null);
 
@@ -381,8 +351,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber?: string
     ) => {
         try {
-            console.log('[Auth] Attempting sign in...');
-
             if (emailOrPhone) {
                 // Sign in with email
                 const { error } = await supabase.auth.signInWithPassword({
@@ -390,7 +358,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     password
                 });
                 if (error) throw error;
-                console.log('[Auth] Sign in successful with email');
             } else if (phoneNumber) {
                 // For phone-based signin, use the placeholder email format
                 const placeholderEmail = `${phoneNumber}@phone.local`;
@@ -400,7 +367,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     password
                 });
                 if (error) throw error;
-                console.log('[Auth] Sign in successful with phone');
             } else {
                 throw new Error('Email or phone number is required');
             }
@@ -418,9 +384,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signInWithGoogle = async () => {
         try {
-            console.log('[Auth] Starting Google Sign-In with expo-auth-session...');
-            console.log('[Auth] Redirect URI:', redirectUri);
-
             // Use Supabase's signInWithOAuth which handles the OAuth flow
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
@@ -433,19 +396,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
-                console.log('[Auth] Opening auth URL:', data.url);
-
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
                     data.url,
                     redirectUri,
                 );
 
-                console.log('[Auth] Browser result type:', result.type);
-                console.log('[Auth] Browser result:', JSON.stringify(result, null, 2));
-
                 if (result.type === 'success' && result.url) {
-                    console.log('[Auth] Processing auth callback, URL:', result.url);
 
                     // Extract the access token and refresh token from the URL
                     const url = new URL(result.url);
@@ -465,8 +422,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (sessionError) {
                             throw sessionError;
                         }
-
-                        console.log('[Auth] Google Sign-In successful:', sessionData.user?.email);
 
                         // Reload the app to properly initialize the Supabase client with the new session
                         await safeReloadApp();
@@ -488,18 +443,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             if (exchangeError) {
                                 throw exchangeError;
                             }
-
-                            console.log('[Auth] Google Sign-In successful via code exchange:', exchangeData.user?.email);
                         } else {
-                            console.log('[Auth] No tokens found in URL, checking hash:', url.hash);
                             throw new Error('No authentication data received from Google');
                         }
                     }
-                } else if (result.type === 'cancel') {
-                    console.log('[Auth] User cancelled Google Sign-In');
-                    return;
-                } else if (result.type === 'dismiss') {
-                    console.log('[Auth] Google Sign-In dismissed');
+                } else if (result.type === 'cancel' || result.type === 'dismiss') {
                     return;
                 }
             } else {
@@ -536,10 +484,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signInWithFacebook = async () => {
         try {
-            console.log('[Auth] Starting Facebook Sign-In with expo-auth-session...');
-            console.log('[Auth] Facebook redirect URI:', redirectUri);
-            console.log('[Auth] Platform:', Platform.OS);
-
             // Use Supabase's signInWithOAuth which handles the OAuth flow
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'facebook',
@@ -553,22 +497,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
-                console.log('[Auth] Opening Facebook auth URL:', data.url);
-                console.log('[Auth] Expected redirect back to:', redirectUri);
-
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
                     data.url,
                     redirectUri,
                 );
 
-                console.log('[Auth] Browser result type:', result.type);
-                if (result.type === 'success') {
-                    console.log('[Auth] Received callback URL:', result.url);
-                }
-
                 if (result.type === 'success' && result.url) {
-                    console.log('[Auth] Processing auth callback...');
 
                     // Extract the access token and refresh token from the URL
                     const url = new URL(result.url);
@@ -588,8 +523,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         if (sessionError) {
                             throw sessionError;
                         }
-
-                        console.log('[Auth] Facebook Sign-In session set:', sessionData.user?.email);
 
                         // The Supabase client doesn't properly initialize after manual setSession().
                         // Reload the app to force a fresh initialization where getSession() works normally.
@@ -612,18 +545,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             if (exchangeError) {
                                 throw exchangeError;
                             }
-
-                            console.log('[Auth] Facebook Sign-In successful via code exchange:', exchangeData.user?.email);
                         } else {
-                            console.log('[Auth] No tokens found in URL, checking hash:', url.hash);
                             throw new Error('No authentication data received from Facebook');
                         }
                     }
-                } else if (result.type === 'cancel') {
-                    console.log('[Auth] User cancelled Facebook Sign-In');
-                    return;
-                } else if (result.type === 'dismiss') {
-                    console.log('[Auth] Facebook Sign-In dismissed');
+                } else if (result.type === 'cancel' || result.type === 'dismiss') {
                     return;
                 }
             } else {
@@ -660,16 +586,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         try {
-            console.log('[Auth] Signing out...');
-
             // Clear password reset flag on sign out
             await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             setIsPasswordResetInProgressState(false);
 
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
-
-            console.log('[Auth] Sign out successful');
         } catch (error: any) {
             Alert.alert('Sign Out Error', error.message);
             throw error;

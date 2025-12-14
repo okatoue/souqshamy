@@ -59,19 +59,16 @@ export function useRecentlyViewed() {
                     const versionedCache = parsed as CachedRecentlyViewed;
                     // Check if cache version matches current version
                     if (versionedCache.version !== RECENTLY_VIEWED_CACHE_VERSION) {
-                        console.log('[RecentlyViewed] Cache version mismatch, clearing stale cache');
                         await AsyncStorage.removeItem(storageKeys.cacheKey);
                         return [];
                     }
                     // Check if cached listings have valid images
                     if (isCacheStale(versionedCache.listings)) {
-                        console.log('[RecentlyViewed] Cache appears stale (missing images), will refresh');
                         return [];
                     }
                     return versionedCache.listings;
                 } else {
                     // Old format (plain array) - clear and return empty
-                    console.log('[RecentlyViewed] Old cache format detected, clearing');
                     await AsyncStorage.removeItem(storageKeys.cacheKey);
                     return [];
                 }

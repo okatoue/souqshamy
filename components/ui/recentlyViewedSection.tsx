@@ -83,7 +83,6 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                                     source={{ uri: getThumbnailUrl(listing.images[0], 300, 300, 75) }}
                                     style={styles.image}
                                     resizeMode="cover"
-                                    onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error)}
                                 />
                             ) : (
                                 <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>

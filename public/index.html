@@ -160,11 +160,6 @@
             // Update manual link
             manualLink.href = deepLink;
 
-            // Log for debugging (remove in production)
-            console.log('[Auth Callback] Deep link:', deepLink);
-            console.log('[Auth Callback] Hash:', hash);
-            console.log('[Auth Callback] Search params:', window.location.search);
-
             // Try to open the app after a short delay
             setTimeout(function() {
                 window.location.href = deepLink;

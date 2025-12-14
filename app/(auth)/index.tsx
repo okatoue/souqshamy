@@ -88,7 +88,6 @@ export default function AuthScreen() {
             email: trimmedInput,
           });
         } catch (resendError) {
-          console.log('Could not resend verification code:', resendError);
           // Continue to verification screen anyway - they can request resend there
         }
 
@@ -125,7 +124,6 @@ export default function AuthScreen() {
         // Navigation happens automatically via auth state listener in _layout.tsx
       } catch (error) {
         // Error already handled in signInWithGoogle
-        console.log('[AuthScreen] Google sign-in failed:', error);
       } finally {
         setSocialLoading(false);
       }
@@ -136,7 +134,6 @@ export default function AuthScreen() {
         // Navigation happens automatically via auth state listener in _layout.tsx
       } catch (error) {
         // Error already handled in signInWithFacebook
-        console.log('[AuthScreen] Facebook sign-in failed:', error);
       } finally {
         setSocialLoading(false);
       }

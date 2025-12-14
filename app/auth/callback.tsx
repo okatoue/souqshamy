@@ -17,40 +17,28 @@ export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null);
   const hasProcessedUrl = useRef(false);
 
-  // Log all available params for debugging
+  // Check for captured URL on mount
   useEffect(() => {
-    console.log('[AuthCallback] Component mounted');
-    console.log('[AuthCallback] Local params:', JSON.stringify(localParams));
-    console.log('[AuthCallback] Global params:', JSON.stringify(globalParams));
-
     // Check for captured URL from initialUrl module
-    const capturedUrl = getCapturedInitialUrl();
-    console.log('[AuthCallback] Captured URL from module:', capturedUrl);
+    getCapturedInitialUrl();
   }, []);
 
   // Process the auth callback URL or tokens
   const processAuthTokens = async (accessToken: string, refreshToken: string) => {
     if (hasProcessedUrl.current) {
-      console.log('[AuthCallback] Already processed, skipping');
       return;
     }
     hasProcessedUrl.current = true;
 
-    console.log('[AuthCallback] Processing tokens...');
-
     try {
-      console.log('[AuthCallback] Setting session with tokens...');
       const { data, error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
       });
 
       if (sessionError) {
-        console.error('[AuthCallback] Session error:', sessionError);
         throw sessionError;
       }
-
-      console.log('[AuthCallback] Session set successfully:', data.user?.email);
 
       // Clear the captured URL since we've processed it
       clearCapturedUrl();
@@ -59,11 +47,9 @@ export default function AuthCallback() {
       try {
         const Updates = require('expo-updates');
         if (Updates.reloadAsync) {
-          console.log('[AuthCallback] Reloading app via expo-updates...');
           await Updates.reloadAsync();
         }
       } catch (reloadError) {
-        console.log('[AuthCallback] expo-updates not available, using navigation');
         router.replace('/(tabs)');
       }
     } catch (err: any) {
@@ -79,8 +65,6 @@ export default function AuthCallback() {
 
   // Process URL string to extract tokens
   const processAuthUrl = async (authUrl: string): Promise<boolean> => {
-    console.log('[AuthCallback] Processing URL:', authUrl);
-
     try {
       const urlObj = new URL(authUrl);
       const fragment = urlObj.hash.substring(1);
@@ -100,11 +84,6 @@ export default function AuthCallback() {
         refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
       }
 
-      console.log('[AuthCallback] Tokens found:', {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-      });
-
       if (accessToken && refreshToken) {
         await processAuthTokens(accessToken, refreshToken);
         return true;
@@ -120,14 +99,11 @@ export default function AuthCallback() {
   // Try multiple methods to get the URL on mount
   useEffect(() => {
     const initializeAuth = async () => {
-      console.log('[AuthCallback] Initializing auth callback...');
-
       // Method 1: Check if tokens are in expo-router params (query string)
       const accessTokenFromParams = localParams.access_token || globalParams.access_token;
       const refreshTokenFromParams = localParams.refresh_token || globalParams.refresh_token;
 
       if (accessTokenFromParams && refreshTokenFromParams) {
-        console.log('[AuthCallback] Found tokens in router params');
         await processAuthTokens(
           accessTokenFromParams as string,
           refreshTokenFromParams as string
@@ -136,9 +112,7 @@ export default function AuthCallback() {
       }
 
       // Method 2: Check captured URL from initialUrl module
-      console.log('[AuthCallback] Checking captured URL...');
       const capturedUrl = await waitForCapturedUrl();
-      console.log('[AuthCallback] Captured URL result:', capturedUrl);
 
       if (capturedUrl && capturedUrl.includes('auth/callback')) {
         const processed = await processAuthUrl(capturedUrl);
@@ -146,24 +120,20 @@ export default function AuthCallback() {
       }
 
       // Method 3: Try getInitialURL (for cold start)
-      console.log('[AuthCallback] Checking getInitialURL...');
       try {
         const initialUrl = await Linking.getInitialURL();
-        console.log('[AuthCallback] getInitialURL result:', initialUrl);
 
         if (initialUrl && initialUrl.includes('auth/callback')) {
           const processed = await processAuthUrl(initialUrl);
           if (processed) return;
         }
       } catch (e) {
-        console.log('[AuthCallback] getInitialURL error:', e);
+        // Silently handle getInitialURL errors
       }
 
       // Method 4: Parse current URL from Linking
-      console.log('[AuthCallback] Checking Linking.parseInitialURLAsync...');
       try {
         const parsedUrl = await Linking.parseInitialURLAsync();
-        console.log('[AuthCallback] parseInitialURLAsync result:', JSON.stringify(parsedUrl));
 
         if (parsedUrl?.queryParams) {
           const accessToken = parsedUrl.queryParams.access_token;
@@ -174,10 +144,8 @@ export default function AuthCallback() {
           }
         }
       } catch (e) {
-        console.log('[AuthCallback] parseInitialURLAsync error:', e);
+        // Silently handle parseInitialURLAsync errors
       }
-
-      console.log('[AuthCallback] No tokens found via any method, waiting for URL event...');
     };
 
     initializeAuth();
@@ -186,7 +154,6 @@ export default function AuthCallback() {
   // Listen for URL events (app already open / foreground)
   useEffect(() => {
     const subscription = Linking.addEventListener('url', (event) => {
-      console.log('[AuthCallback] URL event received:', event.url);
       if (event.url && event.url.includes('auth/callback')) {
         processAuthUrl(event.url);
       }
@@ -201,7 +168,6 @@ export default function AuthCallback() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (!hasProcessedUrl.current) {
-        console.log('[AuthCallback] Timeout - no tokens received after 15s');
         setError('Timed out waiting for authentication data. Please try again.');
         setTimeout(() => router.replace('/(auth)'), 2000);
       }

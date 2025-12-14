@@ -112,10 +112,6 @@ export function useMessages(conversationId: string | null) {
     const sendAudioMessage = useCallback(async (uri: string, duration: number): Promise<boolean> => {
         if (!conversationId || !user) return false;
 
-        console.log('[VoiceMessage] Starting send process...');
-        console.log('[VoiceMessage] URI:', uri);
-        console.log('[VoiceMessage] Duration:', duration);
-
         // Create optimistic message to show immediately
         const optimisticMessage: Message = {
             id: `temp-${Date.now()}`,
@@ -136,18 +132,14 @@ export function useMessages(conversationId: string | null) {
             setIsSending(true);
 
             // Read file as base64
-            console.log('[VoiceMessage] Reading file as base64...');
             const base64 = await FileSystem.readAsStringAsync(uri, {
                 encoding: FileSystem.EncodingType.Base64,
             });
-            console.log('[VoiceMessage] Base64 length:', base64.length);
 
             // Generate unique filename
             const filename = `${conversationId}/${user.id}_${Date.now()}.m4a`;
-            console.log('[VoiceMessage] Filename:', filename);
 
             // Upload to Supabase Storage
-            console.log('[VoiceMessage] Starting upload to voice-messages bucket...');
             const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('voice-messages')
                 .upload(filename, decode(base64), {
@@ -156,18 +148,14 @@ export function useMessages(conversationId: string | null) {
                 });
 
             if (uploadError) {
-                console.error('[VoiceMessage] Upload error:', uploadError);
                 throw uploadError;
             }
-            console.log('[VoiceMessage] Upload successful:', uploadData.path);
 
             // Get signed URL for the uploaded audio (private bucket)
             // Using 1 year expiry for voice messages
             // Add retry logic with delay to handle R2 eventual consistency
             let audioUrl: string | null = null;
             for (let attempt = 1; attempt <= 3; attempt++) {
-                console.log(`[VoiceMessage] Creating signed URL (attempt ${attempt}/3)...`);
-
                 // Small delay to allow R2 to propagate the upload
                 if (attempt > 1) {
                     await new Promise(resolve => setTimeout(resolve, 500 * attempt));
@@ -179,14 +167,10 @@ export function useMessages(conversationId: string | null) {
 
                 if (!signedUrlError && signedUrlData) {
                     audioUrl = signedUrlData.signedUrl;
-                    console.log('[VoiceMessage] Signed URL generated');
                     break;
                 }
 
-                console.warn(`[VoiceMessage] Signed URL attempt ${attempt} failed:`, signedUrlError?.message);
-
                 if (attempt === 3) {
-                    console.error('[VoiceMessage] All signed URL attempts failed');
                     throw signedUrlError;
                 }
             }
@@ -196,7 +180,6 @@ export function useMessages(conversationId: string | null) {
             }
 
             // Insert message record
-            console.log('[VoiceMessage] Inserting message record...');
             const { data, error } = await supabase
                 .from('messages')
                 .insert({
@@ -211,10 +194,8 @@ export function useMessages(conversationId: string | null) {
                 .single();
 
             if (error) {
-                console.error('[VoiceMessage] Message insert error:', error);
                 throw error;
             }
-            console.log('[VoiceMessage] Message inserted successfully:', data.id);
 
             // Replace optimistic message with real message from server
             if (data) {
@@ -232,7 +213,6 @@ export function useMessages(conversationId: string | null) {
                 // Ignore cleanup errors
             }
 
-            console.log('[VoiceMessage] Send complete!');
             return true;
         } catch (error) {
             console.error('[VoiceMessage] Error sending audio message:', error);

@@ -46,55 +46,27 @@ function RootLayoutNav() {
 
   const showLoadingOverlay = authLoading || !minLoadingComplete || needsRedirect;
 
-  // DEBUG: Log all relevant state on every render
-  console.log('[Layout] Render state:', {
-    authLoading,
-    hasUser: !!user,
-    isGlobalLoading,
-    favoritesLoading,
-    minLoadingComplete,
-    needsRedirect,
-    showLoadingOverlay,
-    segments: segments.join('/'),
-  });
-
   // Handle auth state changes and navigation
   // NOTE: Navigation happens immediately based on auth state, independent of data loading.
   // The loading overlay will show on the destination route while data loads.
   useEffect(() => {
-    console.log('[Layout] useEffect triggered');
-
     // Don't navigate until auth is initialized
     if (authLoading) {
-      console.log('[Layout] useEffect: authLoading is true, returning early');
       return;
     }
 
-    console.log('[Layout] useEffect: checking navigation', {
-      hasUser: !!user,
-      inAuthGroup,
-      isOAuthCallback,
-      segment0: segments[0],
-      segment1: segments[1],
-    });
-
     if (!user && !inAuthGroup && !isOAuthCallback) {
       // Redirect to auth screen if not authenticated
-      console.log('[Layout] useEffect: No user, redirecting to /(auth)');
       router.replace('/(auth)');
     } else if (user && (inAuthGroup || isOAuthCallback)) {
       // CRITICAL: Check if we're in password reset flow BEFORE redirecting
       if (isPasswordResetInProgress) {
         // User is in password reset flow - DO NOT redirect to main app
-        console.log('[Auth] Password reset in progress, staying in auth group');
         return;
       }
 
       // Not in password reset flow, safe to redirect to main app
-      console.log('[Layout] useEffect: User authenticated, redirecting to /(tabs)');
       router.replace('/(tabs)');
-    } else {
-      console.log('[Layout] useEffect: No navigation needed (user on correct route)');
     }
   }, [user, segments, authLoading, isPasswordResetInProgress, inAuthGroup, isOAuthCallback]);
 
@@ -153,7 +125,6 @@ function UrlCapture() {
   // Capture URL from useURL hook (might work for warm starts)
   useEffect(() => {
     if (url && !hasCaptured.current) {
-      console.log('[UrlCapture] useURL captured:', url);
       if (url.includes('auth/callback')) {
         setInitialUrl(url);
         hasCaptured.current = true;
@@ -165,18 +136,15 @@ function UrlCapture() {
   useEffect(() => {
     const captureInitial = async () => {
       try {
-        console.log('[UrlCapture] Attempting to capture initial URL...');
-
         // Try getInitialURL
         const initialUrl = await Linking.getInitialURL();
-        console.log('[UrlCapture] getInitialURL:', initialUrl);
 
         if (initialUrl && initialUrl.includes('auth/callback') && !hasCaptured.current) {
           setInitialUrl(initialUrl);
           hasCaptured.current = true;
         }
       } catch (e) {
-        console.log('[UrlCapture] Error:', e);
+        // Silently handle URL capture errors
       }
     };
 
@@ -184,7 +152,6 @@ function UrlCapture() {
 
     // Also listen for URL events
     const subscription = Linking.addEventListener('url', (event) => {
-      console.log('[UrlCapture] URL event:', event.url);
       if (event.url && event.url.includes('auth/callback') && !hasCaptured.current) {
         setInitialUrl(event.url);
         hasCaptured.current = true;

@@ -21,12 +21,10 @@ export function useCreateListing(): UseCreateListingResult {
             // Upload images to Supabase Storage if present
             let uploadedImageUrls: string[] | null = null;
             if (listingData.images && listingData.images.length > 0) {
-                console.log('Uploading images to Supabase Storage...');
                 uploadedImageUrls = await uploadListingImages(
                     listingData.images,
                     listingData.user_id
                 );
-                console.log('Images uploaded successfully:', uploadedImageUrls);
             }
 
             // Create listing with Supabase Storage URLs instead of local URIs
