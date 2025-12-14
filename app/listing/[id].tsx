@@ -1,9 +1,11 @@
-import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
+import { FavoriteButton } from '@/components/favorites/favoriteButton';
+import { BORDER_RADIUS, BRAND_COLOR, COLORS, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
-import { formatDate, formatPrice, getCategoryInfo } from '@/lib/formatters';
+import { formatDate, formatPrice, formatRelativeTime, getCategoryInfo, getDisplayName, getYearsSince, UserProfile } from '@/lib/formatters';
+import { getThumbnailUrl } from '@/lib/imageUtils';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
@@ -28,6 +30,10 @@ import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-g
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Placeholder rating - TODO: Replace when rating system is implemented
+const PLACEHOLDER_RATING = 5.0;
+const PLACEHOLDER_REVIEW_COUNT = 0;
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
@@ -38,6 +44,11 @@ export default function ListingDetailScreen() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [modalImageIndex, setModalImageIndex] = useState(0);
+
+    // Seller info state
+    const [sellerProfile, setSellerProfile] = useState<UserProfile | null>(null);
+    const [sellerListings, setSellerListings] = useState<Listing[]>([]);
+    const [sellerListingsLoading, setSellerListingsLoading] = useState(false);
 
     // Favorites - instant toggle, no loading spinner
     const { isFavorite, handleToggle: handleToggleFavorite } = useFavoriteToggle({
@@ -89,6 +100,47 @@ export default function ListingDetailScreen() {
 
         fetchListing();
     }, [params.id, user?.id]);
+
+    // Fetch seller profile and their other listings
+    useEffect(() => {
+        const fetchSellerData = async () => {
+            if (!listing?.user_id) return;
+
+            setSellerListingsLoading(true);
+
+            try {
+                // Fetch seller profile and their other listings in parallel
+                const [profileResult, listingsResult] = await Promise.all([
+                    supabase
+                        .from('profiles')
+                        .select('id, display_name, email, phone_number, avatar_url, created_at')
+                        .eq('id', listing.user_id)
+                        .single(),
+                    supabase
+                        .from('listings')
+                        .select('*')
+                        .eq('user_id', listing.user_id)
+                        .eq('status', 'active')
+                        .neq('id', listing.id)
+                        .limit(10)
+                ]);
+
+                if (profileResult.data) {
+                    setSellerProfile(profileResult.data);
+                }
+
+                if (listingsResult.data) {
+                    setSellerListings(listingsResult.data);
+                }
+            } catch (error) {
+                console.error('Error fetching seller data:', error);
+            } finally {
+                setSellerListingsLoading(false);
+            }
+        };
+
+        fetchSellerData();
+    }, [listing?.user_id, listing?.id]);
 
     const handleCall = () => {
         if (listing?.phone_number) {
@@ -155,6 +207,13 @@ export default function ListingDetailScreen() {
 
     const handleShare = () => {
         Alert.alert('Share', 'Share functionality coming soon!');
+    };
+
+    const handleSellerPress = () => {
+        if (listing?.user_id) {
+            // Navigate to seller profile - placeholder route for now
+            router.push(`/profile/${listing.user_id}`);
+        }
     };
 
     const openImageModal = (index: number) => {
@@ -262,6 +321,45 @@ export default function ListingDetailScreen() {
                     </View>
                 </View>
 
+                {/* Seller Header - Compact bar above images */}
+                {sellerProfile && (
+                    <Pressable
+                        style={[styles.sellerHeader, { backgroundColor: cardBg, borderColor }]}
+                        onPress={handleSellerPress}
+                    >
+                        {/* Seller Avatar */}
+                        {sellerProfile.avatar_url ? (
+                            <Image
+                                source={{ uri: getThumbnailUrl(sellerProfile.avatar_url, 80, 80) }}
+                                style={styles.sellerHeaderAvatar}
+                            />
+                        ) : (
+                            <View style={[styles.sellerHeaderAvatarPlaceholder, { backgroundColor: secondaryBg }]}>
+                                <MaterialCommunityIcons name="account" size={20} color={placeholderColor} />
+                            </View>
+                        )}
+
+                        {/* Seller Name and Rating */}
+                        <View style={styles.sellerHeaderInfo}>
+                            <Text style={[styles.sellerHeaderName, { color: textColor }]} numberOfLines={1}>
+                                {getDisplayName(sellerProfile)}
+                            </Text>
+                            <View style={styles.sellerHeaderRating}>
+                                <Text style={[styles.sellerHeaderRatingText, { color: mutedColor }]}>
+                                    {PLACEHOLDER_RATING.toFixed(1)} ★
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Posted time */}
+                        <Text style={[styles.sellerHeaderTime, { color: mutedColor }]}>
+                            {formatRelativeTime(listing.created_at)}
+                        </Text>
+
+                        <Ionicons name="chevron-forward" size={18} color={mutedColor} />
+                    </Pressable>
+                )}
+
                 {/* Images */}
                 {listing.images && listing.images.length > 0 ? (
                     <View style={styles.imageCarouselContainer}>
@@ -360,7 +458,148 @@ export default function ListingDetailScreen() {
                             {listing.description}
                         </Text>
                     </View>
+
+                    {/* Listed By Section */}
+                    {sellerProfile && (
+                        <Pressable
+                            style={[styles.listedBySection, { borderColor }]}
+                            onPress={handleSellerPress}
+                        >
+                            <Text style={[styles.sectionTitle, { color: textColor, marginBottom: SPACING.md }]}>
+                                Listed by
+                            </Text>
+                            <View style={styles.listedByContent}>
+                                {/* Large Seller Avatar */}
+                                {sellerProfile.avatar_url ? (
+                                    <Image
+                                        source={{ uri: getThumbnailUrl(sellerProfile.avatar_url, 140, 140) }}
+                                        style={styles.listedByAvatar}
+                                    />
+                                ) : (
+                                    <View style={[styles.listedByAvatarPlaceholder, { backgroundColor: secondaryBg }]}>
+                                        <MaterialCommunityIcons name="account" size={36} color={placeholderColor} />
+                                    </View>
+                                )}
+
+                                {/* Seller Details */}
+                                <View style={styles.listedByInfo}>
+                                    <Text style={[styles.listedByName, { color: textColor }]} numberOfLines={1}>
+                                        {getDisplayName(sellerProfile)}
+                                    </Text>
+
+                                    {/* Star Rating */}
+                                    <View style={styles.listedByRating}>
+                                        <Text style={styles.listedByStars}>★★★★★</Text>
+                                        <Text style={[styles.listedByRatingValue, { color: textColor }]}>
+                                            {PLACEHOLDER_RATING.toFixed(1)}
+                                        </Text>
+                                        <Text style={[styles.listedByReviewCount, { color: mutedColor }]}>
+                                            ({PLACEHOLDER_REVIEW_COUNT} reviews)
+                                        </Text>
+                                    </View>
+
+                                    {/* Years on platform and listings count */}
+                                    <View style={styles.listedByStats}>
+                                        {sellerProfile.created_at && (
+                                            <Text style={[styles.listedByStat, { color: mutedColor }]}>
+                                                {getYearsSince(sellerProfile.created_at)} yr{getYearsSince(sellerProfile.created_at) > 1 ? 's' : ''} on SouqJari
+                                            </Text>
+                                        )}
+                                        <Text style={[styles.listedByStatDot, { color: mutedColor }]}>•</Text>
+                                        <Text style={[styles.listedByStat, { color: mutedColor }]}>
+                                            {sellerListings.length + 1} listing{sellerListings.length + 1 > 1 ? 's' : ''}
+                                        </Text>
+                                    </View>
+                                </View>
+
+                                <Ionicons name="chevron-forward" size={20} color={mutedColor} />
+                            </View>
+                        </Pressable>
+                    )}
                 </View>
+
+                {/* More from this seller Section */}
+                {sellerListings.length > 0 && (
+                    <View style={[styles.moreFromSellerSection, { backgroundColor: cardBg }]}>
+                        <View style={styles.moreFromSellerHeader}>
+                            <Text style={[styles.sectionTitle, { color: textColor }]}>
+                                More from this seller ({sellerListings.length})
+                            </Text>
+                            <Pressable onPress={handleSellerPress}>
+                                <Text style={[styles.viewAllText, { color: BRAND_COLOR }]}>View all</Text>
+                            </Pressable>
+                        </View>
+
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.moreFromSellerScroll}
+                        >
+                            {sellerListings.map((sellerListing) => (
+                                <Pressable
+                                    key={sellerListing.id}
+                                    style={({ pressed }) => [
+                                        styles.sellerListingCard,
+                                        { backgroundColor: secondaryBg, borderColor },
+                                        pressed && styles.sellerListingCardPressed,
+                                    ]}
+                                    onPress={() => router.push(`/listing/${sellerListing.id}`)}
+                                >
+                                    {/* Image with Favorite Button */}
+                                    <View style={styles.sellerListingImageContainer}>
+                                        {sellerListing.images && sellerListing.images.length > 0 ? (
+                                            <Image
+                                                source={{ uri: getThumbnailUrl(sellerListing.images[0], 300, 200, 75) }}
+                                                style={styles.sellerListingImage}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <View style={[styles.sellerListingImagePlaceholder, { backgroundColor: placeholderColor }]}>
+                                                <MaterialIcons name="image" size={30} color={mutedColor} />
+                                            </View>
+                                        )}
+                                        <View style={styles.sellerListingFavorite}>
+                                            <FavoriteButton
+                                                listingId={sellerListing.id}
+                                                size={18}
+                                                variant="overlay"
+                                            />
+                                        </View>
+                                    </View>
+
+                                    {/* Details */}
+                                    <View style={styles.sellerListingDetails}>
+                                        <Text style={[styles.sellerListingPrice, { color: BRAND_COLOR }]}>
+                                            {formatPrice(sellerListing.price, sellerListing.currency)}
+                                        </Text>
+                                        <Text style={[styles.sellerListingTitle, { color: textColor }]} numberOfLines={2}>
+                                            {sellerListing.title}
+                                        </Text>
+                                        <Text style={[styles.sellerListingLocation, { color: mutedColor }]} numberOfLines={1}>
+                                            {sellerListing.location}
+                                        </Text>
+                                    </View>
+                                </Pressable>
+                            ))}
+
+                            {/* View All Card */}
+                            <Pressable
+                                style={[styles.viewAllCard, { backgroundColor: secondaryBg, borderColor }]}
+                                onPress={handleSellerPress}
+                            >
+                                <Ionicons name="arrow-forward-circle" size={40} color={BRAND_COLOR} />
+                                <Text style={[styles.viewAllCardText, { color: BRAND_COLOR }]}>View all</Text>
+                            </Pressable>
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Loading state for seller listings */}
+                {sellerListingsLoading && sellerListings.length === 0 && (
+                    <View style={[styles.sellerListingsLoading, { backgroundColor: cardBg }]}>
+                        <ActivityIndicator size="small" color={BRAND_COLOR} />
+                    </View>
+                )}
             </ScrollView>
 
             {/* Contact Buttons - Fixed at bottom */}
@@ -639,5 +878,192 @@ const styles = StyleSheet.create({
         right: 20,
         zIndex: 10,
         padding: SPACING.sm,
+    },
+    // Seller Header styles (compact bar above images)
+    sellerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.md,
+        marginHorizontal: SPACING.md,
+        marginBottom: SPACING.sm,
+        borderRadius: BORDER_RADIUS.lg,
+        borderWidth: 1,
+    },
+    sellerHeaderAvatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+    },
+    sellerHeaderAvatarPlaceholder: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sellerHeaderInfo: {
+        flex: 1,
+        marginLeft: SPACING.md,
+    },
+    sellerHeaderName: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    sellerHeaderRating: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    sellerHeaderRatingText: {
+        fontSize: 13,
+    },
+    sellerHeaderTime: {
+        fontSize: 12,
+        marginRight: SPACING.sm,
+    },
+    // Listed By section styles
+    listedBySection: {
+        paddingTop: SPACING.lg,
+        borderTopWidth: 1,
+        marginTop: SPACING.md,
+    },
+    listedByContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    listedByAvatar: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+    },
+    listedByAvatarPlaceholder: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    listedByInfo: {
+        flex: 1,
+        marginLeft: SPACING.md,
+    },
+    listedByName: {
+        fontSize: 17,
+        fontWeight: '700',
+        marginBottom: 4,
+    },
+    listedByRating: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    listedByStars: {
+        fontSize: 14,
+        color: '#FFB800',
+        marginRight: SPACING.xs,
+    },
+    listedByRatingValue: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginRight: SPACING.xs,
+    },
+    listedByReviewCount: {
+        fontSize: 13,
+    },
+    listedByStats: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    listedByStat: {
+        fontSize: 13,
+    },
+    listedByStatDot: {
+        marginHorizontal: SPACING.sm,
+    },
+    // More from this seller section styles
+    moreFromSellerSection: {
+        paddingVertical: SPACING.lg,
+        marginTop: SPACING.md,
+    },
+    moreFromSellerHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
+        marginBottom: SPACING.md,
+    },
+    viewAllText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    moreFromSellerScroll: {
+        paddingHorizontal: SPACING.lg,
+        gap: SPACING.md,
+    },
+    sellerListingCard: {
+        width: 160,
+        borderRadius: BORDER_RADIUS.lg,
+        borderWidth: 1,
+        overflow: 'hidden',
+        ...SHADOWS.card,
+    },
+    sellerListingCardPressed: {
+        opacity: 0.7,
+        transform: [{ scale: 0.98 }],
+    },
+    sellerListingImageContainer: {
+        position: 'relative',
+    },
+    sellerListingImage: {
+        width: '100%',
+        height: 110,
+    },
+    sellerListingImagePlaceholder: {
+        width: '100%',
+        height: 110,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    sellerListingFavorite: {
+        position: 'absolute',
+        top: SPACING.sm,
+        right: SPACING.sm,
+    },
+    sellerListingDetails: {
+        padding: SPACING.md,
+    },
+    sellerListingPrice: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    sellerListingTitle: {
+        fontSize: 13,
+        fontWeight: '600',
+        marginBottom: 4,
+        lineHeight: 18,
+    },
+    sellerListingLocation: {
+        fontSize: 11,
+    },
+    viewAllCard: {
+        width: 100,
+        borderRadius: BORDER_RADIUS.lg,
+        borderWidth: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: SPACING.xl,
+    },
+    viewAllCardText: {
+        fontSize: 13,
+        fontWeight: '600',
+        marginTop: SPACING.sm,
+    },
+    sellerListingsLoading: {
+        height: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: SPACING.md,
     },
 });

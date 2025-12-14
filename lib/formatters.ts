@@ -123,6 +123,7 @@ export interface UserProfile {
     email?: string | null;
     phone_number?: string | null;
     avatar_url?: string | null;
+    created_at?: string | null;
 }
 
 /**
@@ -166,6 +167,48 @@ export function getDisplayName(profile: UserProfile | null | undefined): string 
 export function truncateText(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength - 3) + '...';
+}
+
+/**
+ * Formats a date into a human-readable relative time string.
+ * Uses friendly terms like "today", "yesterday", "2 weeks ago", "over a month ago".
+ * @param dateString - ISO date string to format
+ * @returns Formatted string like "today", "3 days ago", "over a month ago"
+ */
+export function formatRelativeTime(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    const diffInMonths = Math.floor(diffInDays / 30);
+    const diffInYears = Math.floor(diffInDays / 365);
+
+    if (diffInMinutes < 60) return 'today';
+    if (diffInHours < 24) return 'today';
+    if (diffInDays === 1) return 'yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    if (diffInWeeks === 1) return '1 week ago';
+    if (diffInWeeks < 4) return `${diffInWeeks} weeks ago`;
+    if (diffInMonths === 1) return 'over a month ago';
+    if (diffInMonths < 12) return `${diffInMonths} months ago`;
+    if (diffInYears === 1) return 'over a year ago';
+    return `${diffInYears} years ago`;
+}
+
+/**
+ * Calculates years since a date (e.g., for "X years on platform").
+ * @param dateString - ISO date string
+ * @returns Number of years (minimum 1 if less than a year)
+ */
+export function getYearsSince(dateString: string): number {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInYears = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 365));
+    return Math.max(1, diffInYears); // Minimum 1 year for display
 }
 
 /**
