@@ -390,6 +390,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 options: {
                     redirectTo: redirectUri,
                     skipBrowserRedirect: true,
+                    queryParams: {
+                        prompt: 'select_account',
+                    },
                 },
             });
 
