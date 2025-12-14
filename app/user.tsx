@@ -12,7 +12,7 @@ import {
     MaterialCommunityIcons,
     MaterialIcons
 } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
 import {
     Alert,
@@ -103,7 +103,7 @@ function Section({ title, children }: SectionProps) {
 
 export default function UserScreen() {
     const { user, signOut } = useAuth();
-    const { profile, getDisplayName } = useProfile();
+    const { profile, getDisplayName, fetchProfile } = useProfile();
     const router = useRouter();
     const backgroundColor = useThemeColor({}, 'background');
     const iconColor = useThemeColor({}, 'icon');
@@ -115,6 +115,14 @@ export default function UserScreen() {
     // Theme context and bottom sheet
     const { themePreference, setThemePreference } = useThemeContext();
     const themeSheetRef = useRef<BottomSheetRefProps>(null);
+
+    // Refresh profile when screen comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            // Background refresh - no loading spinner, just update data
+            fetchProfile(false, false);
+        }, [fetchProfile])
+    );
 
     // Get current theme subtitle
     const getThemeSubtitle = () => {
