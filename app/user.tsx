@@ -109,6 +109,8 @@ export default function UserScreen() {
     const iconColor = useThemeColor({}, 'icon');
     const textColor = useThemeColor({}, 'text');
     const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
+    const cardBackground = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
+    const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
 
     // Theme context and bottom sheet
     const { themePreference, setThemePreference } = useThemeContext();
@@ -198,7 +200,14 @@ export default function UserScreen() {
                 </ThemedView>
 
                 {/* User Info Card */}
-                <View style={styles.userCard}>
+                <Pressable
+                    style={({ pressed }) => [
+                        styles.userCard,
+                        { backgroundColor: cardBackground },
+                        pressed && styles.userCardPressed
+                    ]}
+                    onPress={() => router.push('/personal-details')}
+                >
                     <View style={styles.avatarContainer}>
                         {profile?.avatar_url ? (
                             <Image
@@ -222,16 +231,16 @@ export default function UserScreen() {
                             Member since {new Date(user.created_at || Date.now()).toLocaleDateString()}
                         </Text>
                     </View>
-                </View>
+                    <Ionicons
+                        name="chevron-forward"
+                        size={22}
+                        color={chevronColor}
+                        style={styles.userCardChevron}
+                    />
+                </Pressable>
 
                 {/* Account Settings Section */}
                 <Section title="ACCOUNT SETTINGS">
-                    <MenuItem
-                        icon={<Ionicons name="person-outline" size={22} color={iconColor} />}
-                        title="Personal Details"
-                        subtitle="Name, email, phone number"
-                        onPress={() => router.push('/personal-details')}
-                    />
                     <MenuItem
                         icon={<MaterialIcons name="manage-accounts" size={22} color={iconColor} />}
                         title="Manage Account"
@@ -348,9 +357,16 @@ const styles = StyleSheet.create({
     userCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingVertical: 15,
-        marginBottom: 20,
+        padding: 16,
+        borderRadius: 12,
+        marginHorizontal: 15,
+        marginBottom: 24,
+    },
+    userCardPressed: {
+        opacity: 0.7,
+    },
+    userCardChevron: {
+        marginLeft: 'auto',
     },
     avatarContainer: {
         marginRight: 15,
