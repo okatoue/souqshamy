@@ -64,7 +64,6 @@ export function useAutoLocationDetection() {
 
                 if (status !== 'granted') {
                     // Permission denied - keep default location
-                    console.log('Location permission denied, using default location');
                     return;
                 }
 
@@ -80,8 +79,6 @@ export function useAutoLocationDetection() {
 
                 // Update location filter with detected location and 10km radius
                 updateLocationFilter(locationName, { latitude, longitude }, AUTO_DETECT_RADIUS);
-
-                console.log(`Auto-detected location: ${locationName} (${latitude}, ${longitude})`);
             } catch (error) {
                 // If location detection fails, keep default location
                 console.error('Auto location detection failed:', error);

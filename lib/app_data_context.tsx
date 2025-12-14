@@ -193,13 +193,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     const versionedCache = parsed as CachedRecentlyViewed;
                     // Check if cache version matches current version
                     if (versionedCache.version !== RECENTLY_VIEWED_CACHE_VERSION) {
-                        console.log('[RecentlyViewed] Cache version mismatch, clearing stale cache');
                         await AsyncStorage.removeItem(storageKeys.cacheKey);
                         return [];
                     }
                     // Check if cached listings have valid images
                     if (isCacheStale(versionedCache.listings)) {
-                        console.log('[RecentlyViewed] Cache appears stale (missing images), will refresh');
                         // Return empty to force fresh fetch, but don't delete cache yet
                         // The fresh fetch will update the cache
                         return [];
@@ -207,7 +205,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     return versionedCache.listings;
                 } else {
                     // Old format (plain array) - clear and return empty
-                    console.log('[RecentlyViewed] Old cache format detected, clearing');
                     await AsyncStorage.removeItem(storageKeys.cacheKey);
                     return [];
                 }
@@ -625,11 +622,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     // ========== GLOBAL DATA INITIALIZATION ==========
     useEffect(() => {
         const initializeAllData = async () => {
-            console.log('[AppData] initializeAllData called, user:', !!user, 'initialLoadComplete:', initialLoadComplete.current);
-
             if (!user) {
                 // No user - clear everything and stop loading
-                console.log('[AppData] No user, clearing data');
                 setConversations([]);
                 setUserListings([]);
                 setRecentlyViewed([]);
@@ -641,11 +635,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             if (initialLoadComplete.current) {
-                console.log('[AppData] Initial load already complete, skipping');
                 return;
             }
-
-            console.log('[AppData] Starting data initialization for user:', user.id);
 
             // Wait for the Supabase session to be fully propagated after OAuth.
             // After OAuth, setSession() triggers onAuthStateChange synchronously,
@@ -653,10 +644,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // A longer delay (500ms) is needed for the auth token to be properly
             // set up for authenticated database queries.
             await new Promise(resolve => setTimeout(resolve, 500));
-            console.log('[AppData] Session propagation delay complete');
 
             // STEP 1: Load from cache first (instant, no network)
-            console.log('[AppData] Step 1: Loading from cache...');
             let cachedConversations, cachedUserListings, cachedRecentlyViewed;
             try {
                 [cachedConversations, cachedUserListings, cachedRecentlyViewed] = await Promise.all([
@@ -664,7 +653,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     loadCachedUserListings(),
                     loadCachedRecentlyViewed()
                 ]);
-                console.log('[AppData] Cache loaded successfully');
             } catch (cacheError) {
                 console.error('[AppData] Error loading cache:', cacheError);
                 cachedConversations = null;
@@ -691,13 +679,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             }
 
             // STEP 2: Fetch fresh data from network in parallel
-            console.log('[AppData] Step 2: Starting network fetches...');
             const fetchPromises: Promise<void>[] = [];
 
             // Conversations fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Fetching conversations...');
                     try {
                         const { data: convData, error: convError } = await supabase
                             .from('conversations')
@@ -750,7 +736,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     } catch (error) {
                         console.error('[AppData] Error fetching conversations during init:', error);
                     } finally {
-                        console.log('[AppData] Conversations fetch complete');
                         setConversationsLoading(false);
                     }
                 })()
@@ -759,7 +744,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // User listings fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Fetching user listings...');
                     try {
                         const { data, error } = await supabase
                             .from('listings')
@@ -775,7 +759,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     } catch (error) {
                         console.error('[AppData] Error fetching user listings during init:', error);
                     } finally {
-                        console.log('[AppData] User listings fetch complete');
                         setUserListingsLoading(false);
                     }
                 })()
@@ -784,7 +767,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             // Recently viewed fetch
             fetchPromises.push(
                 (async () => {
-                    console.log('[AppData] Fetching recently viewed...');
                     try {
                         const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
                         if (!storedIds) {
@@ -815,24 +797,20 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     } catch (error) {
                         console.error('[AppData] Error fetching recently viewed during init:', error);
                     } finally {
-                        console.log('[AppData] Recently viewed fetch complete');
                         setRecentlyViewedLoading(false);
                     }
                 })()
             );
 
             // Wait for all fetches to complete
-            console.log('[AppData] Waiting for all fetches to complete...');
             try {
                 await Promise.all(fetchPromises);
-                console.log('[AppData] All fetches completed successfully');
             } catch (fetchAllError) {
                 console.error('[AppData] Error in Promise.all:', fetchAllError);
             }
 
             initialLoadComplete.current = true;
             setIsGlobalLoading(false);
-            console.log('[AppData] Global loading complete, isGlobalLoading set to false');
         };
 
         initializeAllData();

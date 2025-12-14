@@ -11,9 +11,6 @@ let capturedInitialUrl: string | null = null;
 let capturePromise: Promise<string | null> | null = null;
 let hasCaptured = false;
 
-// Try to capture the URL immediately when this module is first imported
-console.log('[InitialUrl] Module loaded, starting immediate capture...');
-
 /**
  * Captures the initial URL immediately.
  * Call this as early as possible in the app lifecycle.
@@ -23,13 +20,10 @@ export function captureInitialUrl(): Promise<string | null> {
     return capturePromise;
   }
 
-  console.log('[InitialUrl] Starting async capture...');
-
   capturePromise = (async () => {
     try {
       // Try getInitialURL first
       const initialUrl = await Linking.getInitialURL();
-      console.log('[InitialUrl] getInitialURL result:', initialUrl);
 
       if (initialUrl) {
         capturedInitialUrl = initialUrl;
@@ -44,7 +38,6 @@ export function captureInitialUrl(): Promise<string | null> {
           const { Linking: RNLinking } = NativeModules;
           if (RNLinking && RNLinking.getInitialURL) {
             const intentUrl = await RNLinking.getInitialURL();
-            console.log('[InitialUrl] Android Intent URL:', intentUrl);
             if (intentUrl) {
               capturedInitialUrl = intentUrl;
               hasCaptured = true;
@@ -52,13 +45,12 @@ export function captureInitialUrl(): Promise<string | null> {
             }
           }
         } catch (e) {
-          console.log('[InitialUrl] Android Intent access failed:', e);
+          // Android Intent access failed - continue with fallback
         }
       }
 
       // Also try parseInitialURLAsync
-      const parsed = await Linking.parseInitialURLAsync();
-      console.log('[InitialUrl] parseInitialURLAsync result:', JSON.stringify(parsed));
+      await Linking.parseInitialURLAsync();
 
       hasCaptured = true;
       return null;
@@ -103,7 +95,6 @@ export function hasAttemptedCapture(): boolean {
  */
 export function setInitialUrl(url: string): void {
   if (!capturedInitialUrl) {  // Only set if not already captured
-    console.log('[InitialUrl] Manually setting URL:', url);
     capturedInitialUrl = url;
     hasCaptured = true;
   }
@@ -113,12 +104,9 @@ export function setInitialUrl(url: string): void {
  * Clears the captured URL (after it's been processed).
  */
 export function clearCapturedUrl(): void {
-  console.log('[InitialUrl] Clearing captured URL');
   capturedInitialUrl = null;
 }
 
 // Start capturing immediately when this module is imported
 // This runs synchronously at module load time
-captureInitialUrl().then(url => {
-  console.log('[InitialUrl] Capture complete, URL:', url);
-});
+captureInitialUrl();

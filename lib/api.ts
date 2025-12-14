@@ -225,10 +225,7 @@ export const favoritesApi = {
      * Includes timeout protection to prevent infinite hanging.
      */
     async getIds(userId: string): Promise<ApiResponse<string[]>> {
-        console.log('[FavoritesApi] getIds starting for user:', userId);
         try {
-            console.log('[FavoritesApi] getIds query executing...');
-
             const queryPromise = supabase
                 .from('favorites')
                 .select('listing_id')
@@ -239,11 +236,6 @@ export const favoritesApi = {
                 API_TIMEOUT_MS,
                 'favoritesApi.getIds'
             );
-
-            console.log('[FavoritesApi] getIds response:', {
-                dataLength: data?.length ?? 0,
-                error: error?.message ?? null
-            });
 
             if (error) throw error;
             return { data: data?.map(f => f.listing_id) || [], error: null };
