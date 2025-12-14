@@ -173,18 +173,26 @@ export function useProfile() {
         initialize();
     }, [user, loadCachedProfile, fetchProfile]);
 
-    // Update profile
+    // Update profile with timeout
     const updateProfile = useCallback(async (updates: Partial<Profile>) => {
         if (!user) return false;
 
+        const timeoutMs = 15000; // 15 second timeout
+
         try {
-            const { error } = await supabase
+            const updatePromise = supabase
                 .from('profiles')
                 .update({
                     ...updates,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', user.id);
+
+            const timeoutPromise = new Promise<{ error: Error }>((_, reject) => {
+                setTimeout(() => reject(new Error('Update timed out after 15 seconds')), timeoutMs);
+            });
+
+            const { error } = await Promise.race([updatePromise, timeoutPromise]);
 
             if (error) throw error;
 
