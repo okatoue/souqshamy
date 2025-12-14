@@ -10,6 +10,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import * as Linking from 'expo-linking';
 import { useURL } from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -76,6 +77,9 @@ function RootLayoutNav() {
   // where navigation was attempted before the Stack was mounted.
   return (
     <View style={styles.container}>
+      {/* Dynamic Status Bar - icons change based on theme */}
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
