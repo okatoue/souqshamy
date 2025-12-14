@@ -124,9 +124,10 @@ export function useProfile() {
             await saveCachedProfile(fetchedProfile);
         } catch (error) {
             console.error('Error fetching profile:', error);
-            // On error, try to use cached or create from user object
-            if (!profile && user) {
-                setProfile({
+            // On error, create fallback from user object
+            setProfile(prev => {
+                if (prev) return prev; // Keep existing profile if we have one
+                return {
                     id: user.id,
                     email: user.email || null,
                     phone_number: user.user_metadata?.phone_number || null,
@@ -135,13 +136,13 @@ export function useProfile() {
                     email_verified: false,
                     created_at: user.created_at || new Date().toISOString(),
                     updated_at: new Date().toISOString()
-                });
-            }
+                };
+            });
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
         }
-    }, [user, saveCachedProfile, clearCache, profile]);
+    }, [user, saveCachedProfile, clearCache]);
 
     // Initialize: load cache first, then refresh in background
     useEffect(() => {
