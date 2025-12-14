@@ -244,8 +244,8 @@ export default function UserScreen() {
                     <MenuItem
                         icon={<MaterialIcons name="manage-accounts" size={22} color={iconColor} />}
                         title="Manage Account"
-                        subtitle="Password, security settings"
-                        onPress={() => handleComingSoon('Manage Account')}
+                        subtitle="Password, delete account"
+                        onPress={() => router.push('/manage-account')}
                     />
                 </Section>
 
