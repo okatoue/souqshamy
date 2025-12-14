@@ -1,12 +1,12 @@
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -100,8 +100,10 @@ export default function ManageAccountScreen() {
     const labelColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
     const modalBackground = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
 
+    // Bottom sheet ref for Change Password
+    const passwordSheetRef = useRef<BottomSheetRefProps>(null);
+
     // Change Password state
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -123,21 +125,21 @@ export default function ManageAccountScreen() {
         router.back();
     };
 
-    const resetPasswordForm = () => {
+    const resetPasswordForm = useCallback(() => {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setShowCurrentPassword(false);
         setShowNewPassword(false);
         setShowConfirmPassword(false);
-    };
+    }, []);
 
     const resetDeleteForm = () => {
         setDeletePassword('');
         setShowDeletePassword(false);
     };
 
-    const handleChangePassword = () => {
+    const handleChangePassword = useCallback(() => {
         if (isOAuthUser) {
             Alert.alert(
                 'Cannot Change Password',
@@ -146,8 +148,8 @@ export default function ManageAccountScreen() {
             );
             return;
         }
-        setShowPasswordModal(true);
-    };
+        passwordSheetRef.current?.open();
+    }, [isOAuthUser]);
 
     const handleSubmitPasswordChange = async () => {
         // Validation
@@ -195,7 +197,7 @@ export default function ManageAccountScreen() {
                     {
                         text: 'OK',
                         onPress: () => {
-                            setShowPasswordModal(false);
+                            passwordSheetRef.current?.close();
                             resetPasswordForm();
                         },
                     },
@@ -311,175 +313,142 @@ export default function ManageAccountScreen() {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Change Password Modal */}
-            <Modal
-                visible={showPasswordModal}
-                animationType="slide"
-                presentationStyle="pageSheet"
-                onRequestClose={() => {
-                    setShowPasswordModal(false);
-                    resetPasswordForm();
-                }}
+            {/* Change Password Bottom Sheet */}
+            <BottomSheet
+                ref={passwordSheetRef}
+                title="Change Password"
+                snapPoints={['60%']}
+                onDismiss={resetPasswordForm}
             >
-                <SafeAreaView style={[styles.modalContainer, { backgroundColor: modalBackground }]}>
-                    <KeyboardAvoidingView
-                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                        style={styles.keyboardView}
-                    >
-                        {/* Modal Header */}
-                        <View style={[styles.modalHeader, { borderBottomColor: borderColor }]}>
-                            <Pressable
-                                onPress={() => {
-                                    setShowPasswordModal(false);
-                                    resetPasswordForm();
-                                }}
-                                style={styles.modalCloseButton}
-                            >
-                                <Text style={[styles.modalCloseText, { color: BRAND_COLOR }]}>Cancel</Text>
-                            </Pressable>
-                            <ThemedText type="defaultSemiBold" style={styles.modalTitle}>
-                                Change Password
-                            </ThemedText>
-                            <View style={styles.modalHeaderSpacer} />
-                        </View>
-
-                        <ScrollView
-                            style={styles.modalScrollView}
-                            contentContainerStyle={styles.modalScrollContent}
-                            keyboardShouldPersistTaps="handled"
-                        >
-                            {/* Current Password */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: labelColor }]}>
-                                    Current Password
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: inputBackground,
-                                                borderColor: borderColor,
-                                                color: textColor,
-                                            },
-                                        ]}
-                                        value={currentPassword}
-                                        onChangeText={setCurrentPassword}
-                                        placeholder="Enter current password"
-                                        placeholderTextColor={COLORS.placeholder}
-                                        secureTextEntry={!showCurrentPassword}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
-                                    <Pressable
-                                        style={styles.eyeIconContainer}
-                                        onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-                                    >
-                                        <Ionicons
-                                            name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
-                                            size={20}
-                                            color={COLORS.muted}
-                                        />
-                                    </Pressable>
-                                </View>
-                            </View>
-
-                            {/* New Password */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: labelColor }]}>
-                                    New Password
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: inputBackground,
-                                                borderColor: borderColor,
-                                                color: textColor,
-                                            },
-                                        ]}
-                                        value={newPassword}
-                                        onChangeText={setNewPassword}
-                                        placeholder="Enter new password"
-                                        placeholderTextColor={COLORS.placeholder}
-                                        secureTextEntry={!showNewPassword}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
-                                    <Pressable
-                                        style={styles.eyeIconContainer}
-                                        onPress={() => setShowNewPassword(!showNewPassword)}
-                                    >
-                                        <Ionicons
-                                            name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
-                                            size={20}
-                                            color={COLORS.muted}
-                                        />
-                                    </Pressable>
-                                </View>
-                                <Text style={[styles.helperText, { color: labelColor }]}>
-                                    Password must be at least 6 characters
-                                </Text>
-                            </View>
-
-                            {/* Confirm New Password */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: labelColor }]}>
-                                    Confirm New Password
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: inputBackground,
-                                                borderColor: borderColor,
-                                                color: textColor,
-                                            },
-                                        ]}
-                                        value={confirmPassword}
-                                        onChangeText={setConfirmPassword}
-                                        placeholder="Confirm new password"
-                                        placeholderTextColor={COLORS.placeholder}
-                                        secureTextEntry={!showConfirmPassword}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
-                                    <Pressable
-                                        style={styles.eyeIconContainer}
-                                        onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    >
-                                        <Ionicons
-                                            name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                                            size={20}
-                                            color={COLORS.muted}
-                                        />
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </ScrollView>
-
-                        {/* Submit Button */}
-                        <View style={[styles.modalFooter, { borderTopColor: borderColor }]}>
-                            <Pressable
+                <View style={styles.sheetContent}>
+                    {/* Current Password */}
+                    <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: labelColor }]}>
+                            Current Password
+                        </Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
                                 style={[
-                                    styles.submitButton,
-                                    (!currentPassword || !newPassword || !confirmPassword) && styles.submitButtonDisabled,
+                                    styles.input,
+                                    {
+                                        backgroundColor: inputBackground,
+                                        borderColor: borderColor,
+                                        color: textColor,
+                                    },
                                 ]}
-                                onPress={handleSubmitPasswordChange}
-                                disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                                value={currentPassword}
+                                onChangeText={setCurrentPassword}
+                                placeholder="Enter current password"
+                                placeholderTextColor={COLORS.placeholder}
+                                secureTextEntry={!showCurrentPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            <Pressable
+                                style={styles.eyeIconContainer}
+                                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
                             >
-                                {isChangingPassword ? (
-                                    <ActivityIndicator color="white" size="small" />
-                                ) : (
-                                    <Text style={styles.submitButtonText}>Update Password</Text>
-                                )}
+                                <Ionicons
+                                    name={showCurrentPassword ? 'eye-off-outline' : 'eye-outline'}
+                                    size={20}
+                                    color={COLORS.muted}
+                                />
                             </Pressable>
                         </View>
-                    </KeyboardAvoidingView>
-                </SafeAreaView>
-            </Modal>
+                    </View>
+
+                    {/* New Password */}
+                    <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: labelColor }]}>
+                            New Password
+                        </Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: inputBackground,
+                                        borderColor: borderColor,
+                                        color: textColor,
+                                    },
+                                ]}
+                                value={newPassword}
+                                onChangeText={setNewPassword}
+                                placeholder="Enter new password"
+                                placeholderTextColor={COLORS.placeholder}
+                                secureTextEntry={!showNewPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            <Pressable
+                                style={styles.eyeIconContainer}
+                                onPress={() => setShowNewPassword(!showNewPassword)}
+                            >
+                                <Ionicons
+                                    name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
+                                    size={20}
+                                    color={COLORS.muted}
+                                />
+                            </Pressable>
+                        </View>
+                        <Text style={[styles.helperText, { color: labelColor }]}>
+                            Password must be at least 6 characters
+                        </Text>
+                    </View>
+
+                    {/* Confirm New Password */}
+                    <View style={styles.inputGroup}>
+                        <Text style={[styles.label, { color: labelColor }]}>
+                            Confirm New Password
+                        </Text>
+                        <View style={styles.inputWrapper}>
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        backgroundColor: inputBackground,
+                                        borderColor: borderColor,
+                                        color: textColor,
+                                    },
+                                ]}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
+                                placeholder="Confirm new password"
+                                placeholderTextColor={COLORS.placeholder}
+                                secureTextEntry={!showConfirmPassword}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                            />
+                            <Pressable
+                                style={styles.eyeIconContainer}
+                                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                                <Ionicons
+                                    name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
+                                    size={20}
+                                    color={COLORS.muted}
+                                />
+                            </Pressable>
+                        </View>
+                    </View>
+
+                    {/* Submit Button */}
+                    <Pressable
+                        style={[
+                            styles.submitButton,
+                            (!currentPassword || !newPassword || !confirmPassword) && styles.submitButtonDisabled,
+                        ]}
+                        onPress={handleSubmitPasswordChange}
+                        disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                    >
+                        {isChangingPassword ? (
+                            <ActivityIndicator color="white" size="small" />
+                        ) : (
+                            <Text style={styles.submitButtonText}>Update Password</Text>
+                        )}
+                    </Pressable>
+                </View>
+            </BottomSheet>
 
             {/* Delete Account Modal */}
             <Modal
@@ -665,6 +634,10 @@ const styles = StyleSheet.create({
     menuItemSubtitle: {
         fontSize: 13,
         marginTop: 2,
+    },
+    // Bottom sheet styles
+    sheetContent: {
+        paddingHorizontal: SPACING.sm,
     },
     // Modal styles
     modalContainer: {
