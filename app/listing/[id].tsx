@@ -16,7 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -29,11 +29,38 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+/**
+ * Helper to navigate to listing detail with pre-loaded data.
+ * This allows instant rendering without waiting for a fetch.
+ */
+export function navigateToListing(listing: Listing) {
+    router.push({
+        pathname: '/listing/[id]',
+        params: {
+            id: listing.id.toString(),
+            listingData: JSON.stringify(listing),
+        },
+    });
+}
+
 export default function ListingDetailScreen() {
-    const params = useLocalSearchParams<{ id: string }>();
+    const params = useLocalSearchParams<{ id: string; listingData?: string }>();
     const { user } = useAuth();
-    const [listing, setListing] = useState<Listing | null>(null);
-    const [loading, setLoading] = useState(true);
+
+    // Parse listing data from params if available (instant load)
+    const initialListing = useMemo(() => {
+        if (params.listingData) {
+            try {
+                return JSON.parse(params.listingData) as Listing;
+            } catch {
+                return null;
+            }
+        }
+        return null;
+    }, [params.listingData]);
+
+    const [listing, setListing] = useState<Listing | null>(initialListing);
+    const [loading, setLoading] = useState(!initialListing);
 
     // Seller info state
     const [sellerProfile, setSellerProfile] = useState<UserProfile | null>(null);
@@ -57,8 +84,17 @@ export default function ListingDetailScreen() {
     const placeholderColor = useThemeColor({}, 'textSecondary');
     const mutedColor = useThemeColor({}, 'textMuted');
 
-    // Fetch listing data
+    // Fetch listing data only if not provided via params
     useEffect(() => {
+        // Skip fetch if we already have listing data from params
+        if (initialListing) {
+            // Track recently viewed
+            if (initialListing.user_id !== user?.id) {
+                addToRecentlyViewed(initialListing.id, user?.id);
+            }
+            return;
+        }
+
         const fetchListing = async () => {
             if (!params.id) return;
 
@@ -85,7 +121,7 @@ export default function ListingDetailScreen() {
         };
 
         fetchListing();
-    }, [params.id, user?.id]);
+    }, [params.id, user?.id, initialListing]);
 
     // Fetch seller profile and their other listings
     useEffect(() => {
@@ -202,7 +238,7 @@ export default function ListingDetailScreen() {
     };
 
     const handleListingPress = (selectedListing: Listing) => {
-        router.push(`/listing/${selectedListing.id}`);
+        navigateToListing(selectedListing);
     };
 
     // Loading state

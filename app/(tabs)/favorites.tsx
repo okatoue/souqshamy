@@ -7,6 +7,7 @@ import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/lib/auth_context';
+import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
@@ -45,8 +46,8 @@ export default function FavoritesScreen() {
   }, [fetchFavorites]);
 
   const handleListingPress = useCallback((listing: Listing) => {
-    router.push(`/listing/${listing.id}`);
-  }, [router]);
+    navigateToListing(listing);
+  }, []);
 
   const handleRemoveFavorite = useCallback((listingId: string) => {
     removeFavorite(listingId);
