@@ -1,10 +1,10 @@
+import { navigateToListing } from '@/app/listing/[id]';
 import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import React from 'react';
 import {
     ActivityIndicator,
@@ -32,7 +32,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     const secondaryText = useThemeColor({}, 'textSecondary');
 
     const handleItemPress = (listing: Listing) => {
-        router.push(`/listing/${listing.id}`);
+        navigateToListing(listing);
     };
 
     if (isLoading) {

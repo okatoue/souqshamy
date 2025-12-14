@@ -2,6 +2,7 @@
 import { ListingCard } from '@/components/listings/listingCard';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSearchListings } from '@/hooks/useSearchListings';
+import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -55,7 +56,7 @@ export default function SearchScreen() {
     };
 
     const handleItemPress = (item: Listing) => {
-        router.push(`/listing/${item.id}`);
+        navigateToListing(item);
     };
 
     const renderItem = ({ item }: { item: Listing }) => (

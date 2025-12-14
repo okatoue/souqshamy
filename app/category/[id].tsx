@@ -6,6 +6,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { useThemeColor, useTheme } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
+import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -82,7 +83,7 @@ export default function CategoryListingScreen() {
   };
 
   const handleItemPress = (item: Listing) => {
-    router.push(`/listing/${item.id}`);
+    navigateToListing(item);
   };
 
   const handleSubcategoryPress = (subcategory: Subcategory) => {

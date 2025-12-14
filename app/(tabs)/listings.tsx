@@ -18,6 +18,7 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
+import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 
 export default function ListingsScreen() {
@@ -53,7 +54,7 @@ export default function ListingsScreen() {
 
   // Handle navigation to detail page
   const handleListingPress = (listing: Listing) => {
-    router.push(`/listing/${listing.id}`);
+    navigateToListing(listing);
   };
 
   // Empty state
