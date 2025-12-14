@@ -95,8 +95,8 @@ grep -E "GOTRUE_URI_ALLOW_LIST|ADDITIONAL_REDIRECT" /root/supabase-docker/.env
 
 Expected configuration:
 ```env
-GOTRUE_URI_ALLOW_LIST=https://souqjari.com,exp://*,stickersmash://auth/callback
-ADDITIONAL_REDIRECT_URLS=https://souqjari.com,exp://,stickersmash://
+GOTRUE_URI_ALLOW_LIST=https://souqjari.com,exp://*,souqjari://auth/callback
+ADDITIONAL_REDIRECT_URLS=https://souqjari.com,exp://,souqjari://
 ```
 
 ### 3.2 Check Storage Buckets Exist
@@ -141,7 +141,7 @@ curl -X POST https://api.souqjari.com/storage/v1/bucket \
 2. Edit your OAuth 2.0 Client ID
 3. Add authorized redirect URIs:
    - `https://api.souqjari.com/auth/v1/callback`
-   - `stickersmash://auth/callback`
+   - `souqjari://auth/callback`
 
 ### 4.2 Facebook OAuth
 
@@ -149,7 +149,7 @@ curl -X POST https://api.souqjari.com/storage/v1/bucket \
 2. Navigate to Settings > Basic
 3. Add valid OAuth redirect URIs:
    - `https://api.souqjari.com/auth/v1/callback`
-   - `stickersmash://auth/callback`
+   - `souqjari://auth/callback`
 
 ---
 
@@ -304,7 +304,7 @@ Images and files are served at:
 
 ### App Scheme
 
-The current app scheme is `stickersmash` (defined in `app.json`). For production, consider changing to `souqjari`:
+The current app scheme is `souqjari` (defined in `app.json`). For production, consider changing to `souqjari`:
 
 1. Update `app.json`:
    ```json

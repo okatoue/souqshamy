@@ -124,11 +124,11 @@ https://console.cloud.google.com/apis/credentials
 
 Add redirect URIs:
 - `https://api.souqjari.com/auth/v1/callback`
-- `stickersmash://auth/callback`
+- `souqjari://auth/callback`
 
 ### Facebook Developer Console
 https://developers.facebook.com/apps
 
 Add redirect URIs:
 - `https://api.souqjari.com/auth/v1/callback`
-- `stickersmash://auth/callback`
+- `souqjari://auth/callback`

@@ -58,7 +58,7 @@ API_EXTERNAL_URL=https://api.souqjari.com
 GOTRUE_API_EXTERNAL_URL=https://api.souqjari.com
 
 # Allowed redirect URLs (includes mobile app deep link)
-GOTRUE_URI_ALLOW_LIST=https://souqjari.com,https://api.souqjari.com,exp://*,stickersmash://*
+GOTRUE_URI_ALLOW_LIST=https://souqjari.com,https://api.souqjari.com,exp://*,souqjari://*
 
 # Mailer URL paths
 GOTRUE_MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify
@@ -98,7 +98,7 @@ docker compose logs auth --tail=50
 1. User clicks email verification link
 2. GoTrue verifies the email and redirects to `GOTRUE_SITE_URL` with tokens in URL fragment
 3. User lands on `https://souqjari.com/auth/callback#access_token=...`
-4. The callback page JavaScript extracts tokens and redirects to `stickersmash://auth/callback#access_token=...`
+4. The callback page JavaScript extracts tokens and redirects to `souqjari://auth/callback#access_token=...`
 5. Mobile app receives the deep link and completes sign-in
 
 ---
@@ -114,8 +114,8 @@ docker compose logs auth --tail=50
 ### App doesn't receive tokens
 
 - Check browser console for JavaScript errors on the callback page
-- Verify the app scheme is correct (`stickersmash://`)
-- Test the deep link manually: `stickersmash://auth/callback#access_token=test`
+- Verify the app scheme is correct (`souqjari://`)
+- Test the deep link manually: `souqjari://auth/callback#access_token=test`
 
 ### Redirect goes to wrong URL
 
@@ -128,8 +128,8 @@ docker compose logs auth --tail=50
 
 | Setting | Value |
 |---------|-------|
-| App Deep Link Scheme | `stickersmash` |
-| App Callback Path | `stickersmash://auth/callback` |
+| App Deep Link Scheme | `souqjari` |
+| App Callback Path | `souqjari://auth/callback` |
 | GoTrue Site URL | `https://souqjari.com/auth/callback` |
 | Callback Page URL | `https://souqjari.com/auth/callback` |
 | Cloudflare Worker | `auth` |

@@ -1,12 +1,12 @@
 // lib/auth_context.tsx
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Session, User } from '@supabase/supabase-js';
 import * as AuthSession from 'expo-auth-session';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
-import { Session, User } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { Alert, Platform } from 'react-native';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { Alert } from 'react-native';
 
 // Safe reload function that works in both development and production
 const safeReloadApp = async () => {
@@ -36,11 +36,11 @@ const FACEBOOK_APP_ID = process.env.EXPO_PUBLIC_FACEBOOK_APP_ID;
 // Get the appropriate redirect URI for the platform
 // Use 'native' option to ensure proper redirect for standalone builds with custom scheme
 const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'stickersmash',
+    scheme: 'souqjari',
     path: 'auth/callback',
     // 'native' ensures the custom scheme is used in standalone builds
     // For Expo Go, this returns exp:// based URI
-    native: 'stickersmash://auth/callback',
+    native: 'souqjari://auth/callback',
 });
 
 
