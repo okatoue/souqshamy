@@ -275,18 +275,11 @@ export default function ChatScreen() {
                                 style={styles.headerAvatar}
                             />
                         ) : (
-                            <View style={styles.headerAvatarPlaceholder}>
-                                <MaterialCommunityIcons name="account-circle" size={44} color={secondaryTextColor} />
-                            </View>
+                            <MaterialCommunityIcons name="account-circle" size={40} color={secondaryTextColor} />
                         )}
-                        <Pressable style={styles.headerTextContainer} onPress={handleListingPress}>
-                            <Text style={[styles.headerName, { color: textColor }]} numberOfLines={1}>
-                                {conversation.other_user.display_name}
-                            </Text>
-                            <Text style={[styles.headerListing, { color: secondaryTextColor }]} numberOfLines={1}>
-                                {conversation.listing?.title}
-                            </Text>
-                        </Pressable>
+                        <Text style={[styles.headerName, { color: textColor }]} numberOfLines={1}>
+                            {conversation.other_user.display_name}
+                        </Text>
                     </View>
                 </View>
 
@@ -427,27 +420,15 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     headerAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-    },
-    headerAvatarPlaceholder: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    headerTextContainer: {
-        flex: 1,
-        marginLeft: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
     },
     headerName: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '600',
-    },
-    headerListing: {
-        fontSize: 13,
-        marginTop: 1,
+        marginLeft: 10,
+        flex: 1,
     },
     listingPreview: {
         flexDirection: 'row',
