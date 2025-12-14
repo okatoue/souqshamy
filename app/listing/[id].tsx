@@ -321,10 +321,13 @@ export default function ListingDetailScreen() {
                     </View>
                 </View>
 
+                {/* Divider line */}
+                <View style={[styles.headerDivider, { backgroundColor: borderColor }]} />
+
                 {/* Seller Header - Compact bar above images */}
                 {sellerProfile && (
                     <Pressable
-                        style={[styles.sellerHeader, { backgroundColor: cardBg, borderColor }]}
+                        style={styles.sellerHeader}
                         onPress={handleSellerPress}
                     >
                         {/* Seller Avatar */}
@@ -879,16 +882,17 @@ const styles = StyleSheet.create({
         zIndex: 10,
         padding: SPACING.sm,
     },
+    // Header divider
+    headerDivider: {
+        height: 1,
+        marginHorizontal: SPACING.lg,
+    },
     // Seller Header styles (compact bar above images)
     sellerHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
-        marginHorizontal: SPACING.md,
-        marginBottom: SPACING.sm,
-        borderRadius: BORDER_RADIUS.lg,
-        borderWidth: 1,
     },
     sellerHeaderAvatar: {
         width: 36,
