@@ -178,7 +178,7 @@ export default function ChatsScreen() {
             <View style={styles.imageContainer}>
                 {item.listing?.images && item.listing.images.length > 0 ? (
                     <Image
-                        source={{ uri: getThumbnailUrl(item.listing.images[0], 100, 100, 60) }}
+                        source={{ uri: getThumbnailUrl(item.listing.images[0], 150, 150, 75) }}
                         style={styles.listingImage}
                     />
                 ) : (

@@ -80,7 +80,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                             {/* Image */}
                             {listing.images && listing.images.length > 0 ? (
                                 <Image
-                                    source={{ uri: getThumbnailUrl(listing.images[0], 200, 200, 60) }}
+                                    source={{ uri: getThumbnailUrl(listing.images[0], 300, 300, 75) }}
                                     style={styles.image}
                                     resizeMode="cover"
                                     onError={(e) => console.log('[RecentlyViewed] Image load error:', e.nativeEvent.error)}

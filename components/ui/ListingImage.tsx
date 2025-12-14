@@ -42,7 +42,8 @@ export function ListingImage({ images, size = 80, style }: ListingImageProps) {
   }
 
   // Use thumbnail URL for optimized image loading
-  const thumbnailUrl = getThumbnailUrl(images[0], size, size, 60);
+  // Request 2x size for retina displays, 75% quality for good visual balance
+  const thumbnailUrl = getThumbnailUrl(images[0], size * 2, size * 2, 75);
 
   return (
     <Image
