@@ -14,7 +14,7 @@ import {
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -70,6 +70,9 @@ export default function VerifyScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Ref to prevent double-sending initial verification code
+  const hasSentInitialCode = useRef(false);
+
   // Step 1 (password-reset only): Send verification code
   const handleSendCode = async () => {
     const trimmedEmail = email.trim();
@@ -111,6 +114,14 @@ export default function VerifyScreen() {
       setLoading(false);
     }
   };
+
+  // Auto-send verification code for password-reset when email is pre-filled
+  useEffect(() => {
+    if (mode === 'password-reset' && initialEmail && step === 'code' && !hasSentInitialCode.current) {
+      hasSentInitialCode.current = true;
+      handleSendCode();
+    }
+  }, []);
 
   // Step 2: Verify OTP code
   const handleVerifyCode = async () => {
