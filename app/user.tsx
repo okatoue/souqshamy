@@ -247,12 +247,6 @@ export default function UserScreen() {
                         subtitle="Password, security settings"
                         onPress={() => handleComingSoon('Manage Account')}
                     />
-                    <MenuItem
-                        icon={<Ionicons name="notifications-outline" size={22} color={iconColor} />}
-                        title="Notification Preferences"
-                        subtitle="Push notifications, email alerts"
-                        onPress={() => handleComingSoon('Notification Preferences')}
-                    />
                 </Section>
 
                 {/* App Settings Section */}
@@ -262,6 +256,12 @@ export default function UserScreen() {
                         title="App Theme"
                         subtitle={getThemeSubtitle()}
                         onPress={handleOpenThemeSheet}
+                    />
+                    <MenuItem
+                        icon={<Ionicons name="notifications-outline" size={22} color={iconColor} />}
+                        title="Notification Preferences"
+                        subtitle="Push notifications, email alerts"
+                        onPress={() => handleComingSoon('Notification Preferences')}
                     />
                 </Section>
 
