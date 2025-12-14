@@ -213,6 +213,11 @@ export default function UserScreen() {
                         <Text style={[styles.userName, { color: textColor }]}>
                             {getDisplayName()}
                         </Text>
+                        {(profile?.email || profile?.phone_number) && (
+                            <Text style={[styles.userContact, { color: subtitleColor }]}>
+                                {profile.email || profile.phone_number}
+                            </Text>
+                        )}
                         <Text style={[styles.userSince, { color: subtitleColor }]}>
                             Member since {new Date(user.created_at || Date.now()).toLocaleDateString()}
                         </Text>
@@ -362,6 +367,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         marginBottom: 4,
+    },
+    userContact: {
+        fontSize: 14,
+        marginTop: 2,
     },
     userSince: {
         fontSize: 14,
