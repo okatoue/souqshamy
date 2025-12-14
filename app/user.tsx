@@ -364,9 +364,8 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     userName: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '600',
-        marginBottom: 4,
     },
     userContact: {
         fontSize: 14,
