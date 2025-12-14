@@ -1,5 +1,5 @@
 import { ThemedText } from '@/components/themed-text';
-import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { BottomSheet, BottomSheetRefProps, BottomSheetTextInput } from '@/components/ui/bottomSheet';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth_context';
@@ -327,7 +327,7 @@ export default function ManageAccountScreen() {
                             Current Password
                         </Text>
                         <View style={styles.inputWrapper}>
-                            <TextInput
+                            <BottomSheetTextInput
                                 style={[
                                     styles.input,
                                     {
@@ -363,7 +363,7 @@ export default function ManageAccountScreen() {
                             New Password
                         </Text>
                         <View style={styles.inputWrapper}>
-                            <TextInput
+                            <BottomSheetTextInput
                                 style={[
                                     styles.input,
                                     {
@@ -402,7 +402,7 @@ export default function ManageAccountScreen() {
                             Confirm New Password
                         </Text>
                         <View style={styles.inputWrapper}>
-                            <TextInput
+                            <BottomSheetTextInput
                                 style={[
                                     styles.input,
                                     {
