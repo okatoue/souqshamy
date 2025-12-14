@@ -22,14 +22,12 @@ import {
     TextInput,
     View
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
     const params = useLocalSearchParams<{ id: string }>();
     const conversationId = params.id;
     const { user } = useAuth();
-    const insets = useSafeAreaInsets();
-
     const [conversation, setConversation] = useState<ConversationWithDetails | null>(null);
     const [conversationLoading, setConversationLoading] = useState(true);
     const [messageText, setMessageText] = useState('');
@@ -256,7 +254,7 @@ export default function ChatScreen() {
     }
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'bottom']}>
             <KeyboardAvoidingView
                 style={styles.keyboardAvoid}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -329,7 +327,7 @@ export default function ChatScreen() {
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
-                        paddingBottom: Math.max(insets.bottom, 8)
+                        paddingBottom: 8
                     }
                 ]}>
                     {/* TextInput - hidden when recording */}
