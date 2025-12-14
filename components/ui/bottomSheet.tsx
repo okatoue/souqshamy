@@ -1,4 +1,4 @@
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -6,6 +6,9 @@ import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme'
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
+
+// Export BottomSheetTextInput for use in forms within bottom sheets
+export { BottomSheetTextInput };
 
 // =============================================================================
 // Generic Bottom Sheet Component
@@ -88,6 +91,9 @@ export const BottomSheet = forwardRef<BottomSheetRefProps, GenericBottomSheetPro
                 handleIndicatorStyle={[styles.handleIndicator, { backgroundColor: handleColor }]}
                 backdropComponent={renderBackdrop}
                 onChange={handleSheetChanges}
+                keyboardBehavior="interactive"
+                keyboardBlurBehavior="restore"
+                android_keyboardInputMode="adjustResize"
             >
                 <View style={styles.contentContainer}>
                     {title && (
