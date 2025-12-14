@@ -325,7 +325,7 @@ export default function ListingDetailScreen() {
                 <View style={[styles.headerDivider, { backgroundColor: borderColor }]} />
 
                 {/* Seller Header - Compact bar above images */}
-                {sellerProfile && (
+                {sellerProfile ? (
                     <Pressable
                         style={styles.sellerHeader}
                         onPress={handleSellerPress}
@@ -361,6 +361,16 @@ export default function ListingDetailScreen() {
 
                         <Ionicons name="chevron-forward" size={18} color={mutedColor} />
                     </Pressable>
+                ) : (
+                    /* Seller Header Loading Skeleton */
+                    <View style={styles.sellerHeader}>
+                        <View style={[styles.sellerHeaderAvatarPlaceholder, styles.skeletonPulse, { backgroundColor: borderColor }]} />
+                        <View style={styles.sellerHeaderInfo}>
+                            <View style={[styles.skeletonText, styles.skeletonPulse, { backgroundColor: borderColor, width: 100 }]} />
+                            <View style={[styles.skeletonTextSmall, styles.skeletonPulse, { backgroundColor: borderColor, width: 50, marginTop: 4 }]} />
+                        </View>
+                        <View style={[styles.skeletonTextSmall, styles.skeletonPulse, { backgroundColor: borderColor, width: 80 }]} />
+                    </View>
                 )}
 
                 {/* Images */}
@@ -925,6 +935,18 @@ const styles = StyleSheet.create({
     sellerHeaderTime: {
         fontSize: 12,
         marginRight: SPACING.sm,
+    },
+    // Skeleton loading styles
+    skeletonPulse: {
+        opacity: 0.5,
+    },
+    skeletonText: {
+        height: 14,
+        borderRadius: BORDER_RADIUS.xs,
+    },
+    skeletonTextSmall: {
+        height: 10,
+        borderRadius: BORDER_RADIUS.xs,
     },
     // Listed By section styles
     listedBySection: {
