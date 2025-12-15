@@ -27,6 +27,7 @@ import { SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
+import { unformatPrice } from '@/lib/formatters';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
@@ -59,6 +60,8 @@ export default function ProductDetailsScreen() {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('SYP');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [sameAsPhone, setSameAsPhone] = useState(false);
 
   // Location state
   const [location, setLocation] = useState('Damascus'); // Default to Damascus
@@ -120,7 +123,7 @@ export default function ProductDetailsScreen() {
       return;
     }
 
-    if (!phoneNumber.trim()) {
+    if (!phoneNumber.trim() && !whatsappNumber.trim()) {
       Alert.alert('Missing Information', 'Please add either a phone number or WhatsApp number');
       return;
     }
@@ -130,15 +133,19 @@ export default function ProductDetailsScreen() {
       return;
     }
 
+    // Determine whatsapp value: if sameAsPhone, use phone number
+    const finalWhatsapp = sameAsPhone ? phoneNumber.trim() : whatsappNumber.trim();
+
     const listingData = {
       user_id: user.id,
       title: title.trim(),
       category_id: currentCategoryId,
       subcategory_id: currentSubcategoryId,
       description: description.trim(),
-      price: parseFloat(price),
+      price: parseFloat(unformatPrice(price)),
       currency,
       phone_number: phoneNumber.trim() || null,
+      whatsapp_number: finalWhatsapp || null,
       images: images.length > 0 ? images : null,
       status: 'active' as const,
       location,
@@ -175,7 +182,7 @@ export default function ProductDetailsScreen() {
     title.trim() !== '' &&
     description.trim() !== '' &&
     price !== '' &&
-    phoneNumber.trim() !== '' &&
+    (phoneNumber.trim() !== '' || whatsappNumber.trim() !== '') &&
     location !== '';
 
   return (
@@ -232,6 +239,10 @@ export default function ProductDetailsScreen() {
             <ContactSection
               phoneNumber={phoneNumber}
               setPhoneNumber={setPhoneNumber}
+              whatsappNumber={whatsappNumber}
+              setWhatsappNumber={setWhatsappNumber}
+              sameAsPhone={sameAsPhone}
+              setSameAsPhone={setSameAsPhone}
             />
           </ScrollView>
 
