@@ -206,12 +206,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         setIsPasswordResetInProgressState(false);
                     }
 
+                    // Extract OAuth-specific metadata fields with fallback chain
+                    // Google/Facebook use 'full_name' or 'name', regular signup uses 'display_name'
+                    const displayName = session.user.user_metadata?.full_name
+                        || session.user.user_metadata?.name
+                        || session.user.user_metadata?.display_name
+                        || null;
+
+                    // Avatar fallback: avatar_url → picture → null
+                    const avatarUrl = session.user.user_metadata?.avatar_url
+                        || session.user.user_metadata?.picture
+                        || null;
+
                     // Create/update profile
                     createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
                         session.user.user_metadata?.phone_number,
-                        session.user.user_metadata?.display_name
+                        displayName,
+                        avatarUrl
                     );
                 }
             } catch (error) {
@@ -234,11 +247,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 // Only update profile on sign in if NOT resetting password
                 if (event === 'SIGNED_IN' && session?.user && isResetting !== 'true') {
+                    // Extract OAuth-specific metadata fields with fallback chain
+                    const displayName = session.user.user_metadata?.full_name
+                        || session.user.user_metadata?.name
+                        || session.user.user_metadata?.display_name
+                        || null;
+
+                    const avatarUrl = session.user.user_metadata?.avatar_url
+                        || session.user.user_metadata?.picture
+                        || null;
+
                     await createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
                         session.user.user_metadata?.phone_number,
-                        session.user.user_metadata?.display_name
+                        displayName,
+                        avatarUrl
                     );
                 }
 
@@ -254,13 +278,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: string,
         email?: string,
         phoneNumber?: string,
-        displayName?: string
+        displayName?: string,
+        avatarUrl?: string
     ) => {
         try {
             // First check if profile exists
             const { data: existingProfile } = await supabase
                 .from('profiles')
-                .select('id, display_name')
+                .select('id, display_name, avatar_url')
                 .eq('id', userId)
                 .single();
 
@@ -273,16 +298,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         email: email,
                         phone_number: phoneNumber,
                         display_name: displayName,
+                        avatar_url: avatarUrl,
                     });
 
                 if (error) console.error('Profile creation error:', error);
             } else {
-                // Update existing profile - only update display_name if provided and not already set
+                // Update existing profile - only update display_name/avatar_url if provided and not already set
                 const updates: any = {};
                 if (email) updates.email = email;
                 if (phoneNumber) updates.phone_number = phoneNumber;
                 if (displayName && !existingProfile.display_name) {
                     updates.display_name = displayName;
+                }
+                if (avatarUrl && !existingProfile.avatar_url) {
+                    updates.avatar_url = avatarUrl;
                 }
 
                 if (Object.keys(updates).length > 0) {
