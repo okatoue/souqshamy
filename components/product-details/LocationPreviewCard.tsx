@@ -18,6 +18,7 @@ interface LocationPreviewCardProps {
     };
     radius?: number; // Optional radius in meters
     onPress: () => void;
+    tapHintText?: string; // Custom hint text (default: "Tap to edit")
 }
 
 /**
@@ -95,7 +96,8 @@ export default function LocationPreviewCard({
     location,
     coordinates,
     radius = 1000, // Default 1km radius
-    onPress
+    onPress,
+    tapHintText = 'Tap to edit'
 }: LocationPreviewCardProps) {
     // Theme colors
     const cardBg = useThemeColor({}, 'cardBackground');
@@ -133,7 +135,7 @@ export default function LocationPreviewCard({
                 <View style={styles.mapOverlay} pointerEvents="box-only">
                     <View style={styles.tapHint}>
                         <Ionicons name="expand-outline" size={16} color="white" />
-                        <Text style={styles.tapHintText}>Tap to edit</Text>
+                        <Text style={styles.tapHintText}>{tapHintText}</Text>
                     </View>
                 </View>
             </View>
