@@ -117,6 +117,13 @@ export default function ProductDetailsScreen() {
   // Submit listing to database
   const submitListing = async () => {
     console.log('INSIDE submitListing - this should not run during render');
+
+    // Safety check - this function should only be called after validation
+    if (!locationCoordinates || !location) {
+      console.error('submitListing called without location data');
+      return;
+    }
+
     const finalWhatsapp = sameAsPhone ? phoneNumber.trim() : whatsappNumber.trim();
 
     const listingData = {
@@ -131,9 +138,9 @@ export default function ProductDetailsScreen() {
       whatsapp_number: finalWhatsapp || null,
       images: images.length > 0 ? images : null,
       status: 'active' as const,
-      location: location!,
-      location_lat: locationCoordinates!.latitude,
-      location_lon: locationCoordinates!.longitude,
+      location: location,
+      location_lat: locationCoordinates.latitude,
+      location_lon: locationCoordinates.longitude,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
