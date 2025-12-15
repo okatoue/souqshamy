@@ -8,6 +8,7 @@ export interface Listing {
     price: number;
     currency: string;
     phone_number: string | null;
+    whatsapp_number: string | null;
     images: string[] | null;
     status: 'active' | 'sold' | 'inactive';
     location: string;
@@ -26,6 +27,7 @@ export interface CreateListingDTO {
     price: number;
     currency: string;
     phone_number: string | null;
+    whatsapp_number: string | null;
     images: string[] | null;
     status: 'active' | 'sold' | 'inactive';
     location: string;

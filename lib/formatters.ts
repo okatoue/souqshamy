@@ -67,6 +67,34 @@ export function formatPrice(price: number, currency: string): string {
     return `USD ${formattedNumber}`;
 }
 
+/**
+ * Formats a number string with thousand separators for display.
+ * @param value - Raw number string (e.g., "1000000")
+ * @returns Formatted string (e.g., "1,000,000")
+ */
+export function formatPriceInput(value: string): string {
+    // Remove any existing commas and non-numeric chars except decimal
+    const cleanValue = value.replace(/[^0-9.]/g, '');
+
+    // Split by decimal point
+    const parts = cleanValue.split('.');
+
+    // Format integer part with commas
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Rejoin with decimal if exists
+    return parts.join('.');
+}
+
+/**
+ * Removes formatting to get raw number for storage.
+ * @param formattedValue - Formatted string (e.g., "1,000,000")
+ * @returns Raw number string (e.g., "1000000")
+ */
+export function unformatPrice(formattedValue: string): string {
+    return formattedValue.replace(/,/g, '');
+}
+
 // ============================================================================
 // Category Utilities
 // ============================================================================
