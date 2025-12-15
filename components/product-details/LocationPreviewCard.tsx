@@ -15,7 +15,7 @@ interface LocationPreviewCardProps {
     coordinates: {
         latitude: number;
         longitude: number;
-    };
+    } | null;
     radius?: number; // Optional radius in meters
     onPress: () => void;
     tapHintText?: string; // Custom hint text (default: "Tap to edit")
