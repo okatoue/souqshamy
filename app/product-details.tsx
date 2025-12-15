@@ -6,11 +6,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
-  View
+  StyleSheet
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CategoryInfo from '@/components/product-details/categoryInfo';
 import ContactSection from '@/components/product-details/contactSection';
@@ -23,7 +22,6 @@ import ProductHeader from '@/components/product-details/productHeader';
 import SubmitButton from '@/components/product-details/submitButton';
 import TitleSection from '@/components/product-details/titleSection';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
-import { SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
@@ -38,7 +36,6 @@ export default function ProductDetailsScreen() {
 
   const router = useRouter();
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
 
   // Extract params - NOW WITH NUMERIC IDS!
   const {
@@ -86,8 +83,6 @@ export default function ProductDetailsScreen() {
   const { createListing, isLoading: isSubmitting } = useCreateListing();
   console.log('CHECKPOINT 3: before useThemeColor');
   const backgroundColor = useThemeColor({}, 'background');
-  const borderColor = useThemeColor({}, 'border');
-  console.log('CHECKPOINT 4: after hooks');
 
   console.log('CHECKPOINT 5: defining handleLocationSelect');
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
@@ -263,7 +258,6 @@ export default function ProductDetailsScreen() {
 
           <ScrollView
             style={styles.scrollContainer}
-            contentContainerStyle={{ paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -311,24 +305,13 @@ export default function ProductDetailsScreen() {
               sameAsPhone={sameAsPhone}
               setSameAsPhone={setSameAsPhone}
             />
-          </ScrollView>
 
-          {/* Sticky Submit Button */}
-          <View style={[
-            styles.stickyButtonContainer,
-            {
-              backgroundColor,
-              borderTopColor: borderColor,
-              paddingBottom: insets.bottom > 0 ? insets.bottom - SPACING.xs : SPACING.xs
-            },
-            SHADOWS.sm
-          ]}>
             <SubmitButton
               onPress={handleSubmit}
               disabled={!isFormValid || isSubmitting}
               loading={isSubmitting}
             />
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
 
         <MapModal
@@ -355,13 +338,5 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
-  },
-  stickyButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    paddingTop: SPACING.xs,
   },
 });
