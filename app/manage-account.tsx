@@ -264,7 +264,7 @@ export default function ManageAccountScreen() {
                 .eq('id', user?.id);
 
             if (deleteError) {
-                Alert.alert('Error', 'Failed to delete account. Please try again.');
+                Alert.alert('Error', deleteError.message || 'Failed to delete account. Please try again.');
                 setIsDeleting(false);
                 return;
             }
