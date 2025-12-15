@@ -428,6 +428,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
+                // Dismiss any existing browser session to prevent invalid state
+                await WebBrowser.coolDownAsync();
+
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
                     data.url,
@@ -529,6 +532,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) throw error;
 
             if (data?.url) {
+                // Dismiss any existing browser session to prevent invalid state
+                await WebBrowser.coolDownAsync();
+
                 // Open the browser for authentication
                 const result = await WebBrowser.openAuthSessionAsync(
                     data.url,
