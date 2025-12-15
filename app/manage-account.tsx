@@ -114,6 +114,7 @@ export default function ManageAccountScreen() {
     const [deletePassword, setDeletePassword] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeletePassword, setShowDeletePassword] = useState(false);
+    const [confirmationPhrase, setConfirmationPhrase] = useState('');
 
     // Check if user signed in via OAuth (no password)
     const isOAuthUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
@@ -134,6 +135,7 @@ export default function ManageAccountScreen() {
     const resetDeleteForm = () => {
         setDeletePassword('');
         setShowDeletePassword(false);
+        setConfirmationPhrase('');
     };
 
     const handleChangePassword = () => {
@@ -223,27 +225,39 @@ export default function ManageAccountScreen() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!deletePassword) {
-            Alert.alert('Error', 'Please enter your password to confirm deletion.');
-            return;
+        // Different validation for OAuth vs password users
+        if (isOAuthUser) {
+            // OAuth users must type "DELETE" to confirm
+            if (confirmationPhrase !== 'DELETE') {
+                Alert.alert('Error', 'Please type DELETE to confirm account deletion.');
+                return;
+            }
+        } else {
+            // Password users must enter their password
+            if (!deletePassword) {
+                Alert.alert('Error', 'Please enter your password to confirm deletion.');
+                return;
+            }
         }
 
         setIsDeleting(true);
 
         try {
-            // Verify password first
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-                email: user?.email || '',
-                password: deletePassword,
-            });
+            // For password users, verify password first
+            if (!isOAuthUser) {
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                    email: user?.email || '',
+                    password: deletePassword,
+                });
 
-            if (signInError) {
-                Alert.alert('Error', 'Password is incorrect.');
-                setIsDeleting(false);
-                return;
+                if (signInError) {
+                    Alert.alert('Error', 'Password is incorrect.');
+                    setIsDeleting(false);
+                    return;
+                }
             }
 
-            // Soft delete - mark profile as deleted
+            // Proceed with account deletion (soft delete)
             const { error: deleteError } = await supabase
                 .from('profiles')
                 .update({ deleted_at: new Date().toISOString() })
@@ -255,6 +269,12 @@ export default function ManageAccountScreen() {
                 return;
             }
 
+            // Also deactivate all user's listings
+            await supabase
+                .from('listings')
+                .update({ status: 'deleted' })
+                .eq('user_id', user?.id);
+
             // Sign out and redirect to auth
             await signOut();
             router.replace('/(auth)');
@@ -262,6 +282,14 @@ export default function ManageAccountScreen() {
             Alert.alert('Error', error.message || 'An unexpected error occurred.');
             setIsDeleting(false);
         }
+    };
+
+    // Get the provider name for display
+    const getProviderName = () => {
+        const provider = user?.app_metadata?.provider;
+        if (provider === 'google') return 'Google';
+        if (provider === 'facebook') return 'Facebook';
+        return 'social login';
     };
 
     return (
@@ -524,45 +552,80 @@ export default function ManageAccountScreen() {
                                     This action is permanent
                                 </Text>
                                 <Text style={[styles.warningText, { color: labelColor }]}>
-                                    Once you delete your account, all your data including listings, messages, and profile information will be permanently removed and cannot be recovered.
+                                    Once you delete your account, all your data including listings, messages,
+                                    and profile information will be permanently removed and cannot be recovered.
                                 </Text>
                             </View>
 
-                            {/* Password Confirmation */}
-                            <View style={styles.inputGroup}>
-                                <Text style={[styles.label, { color: labelColor }]}>
-                                    Enter your password to confirm
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <TextInput
-                                        style={[
-                                            styles.input,
-                                            {
-                                                backgroundColor: inputBackground,
-                                                borderColor: borderColor,
-                                                color: textColor,
-                                            },
-                                        ]}
-                                        value={deletePassword}
-                                        onChangeText={setDeletePassword}
-                                        placeholder="Enter password"
-                                        placeholderTextColor={COLORS.placeholder}
-                                        secureTextEntry={!showDeletePassword}
-                                        autoCapitalize="none"
-                                        autoCorrect={false}
-                                    />
-                                    <Pressable
-                                        style={styles.eyeIconContainer}
-                                        onPress={() => setShowDeletePassword(!showDeletePassword)}
-                                    >
-                                        <Ionicons
-                                            name={showDeletePassword ? 'eye-off-outline' : 'eye-outline'}
-                                            size={20}
-                                            color={COLORS.muted}
+                            {isOAuthUser ? (
+                                /* OAuth User: Type DELETE to confirm */
+                                <View style={styles.inputGroup}>
+                                    <Text style={[styles.label, { color: labelColor }]}>
+                                        You signed in with {getProviderName()}. Type{' '}
+                                        <Text style={{ fontWeight: '700', color: '#FF3B30' }}>DELETE</Text>
+                                        {' '}to confirm account deletion.
+                                    </Text>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={[
+                                                styles.input,
+                                                {
+                                                    backgroundColor: inputBackground,
+                                                    borderColor: confirmationPhrase === 'DELETE' ? '#FF3B30' : borderColor,
+                                                    color: textColor,
+                                                },
+                                            ]}
+                                            value={confirmationPhrase}
+                                            onChangeText={setConfirmationPhrase}
+                                            placeholder="Type DELETE"
+                                            placeholderTextColor={COLORS.placeholder}
+                                            autoCapitalize="characters"
+                                            autoCorrect={false}
                                         />
-                                    </Pressable>
+                                    </View>
+                                    {confirmationPhrase.length > 0 && confirmationPhrase !== 'DELETE' && (
+                                        <Text style={[styles.helperText, { color: '#FF3B30' }]}>
+                                            Please type DELETE exactly as shown
+                                        </Text>
+                                    )}
                                 </View>
-                            </View>
+                            ) : (
+                                /* Password User: Enter password */
+                                <View style={styles.inputGroup}>
+                                    <Text style={[styles.label, { color: labelColor }]}>
+                                        Enter your password to confirm
+                                    </Text>
+                                    <View style={styles.inputWrapper}>
+                                        <TextInput
+                                            style={[
+                                                styles.input,
+                                                {
+                                                    backgroundColor: inputBackground,
+                                                    borderColor: borderColor,
+                                                    color: textColor,
+                                                },
+                                            ]}
+                                            value={deletePassword}
+                                            onChangeText={setDeletePassword}
+                                            placeholder="Enter password"
+                                            placeholderTextColor={COLORS.placeholder}
+                                            secureTextEntry={!showDeletePassword}
+                                            autoCapitalize="none"
+                                            autoCorrect={false}
+                                        />
+                                        <Pressable
+                                            style={styles.eyeIconContainer}
+                                            onPress={() => setShowDeletePassword(!showDeletePassword)}
+                                        >
+                                            <Ionicons
+                                                name={showDeletePassword ? 'eye-off-outline' : 'eye-outline'}
+                                                size={20}
+                                                color={COLORS.muted}
+                                            />
+                                        </Pressable>
+                                    </View>
+                                </View>
+                            )}
                         </ScrollView>
 
                         {/* Delete Button */}
@@ -570,15 +633,21 @@ export default function ManageAccountScreen() {
                             <Pressable
                                 style={[
                                     styles.deleteButton,
-                                    !deletePassword && styles.submitButtonDisabled,
+                                    (isOAuthUser ? confirmationPhrase !== 'DELETE' : !deletePassword) &&
+                                        styles.submitButtonDisabled,
                                 ]}
                                 onPress={handleConfirmDelete}
-                                disabled={isDeleting || !deletePassword}
+                                disabled={
+                                    isDeleting ||
+                                    (isOAuthUser ? confirmationPhrase !== 'DELETE' : !deletePassword)
+                                }
                             >
                                 {isDeleting ? (
                                     <ActivityIndicator color="white" size="small" />
                                 ) : (
-                                    <Text style={styles.submitButtonText}>Delete My Account</Text>
+                                    <Text style={styles.submitButtonText}>
+                                        Delete My Account
+                                    </Text>
                                 )}
                             </Pressable>
                         </View>
