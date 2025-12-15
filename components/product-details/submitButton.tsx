@@ -34,7 +34,7 @@ export default function SubmitButton({ onPress, disabled, loading }: SubmitButto
 const styles = StyleSheet.create({
   submitButton: {
     marginHorizontal: SPACING.xl,
-    marginVertical: SPACING.xxxl,
+    marginVertical: SPACING.sm,
     height: 56,
     borderRadius: BORDER_RADIUS.lg,
     justifyContent: 'center',

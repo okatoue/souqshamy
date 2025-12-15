@@ -1,46 +1,57 @@
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface CategoryInfoProps {
-  categoryIcon: string;
   category: string;
   subcategory: string;
-  title: string;
+  categoryIcon?: string;
+  onChangePress: () => void;
 }
 
 export default function CategoryInfo({
-  categoryIcon,
   category,
   subcategory,
-  title
+  categoryIcon,
+  onChangePress
 }: CategoryInfoProps) {
-  // Theme colors
   const textColor = useThemeColor({}, 'text');
   const mutedColor = useThemeColor({}, 'textMuted');
 
   return (
-    <View style={styles.categoryInfo}>
-      <Text style={[styles.categoryText, { color: mutedColor }]}>
-        {categoryIcon} {category} › {subcategory}
-      </Text>
-      <Text style={[styles.titleText, { color: textColor }]}>{title}</Text>
+    <View style={styles.container}>
+      <View style={styles.row}>
+        <Text style={[styles.categoryText, { color: textColor }]}>
+          {categoryIcon} {category} › {subcategory}
+        </Text>
+        <TouchableOpacity onPress={onChangePress}>
+          <Text style={[styles.changeText, { color: mutedColor }]}>
+            Change
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  categoryInfo: {
+  container: {
     paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.xl,
+    paddingVertical: SPACING.md,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   categoryText: {
-    fontSize: 14,
-    marginBottom: SPACING.sm,
+    fontSize: 16,
+    fontWeight: '500',
+    flex: 1,
   },
-  titleText: {
-    fontSize: 20,
-    fontWeight: '600',
+  changeText: {
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });

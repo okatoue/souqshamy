@@ -1,13 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet
+  StyleSheet,
+  View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CategoryInfo from '@/components/product-details/categoryInfo';
 import ContactSection from '@/components/product-details/contactSection';
@@ -18,26 +21,39 @@ import MapModal from '@/components/product-details/mapModal';
 import PriceSection from '@/components/product-details/priceSection';
 import ProductHeader from '@/components/product-details/productHeader';
 import SubmitButton from '@/components/product-details/submitButton';
+import TitleSection from '@/components/product-details/titleSection';
+import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
+import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
   const params = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Extract params - NOW WITH NUMERIC IDS!
   const {
-    title,
-    categoryId,      // This is now a number (1, 2, 3...)
-    subcategoryId,   // This is now a number (1, 2, 3...)
-    categoryName,    // Display name
-    subcategoryName, // Display name
+    title: initialTitle,
+    categoryId,
+    subcategoryId,
+    categoryName,
+    subcategoryName,
     categoryIcon
   } = params;
 
+  // Category state (editable - initialized from params)
+  const [currentCategoryId, setCurrentCategoryId] = useState(Number(categoryId));
+  const [currentSubcategoryId, setCurrentSubcategoryId] = useState(Number(subcategoryId));
+  const [currentCategoryName, setCurrentCategoryName] = useState(categoryName as string);
+  const [currentSubcategoryName, setCurrentSubcategoryName] = useState(subcategoryName as string);
+  const [currentCategoryIcon, setCurrentCategoryIcon] = useState(categoryIcon as string);
+
   // State for product details
+  const [title, setTitle] = useState(initialTitle as string || '');
   const [images, setImages] = useState<string[]>([]);
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -52,12 +68,31 @@ export default function ProductDetailsScreen() {
   });
   const [showMapModal, setShowMapModal] = useState(false);
 
+  // Refs
+  const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
+
   const { createListing, isLoading: isSubmitting } = useCreateListing();
   const backgroundColor = useThemeColor({}, 'background');
+  const borderColor = useThemeColor({}, 'border');
 
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
     setLocationCoordinates(coordinates);
+  };
+
+  // Handle category change from bottom sheet
+  const handleCategoryChange = (category: Category, subcategory: Subcategory) => {
+    setCurrentCategoryId(category.id);
+    setCurrentSubcategoryId(subcategory.id);
+    setCurrentCategoryName(category.name);
+    setCurrentSubcategoryName(subcategory.name);
+    setCurrentCategoryIcon(category.icon);
+  };
+
+  // Open category bottom sheet
+  const handleOpenCategorySheet = () => {
+    Keyboard.dismiss();
+    categorySheetRef.current?.open();
   };
 
   // Much simpler handleSubmit - no lookups needed!
@@ -70,6 +105,11 @@ export default function ProductDetailsScreen() {
     }
 
     // Validation
+    if (!title.trim()) {
+      Alert.alert('Missing Information', 'Please add a title');
+      return;
+    }
+
     if (!description.trim()) {
       Alert.alert('Missing Information', 'Please add a description');
       return;
@@ -92,9 +132,9 @@ export default function ProductDetailsScreen() {
 
     const listingData = {
       user_id: user.id,
-      title: title as string,
-      category_id: Number(categoryId),
-      subcategory_id: Number(subcategoryId),
+      title: title.trim(),
+      category_id: currentCategoryId,
+      subcategory_id: currentSubcategoryId,
       description: description.trim(),
       price: parseFloat(price),
       currency,
@@ -132,75 +172,102 @@ export default function ProductDetailsScreen() {
   };
 
   const isFormValid =
+    title.trim() !== '' &&
     description.trim() !== '' &&
     price !== '' &&
     phoneNumber.trim() !== '' &&
     location !== '';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
-      >
-        <ProductHeader onBack={() => router.back()} />
-
-        <ScrollView
-          style={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'left', 'right']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
         >
-          <CategoryInfo
-            category={categoryName as string || 'Category'}
-            subcategory={subcategoryName as string || 'Subcategory'}
-            categoryIcon={categoryIcon as string}
-            title={title as string}
-          />
+          <ProductHeader onBack={() => router.back()} />
 
-          <ImageUploadSection
-            images={images}
-            setImages={setImages}
-          />
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <CategoryInfo
+              category={currentCategoryName}
+              subcategory={currentSubcategoryName}
+              categoryIcon={currentCategoryIcon}
+              onChangePress={handleOpenCategorySheet}
+            />
 
-          <DescriptionSection
-            description={description}
-            setDescription={setDescription}
-          />
+            <ImageUploadSection
+              images={images}
+              setImages={setImages}
+            />
 
-          <PriceSection
-            price={price}
-            currency={currency}
-            setPrice={setPrice}
-            setCurrency={setCurrency}
-          />
+            <TitleSection
+              title={title}
+              setTitle={setTitle}
+            />
 
-          <LocationSection
-            location={location}
-            coordinates={locationCoordinates}
-            onPress={() => setShowMapModal(true)}
-          />
+            <PriceSection
+              price={price}
+              currency={currency}
+              setPrice={setPrice}
+              setCurrency={setCurrency}
+            />
 
-          <ContactSection
-            phoneNumber={phoneNumber}
-            setPhoneNumber={setPhoneNumber}
-          />
+            <DescriptionSection
+              description={description}
+              setDescription={setDescription}
+            />
 
-          <SubmitButton
-            onPress={handleSubmit}
-            disabled={!isFormValid || isSubmitting}
-            loading={isSubmitting}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+            <LocationSection
+              location={location}
+              coordinates={locationCoordinates}
+              onPress={() => setShowMapModal(true)}
+            />
 
-      <MapModal
-        visible={showMapModal}
-        currentLocation={location}
-        onSelectLocation={handleLocationSelect}
-        onClose={() => setShowMapModal(false)}
-      />
-    </SafeAreaView>
+            <ContactSection
+              phoneNumber={phoneNumber}
+              setPhoneNumber={setPhoneNumber}
+            />
+          </ScrollView>
+
+          {/* Sticky Submit Button */}
+          <View style={[
+            styles.stickyButtonContainer,
+            {
+              backgroundColor,
+              borderTopColor: borderColor,
+              paddingBottom: insets.bottom || SPACING.lg
+            },
+            SHADOWS.sm
+          ]}>
+            <SubmitButton
+              onPress={handleSubmit}
+              disabled={!isFormValid || isSubmitting}
+              loading={isSubmitting}
+            />
+          </View>
+        </KeyboardAvoidingView>
+
+        <MapModal
+          visible={showMapModal}
+          currentLocation={location}
+          onSelectLocation={handleLocationSelect}
+          onClose={() => setShowMapModal(false)}
+        />
+
+        {/* Category Selection Bottom Sheet */}
+        <CategoryBottomSheet
+          ref={categorySheetRef}
+          onCategorySelect={handleCategoryChange}
+          showCategories={true}
+        />
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -210,5 +277,13 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  stickyButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    borderTopWidth: 1,
+    paddingTop: SPACING.md,
   },
 });
