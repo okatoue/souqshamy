@@ -3,3 +3,4 @@ export { default as ListedBySection, type ListedBySectionProps } from './ListedB
 export { default as MoreFromSellerSection, type MoreFromSellerSectionProps } from './MoreFromSellerSection';
 export { default as ImageCarousel, type ImageCarouselProps } from './ImageCarousel';
 export { default as ContactBar, type ContactBarProps } from './ContactBar';
+export { default as ListingGridCard, type ListingGridCardProps } from './ListingGridCard';
