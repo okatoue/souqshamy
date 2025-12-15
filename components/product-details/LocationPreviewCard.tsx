@@ -30,9 +30,8 @@ function generateStaticMapHtml(
     radius: number,
     brandColor: string
 ): string {
-    // Convert radius in meters to a reasonable zoom level
-    // Smaller radius = higher zoom
-    const zoom = radius <= 500 ? 15 : radius <= 1000 ? 14 : radius <= 2000 ? 13 : 12;
+    // Fixed zoom level to show ~5km area
+    const zoom = 13;
 
     return `
 <!DOCTYPE html>
@@ -69,7 +68,7 @@ function generateStaticMapHtml(
       minZoom: 5
     }).addTo(map);
 
-    // Add radius circle overlay
+    // Add radius circle overlay (no center marker)
     L.circle([${lat}, ${lng}], {
       radius: ${radius},
       color: '${brandColor}',
@@ -77,15 +76,6 @@ function generateStaticMapHtml(
       fillColor: '${brandColor}',
       fillOpacity: 0.2
     }).addTo(map);
-
-    // Add center marker
-    var markerIcon = L.divIcon({
-      className: 'center-marker',
-      html: '<div style="width: 14px; height: 14px; background: ${brandColor}; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.3);"></div>',
-      iconSize: [14, 14],
-      iconAnchor: [7, 7]
-    });
-    L.marker([${lat}, ${lng}], { icon: markerIcon }).addTo(map);
   </script>
 </body>
 </html>
