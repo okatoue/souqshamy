@@ -212,6 +212,28 @@ export function getYearsSince(dateString: string): number {
 }
 
 /**
+ * Gets a human-readable string for time on platform.
+ * @param dateString - ISO date string of when user joined
+ * @returns Formatted string like "5 days on SouqJari", "3 months on SouqJari", "2 yrs on SouqJari"
+ */
+export function getTimeOnPlatform(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInDays < 30) {
+        return `${Math.max(1, diffInDays)} ${diffInDays === 1 ? 'day' : 'days'} on SouqJari`;
+    } else if (diffInDays < 365) {
+        const months = Math.floor(diffInDays / 30);
+        return `${months} ${months === 1 ? 'month' : 'months'} on SouqJari`;
+    } else {
+        const years = Math.floor(diffInDays / 365);
+        return `${years} ${years === 1 ? 'yr' : 'yrs'} on SouqJari`;
+    }
+}
+
+/**
  * Formats a file size in bytes to a human-readable string.
  * @param bytes - File size in bytes
  * @returns Formatted string like "1.5 MB" or "500 KB"
