@@ -31,10 +31,7 @@ import { unformatPrice } from '@/lib/formatters';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
-  console.log('=== ProductDetailsScreen RENDER START ===');
-
   const params = useLocalSearchParams();
-  console.log('params:', JSON.stringify(params));
 
   const router = useRouter();
   const { user } = useAuth();
@@ -75,26 +72,17 @@ export default function ProductDetailsScreen() {
   } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
-  console.log('location:', location);
-  console.log('locationCoordinates:', locationCoordinates);
-
-  console.log('CHECKPOINT 1: before refs');
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
 
-  console.log('CHECKPOINT 2: before useCreateListing');
   const { createListing, isLoading: isSubmitting } = useCreateListing();
-  console.log('CHECKPOINT 3: before useThemeColor');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
-  console.log('CHECKPOINT 4: after hooks');
 
-  console.log('CHECKPOINT 5: defining handleLocationSelect');
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
     setLocationCoordinates(coordinates);
   };
-  console.log('CHECKPOINT 6: after handleLocationSelect');
 
   // Handle category change from bottom sheet
   const handleCategoryChange = (category: Category, subcategory: Subcategory) => {
@@ -104,20 +92,15 @@ export default function ProductDetailsScreen() {
     setCurrentSubcategoryName(subcategory.name);
     setCurrentCategoryIcon(category.icon);
   };
-  console.log('CHECKPOINT 7: after handleCategoryChange');
 
   // Open category bottom sheet
   const handleOpenCategorySheet = () => {
     Keyboard.dismiss();
     categorySheetRef.current?.open();
   };
-  console.log('CHECKPOINT 8: after handleOpenCategorySheet');
 
-  console.log('CHECKPOINT 8a: before submitListing definition');
   // Submit listing to database
   const submitListing = async () => {
-    console.log('INSIDE submitListing - this should not run during render');
-
     // Safety check - this function should only be called after validation
     if (!locationCoordinates || !location) {
       console.error('submitListing called without location data');
@@ -144,7 +127,6 @@ export default function ProductDetailsScreen() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-    console.log('CHECKPOINT 8b: after listingData creation in submitListing');
 
     const { error } = await createListing(listingData);
 
@@ -168,10 +150,8 @@ export default function ProductDetailsScreen() {
       ]
     );
   };
-  console.log('CHECKPOINT 8c: after submitListing definition');
 
   // Handle form submission with validation
-  console.log('CHECKPOINT 8d: before handleSubmit definition');
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!user) {
@@ -240,17 +220,12 @@ export default function ProductDetailsScreen() {
 
     submitListing();
   };
-  console.log('CHECKPOINT 9: after handleSubmit');
 
   // Only description, price, and location are required
-  console.log('CHECKPOINT 10: calculating isFormValid');
   const isFormValid =
     description.trim() !== '' &&
     price !== '' &&
     location !== null;
-  console.log('CHECKPOINT 11: isFormValid =', isFormValid);
-
-  console.log('=== ProductDetailsScreen RENDER END - about to return JSX ===');
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
