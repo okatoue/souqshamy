@@ -11,11 +11,11 @@ import {
 import LocationPreviewCard from './LocationPreviewCard';
 
 interface LocationSectionProps {
-    location: string;
-    coordinates?: {
+    location: string | null;
+    coordinates: {
         latitude: number;
         longitude: number;
-    };
+    } | null;
     radius?: number;
     onPress: () => void;
 }
@@ -27,42 +27,39 @@ export default function LocationSection({ location, coordinates, radius, onPress
     const borderColor = useThemeColor({}, 'border');
     const mutedColor = useThemeColor({}, 'textMuted');
 
-    // Check if a location has been selected (has coordinates)
-    const hasSelectedLocation = coordinates && location;
+    // Check if a location has been selected
+    const hasLocation = location && coordinates;
+
+    if (!hasLocation) {
+        return (
+            <View style={styles.container}>
+                <Text style={[styles.label, { color: textColor }]}>Location *</Text>
+                <TouchableOpacity
+                    style={[styles.emptyLocationBox, { backgroundColor: inputBg, borderColor }]}
+                    onPress={onPress}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="location-outline" size={32} color={mutedColor} />
+                    <Text style={[styles.emptyLocationTitle, { color: textColor }]}>
+                        Select Location
+                    </Text>
+                    <Text style={[styles.emptyLocationSubtitle, { color: mutedColor }]}>
+                        Tap to choose on map
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
-            <Text style={[styles.label, { color: textColor }]}>Location</Text>
-
-            {hasSelectedLocation ? (
-                <LocationPreviewCard
-                    location={location}
-                    coordinates={coordinates}
-                    radius={radius}
-                    onPress={onPress}
-                />
-            ) : (
-                <>
-                    <TouchableOpacity
-                        style={[styles.locationBox, { backgroundColor: inputBg, borderColor }]}
-                        onPress={onPress}
-                        activeOpacity={0.7}
-                    >
-                        <View style={styles.locationContent}>
-                            <Ionicons name="location" size={20} color={BRAND_COLOR} />
-                            <Text style={[styles.locationText, { color: textColor }]}>
-                                {location || 'Select location'}
-                            </Text>
-                        </View>
-
-                        <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
-                    </TouchableOpacity>
-
-                    <Text style={[styles.helperText, { color: mutedColor }]}>
-                        Tap to select your location on the map
-                    </Text>
-                </>
-            )}
+            <Text style={[styles.label, { color: textColor }]}>Location *</Text>
+            <LocationPreviewCard
+                location={location}
+                coordinates={coordinates}
+                radius={radius}
+                onPress={onPress}
+            />
         </View>
     );
 }
@@ -77,27 +74,22 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         marginBottom: SPACING.sm,
     },
-    locationBox: {
-        flexDirection: 'row',
+    emptyLocationBox: {
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         borderRadius: BORDER_RADIUS.lg,
         borderWidth: 1,
+        borderStyle: 'dashed',
+        paddingVertical: SPACING.xxl,
         paddingHorizontal: SPACING.lg,
-        paddingVertical: 14,
+        gap: SPACING.xs,
     },
-    locationContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    locationText: {
+    emptyLocationTitle: {
         fontSize: 16,
-        marginLeft: SPACING.md,
-        flex: 1,
+        fontWeight: '600',
+        marginTop: SPACING.sm,
     },
-    helperText: {
-        fontSize: 12,
-        marginTop: 6,
+    emptyLocationSubtitle: {
+        fontSize: 14,
     },
 });
