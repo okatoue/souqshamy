@@ -241,7 +241,7 @@ export default function ProductDetailsScreen() {
             {
               backgroundColor,
               borderTopColor: borderColor,
-              paddingBottom: insets.bottom || SPACING.lg
+              paddingBottom: insets.bottom > 0 ? insets.bottom - SPACING.xs : SPACING.xs
             },
             SHADOWS.sm
           ]}>
@@ -284,6 +284,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderTopWidth: 1,
-    paddingTop: SPACING.md,
+    paddingTop: SPACING.xs,
   },
 });
