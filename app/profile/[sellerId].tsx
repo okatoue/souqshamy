@@ -39,6 +39,102 @@ interface SellerStats {
     avgReplyTimeHours: number | null;
 }
 
+interface MessageBasic {
+    id: string;
+    conversation_id: string;
+    sender_id: string;
+    created_at: string;
+}
+
+// Minimum conversations required to show stats (otherwise show "-")
+const MIN_CONVERSATIONS_FOR_STATS = 3;
+
+/**
+ * Calculates seller response stats from conversations and messages.
+ * Uses efficient batch queries to minimize database calls.
+ */
+async function calculateSellerStats(
+    sellerId: string
+): Promise<{ replyRate: number | null; avgReplyTimeHours: number | null }> {
+    try {
+        // 1. Get all conversations where user is the seller
+        const { data: conversations, error: convError } = await supabase
+            .from('conversations')
+            .select('id, buyer_id, seller_id')
+            .eq('seller_id', sellerId);
+
+        if (convError || !conversations || conversations.length === 0) {
+            return { replyRate: null, avgReplyTimeHours: null };
+        }
+
+        // 2. Get all messages for these conversations (only what we need)
+        const conversationIds = conversations.map(c => c.id);
+        const { data: messages, error: msgError } = await supabase
+            .from('messages')
+            .select('id, conversation_id, sender_id, created_at')
+            .in('conversation_id', conversationIds)
+            .order('created_at', { ascending: true });
+
+        if (msgError || !messages) {
+            return { replyRate: null, avgReplyTimeHours: null };
+        }
+
+        // 3. Group messages by conversation
+        const messagesByConv: Record<string, MessageBasic[]> = {};
+        messages.forEach(msg => {
+            if (!messagesByConv[msg.conversation_id]) {
+                messagesByConv[msg.conversation_id] = [];
+            }
+            messagesByConv[msg.conversation_id].push(msg);
+        });
+
+        // 4. Calculate stats
+        let conversationsWithReply = 0;
+        const replyTimes: number[] = [];
+
+        conversations.forEach(conv => {
+            const convMessages = messagesByConv[conv.id] || [];
+            const sellerMessages = convMessages.filter(m => m.sender_id === conv.seller_id);
+
+            // Check if seller replied at least once
+            if (sellerMessages.length > 0) {
+                conversationsWithReply++;
+
+                // Find first buyer message
+                const firstBuyerMsg = convMessages.find(m => m.sender_id === conv.buyer_id);
+                if (firstBuyerMsg) {
+                    // Find first seller reply after the first buyer message
+                    const firstSellerReply = convMessages.find(
+                        m => m.sender_id === conv.seller_id &&
+                            new Date(m.created_at).getTime() > new Date(firstBuyerMsg.created_at).getTime()
+                    );
+
+                    if (firstSellerReply) {
+                        const replyTimeMs = new Date(firstSellerReply.created_at).getTime() -
+                            new Date(firstBuyerMsg.created_at).getTime();
+                        replyTimes.push(replyTimeMs);
+                    }
+                }
+            }
+        });
+
+        // Calculate reply rate (only if we have enough conversations)
+        const replyRate = conversations.length >= MIN_CONVERSATIONS_FOR_STATS
+            ? Math.round((conversationsWithReply / conversations.length) * 100)
+            : null;
+
+        // Calculate average reply time (only if we have enough data points)
+        const avgReplyTimeHours = replyTimes.length >= MIN_CONVERSATIONS_FOR_STATS
+            ? replyTimes.reduce((a, b) => a + b, 0) / replyTimes.length / (1000 * 60 * 60)
+            : null;
+
+        return { replyRate, avgReplyTimeHours };
+    } catch (error) {
+        console.error('Error calculating seller stats:', error);
+        return { replyRate: null, avgReplyTimeHours: null };
+    }
+}
+
 type TabType = 'listings' | 'ratings';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -71,8 +167,8 @@ export default function SellerProfileScreen() {
             if (!params.sellerId) return;
 
             try {
-                // Parallel fetch: profile + listings
-                const [profileResult, listingsResult] = await Promise.all([
+                // Parallel fetch: profile + listings + stats
+                const [profileResult, listingsResult, responseStats] = await Promise.all([
                     supabase
                         .from('profiles')
                         .select('id, display_name, email, avatar_url, created_at')
@@ -83,7 +179,8 @@ export default function SellerProfileScreen() {
                         .select('*')
                         .eq('user_id', params.sellerId)
                         .eq('status', 'active')
-                        .order('created_at', { ascending: false })
+                        .order('created_at', { ascending: false }),
+                    calculateSellerStats(params.sellerId)
                 ]);
 
                 if (profileResult.data) {
@@ -94,8 +191,8 @@ export default function SellerProfileScreen() {
                     setListings(listingsResult.data);
                     setStats({
                         totalListings: listingsResult.data.length,
-                        replyRate: null,        // TODO: implement
-                        avgReplyTimeHours: null // TODO: implement
+                        replyRate: responseStats.replyRate,
+                        avgReplyTimeHours: responseStats.avgReplyTimeHours
                     });
                 }
             } catch (error) {
