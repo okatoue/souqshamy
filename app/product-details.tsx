@@ -63,12 +63,12 @@ export default function ProductDetailsScreen() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [sameAsPhone, setSameAsPhone] = useState(false);
 
-  // Location state
-  const [location, setLocation] = useState('Damascus'); // Default to Damascus
-  const [locationCoordinates, setLocationCoordinates] = useState({
-    latitude: 33.5138,
-    longitude: 36.2765,
-  });
+  // Location state - initially null (no location selected)
+  const [location, setLocation] = useState<string | null>(null);
+  const [locationCoordinates, setLocationCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
   // Refs
@@ -98,47 +98,13 @@ export default function ProductDetailsScreen() {
     categorySheetRef.current?.open();
   };
 
-  // Much simpler handleSubmit - no lookups needed!
-  const handleSubmit = async () => {
-    // Check if user is authenticated
-    if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to post a listing');
-      router.push('/(auth)');
-      return;
-    }
-
-    // Validation
-    if (!title.trim()) {
-      Alert.alert('Missing Information', 'Please add a title');
-      return;
-    }
-
-    if (!description.trim()) {
-      Alert.alert('Missing Information', 'Please add a description');
-      return;
-    }
-
-    if (price === '') {
-      Alert.alert('Missing Information', 'Please set a price (can be 0)');
-      return;
-    }
-
-    if (!phoneNumber.trim() && !whatsappNumber.trim()) {
-      Alert.alert('Missing Information', 'Please add either a phone number or WhatsApp number');
-      return;
-    }
-
-    if (!location) {
-      Alert.alert('Missing Information', 'Please select a location');
-      return;
-    }
-
-    // Determine whatsapp value: if sameAsPhone, use phone number
+  // Submit listing to database
+  const submitListing = async () => {
     const finalWhatsapp = sameAsPhone ? phoneNumber.trim() : whatsappNumber.trim();
 
     const listingData = {
-      user_id: user.id,
-      title: title.trim(),
+      user_id: user!.id,
+      title: title.trim() || 'Untitled',
       category_id: currentCategoryId,
       subcategory_id: currentSubcategoryId,
       description: description.trim(),
@@ -148,9 +114,9 @@ export default function ProductDetailsScreen() {
       whatsapp_number: finalWhatsapp || null,
       images: images.length > 0 ? images : null,
       status: 'active' as const,
-      location,
-      location_lat: locationCoordinates.latitude,
-      location_lon: locationCoordinates.longitude,
+      location: location!,
+      location_lat: locationCoordinates!.latitude,
+      location_lon: locationCoordinates!.longitude,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -178,12 +144,81 @@ export default function ProductDetailsScreen() {
     );
   };
 
+  // Handle form submission with validation
+  const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please sign in to post a listing');
+      router.push('/(auth)');
+      return;
+    }
+
+    // Required field validation
+    if (!description.trim()) {
+      Alert.alert('Missing Information', 'Please add a description');
+      return;
+    }
+
+    if (price === '') {
+      Alert.alert('Missing Information', 'Please set a price (can be 0)');
+      return;
+    }
+
+    if (!location || !locationCoordinates) {
+      Alert.alert('Missing Information', 'Please select a location');
+      return;
+    }
+
+    // Warning for no images (not blocking)
+    if (images.length === 0) {
+      Alert.alert(
+        'No Images Added',
+        'Images boost views and drive sales. Are you sure you want to post without images?',
+        [
+          { text: 'Add Images', style: 'cancel' },
+          { text: 'Post Anyway', onPress: () => {
+            // Check contact info before submitting
+            const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
+            if (!hasContact) {
+              Alert.alert(
+                'No Contact Information',
+                "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+                [
+                  { text: 'Add Contact', style: 'cancel' },
+                  { text: 'Continue', onPress: () => submitListing() }
+                ]
+              );
+            } else {
+              submitListing();
+            }
+          }}
+        ]
+      );
+      return;
+    }
+
+    // Warning for no contact info (not blocking)
+    const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
+    if (!hasContact) {
+      Alert.alert(
+        'No Contact Information',
+        "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+        [
+          { text: 'Add Contact', style: 'cancel' },
+          { text: 'Continue', onPress: () => submitListing() }
+        ]
+      );
+      return;
+    }
+
+    submitListing();
+  };
+
+  // Only description, price, and location are required
   const isFormValid =
-    title.trim() !== '' &&
     description.trim() !== '' &&
     price !== '' &&
-    (phoneNumber.trim() !== '' || whatsappNumber.trim() !== '') &&
-    location !== '';
+    location !== null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
