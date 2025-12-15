@@ -89,10 +89,12 @@ export default function ProductDetailsScreen() {
   const borderColor = useThemeColor({}, 'border');
   console.log('CHECKPOINT 4: after hooks');
 
+  console.log('CHECKPOINT 5: defining handleLocationSelect');
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
     setLocationCoordinates(coordinates);
   };
+  console.log('CHECKPOINT 6: after handleLocationSelect');
 
   // Handle category change from bottom sheet
   const handleCategoryChange = (category: Category, subcategory: Subcategory) => {
@@ -102,12 +104,14 @@ export default function ProductDetailsScreen() {
     setCurrentSubcategoryName(subcategory.name);
     setCurrentCategoryIcon(category.icon);
   };
+  console.log('CHECKPOINT 7: after handleCategoryChange');
 
   // Open category bottom sheet
   const handleOpenCategorySheet = () => {
     Keyboard.dismiss();
     categorySheetRef.current?.open();
   };
+  console.log('CHECKPOINT 8: after handleOpenCategorySheet');
 
   // Submit listing to database
   const submitListing = async () => {
@@ -224,12 +228,15 @@ export default function ProductDetailsScreen() {
 
     submitListing();
   };
+  console.log('CHECKPOINT 9: after handleSubmit');
 
   // Only description, price, and location are required
+  console.log('CHECKPOINT 10: calculating isFormValid');
   const isFormValid =
     description.trim() !== '' &&
     price !== '' &&
     location !== null;
+  console.log('CHECKPOINT 11: isFormValid =', isFormValid);
 
   console.log('=== ProductDetailsScreen RENDER END - about to return JSX ===');
 
