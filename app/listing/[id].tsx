@@ -11,7 +11,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
-import { formatDate, formatPrice, getCategoryInfo, UserProfile } from '@/lib/formatters';
+import { formatPrice, UserProfile } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
@@ -25,6 +25,7 @@ import {
     Platform,
     Pressable,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     View,
@@ -229,8 +230,19 @@ export default function ListingDetailScreen() {
         }
     };
 
-    const handleShare = () => {
-        Alert.alert('Share', 'Share functionality coming soon!');
+    const handleShare = async () => {
+        if (!listing) return;
+
+        try {
+            const shareUrl = `https://souqjari.com/listing/${listing.id}`;
+            await Share.share({
+                message: `Check out this listing: ${listing.title}\n${shareUrl}`,
+                url: shareUrl,
+                title: listing.title,
+            });
+        } catch (error) {
+            console.error('Error sharing:', error);
+        }
     };
 
     const handleSellerPress = () => {
@@ -291,11 +303,6 @@ export default function ListingDetailScreen() {
         );
     }
 
-    const { categoryName, categoryIcon, subcategoryName } = getCategoryInfo(
-        listing.category_id,
-        listing.subcategory_id
-    );
-
     const isOwnListing = user?.id === listing.user_id;
 
     return (
@@ -343,30 +350,6 @@ export default function ListingDetailScreen() {
                         </Text>
                     </View>
 
-                    {/* Category */}
-                    <View style={styles.categoryRow}>
-                        <Text style={styles.categoryIcon}>{categoryIcon}</Text>
-                        <Text style={[styles.categoryText, { color: placeholderColor }]}>
-                            {categoryName} › {subcategoryName}
-                        </Text>
-                    </View>
-
-                    {/* Location and Date */}
-                    <View style={styles.metaRow}>
-                        <View style={styles.metaItem}>
-                            <Ionicons name="location-outline" size={16} color={placeholderColor} />
-                            <Text style={[styles.metaText, { color: placeholderColor }]}>
-                                {listing.location}
-                            </Text>
-                        </View>
-                        <View style={styles.metaItem}>
-                            <Ionicons name="time-outline" size={16} color={placeholderColor} />
-                            <Text style={[styles.metaText, { color: placeholderColor }]}>
-                                {formatDate(listing.created_at)}
-                            </Text>
-                        </View>
-                    </View>
-
                     {/* Status Badge */}
                     {listing.status !== 'active' && (
                         <View style={[
@@ -390,6 +373,26 @@ export default function ListingDetailScreen() {
                         <Text style={[styles.description, { color: textColor }]}>
                             {listing.description}
                         </Text>
+
+                        {/* WhatsApp & Call Buttons - only shown if phone number exists */}
+                        {listing.phone_number && listing.status !== 'sold' && !isOwnListing && (
+                            <View style={styles.contactButtonsRow}>
+                                <Pressable
+                                    style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
+                                    onPress={handleWhatsApp}
+                                >
+                                    <Ionicons name="logo-whatsapp" size={20} color="white" />
+                                    <Text style={styles.contactButtonText}>WhatsApp</Text>
+                                </Pressable>
+                                <Pressable
+                                    style={[styles.contactButton, { backgroundColor: COLORS.callButton }]}
+                                    onPress={handleCall}
+                                >
+                                    <Ionicons name="call" size={20} color="white" />
+                                    <Text style={styles.contactButtonText}>Call</Text>
+                                </Pressable>
+                            </View>
+                        )}
                     </View>
 
                     {/* Location Section - with map if coordinates exist */}
@@ -441,12 +444,9 @@ export default function ListingDetailScreen() {
                 />
             </ScrollView>
 
-            {/* Contact Bar */}
+            {/* Contact Bar - Chat Only */}
             <ContactBar
                 onChat={handleChat}
-                onCall={handleCall}
-                onWhatsApp={handleWhatsApp}
-                phoneNumber={listing.phone_number}
                 isStartingChat={isStartingChat}
                 isVisible={listing.status !== 'sold' && !isOwnListing}
             />
@@ -510,31 +510,6 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: '700',
     },
-    categoryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.md,
-    },
-    categoryIcon: {
-        fontSize: 18,
-        marginRight: SPACING.sm,
-    },
-    categoryText: {
-        fontSize: 14,
-    },
-    metaRow: {
-        flexDirection: 'row',
-        gap: SPACING.xl,
-        marginBottom: SPACING.lg,
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: SPACING.xs,
-    },
-    metaText: {
-        fontSize: 14,
-    },
     statusBadge: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -572,6 +547,25 @@ const styles = StyleSheet.create({
     description: {
         fontSize: 16,
         lineHeight: 24,
+    },
+    contactButtonsRow: {
+        flexDirection: 'row',
+        gap: SPACING.sm,
+        marginTop: SPACING.lg,
+    },
+    contactButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderRadius: BORDER_RADIUS.md,
+        gap: 6,
+    },
+    contactButtonText: {
+        color: 'white',
+        fontSize: 15,
+        fontWeight: '600',
     },
     backButton: {
         paddingVertical: SPACING.md,

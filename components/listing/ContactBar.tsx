@@ -6,18 +6,12 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 export interface ContactBarProps {
     onChat: () => void;
-    onCall?: () => void;
-    onWhatsApp?: () => void;
-    phoneNumber?: string | null;
     isStartingChat?: boolean;
     isVisible: boolean;
 }
 
 export function ContactBar({
     onChat,
-    onCall,
-    onWhatsApp,
-    phoneNumber,
     isStartingChat,
     isVisible,
 }: ContactBarProps) {
@@ -30,7 +24,7 @@ export function ContactBar({
 
     return (
         <View style={[styles.container, { backgroundColor: cardBg, borderTopColor: borderColor }]}>
-            {/* Chat Button */}
+            {/* Chat Button - Full Width */}
             <Pressable
                 style={[styles.button, { backgroundColor: COLORS.chatButton }]}
                 onPress={onChat}
@@ -41,32 +35,10 @@ export function ContactBar({
                 ) : (
                     <>
                         <Ionicons name="chatbubble" size={20} color="white" />
-                        <Text style={styles.buttonText}>Chat</Text>
+                        <Text style={styles.buttonText}>Chat with Seller</Text>
                     </>
                 )}
             </Pressable>
-
-            {/* Call Button */}
-            {phoneNumber && onCall && (
-                <Pressable
-                    style={[styles.button, { backgroundColor: COLORS.callButton }]}
-                    onPress={onCall}
-                >
-                    <Ionicons name="call" size={20} color="white" />
-                    <Text style={styles.buttonText}>Call</Text>
-                </Pressable>
-            )}
-
-            {/* WhatsApp Button */}
-            {phoneNumber && onWhatsApp && (
-                <Pressable
-                    style={[styles.button, { backgroundColor: COLORS.whatsappButton }]}
-                    onPress={onWhatsApp}
-                >
-                    <Ionicons name="logo-whatsapp" size={20} color="white" />
-                    <Text style={styles.buttonText}>WhatsApp</Text>
-                </Pressable>
-            )}
         </View>
     );
 }
