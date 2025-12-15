@@ -113,8 +113,10 @@ export default function ProductDetailsScreen() {
   };
   console.log('CHECKPOINT 8: after handleOpenCategorySheet');
 
+  console.log('CHECKPOINT 8a: before submitListing definition');
   // Submit listing to database
   const submitListing = async () => {
+    console.log('INSIDE submitListing - this should not run during render');
     const finalWhatsapp = sameAsPhone ? phoneNumber.trim() : whatsappNumber.trim();
 
     const listingData = {
@@ -135,6 +137,7 @@ export default function ProductDetailsScreen() {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    console.log('CHECKPOINT 8b: after listingData creation in submitListing');
 
     const { error } = await createListing(listingData);
 
@@ -158,8 +161,10 @@ export default function ProductDetailsScreen() {
       ]
     );
   };
+  console.log('CHECKPOINT 8c: after submitListing definition');
 
   // Handle form submission with validation
+  console.log('CHECKPOINT 8d: before handleSubmit definition');
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!user) {
