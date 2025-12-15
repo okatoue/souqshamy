@@ -27,10 +27,8 @@ export default function LocationSection({ location, coordinates, radius, onPress
     const borderColor = useThemeColor({}, 'border');
     const mutedColor = useThemeColor({}, 'textMuted');
 
-    // Check if a location has been selected
-    const hasLocation = location && coordinates;
-
-    if (!hasLocation) {
+    // Show empty state if no location selected
+    if (!location || !coordinates) {
         return (
             <View style={styles.container}>
                 <Text style={[styles.label, { color: textColor }]}>Location *</Text>
@@ -51,6 +49,7 @@ export default function LocationSection({ location, coordinates, radius, onPress
         );
     }
 
+    // At this point TypeScript knows location is string and coordinates is non-null
     return (
         <View style={styles.container}>
             <Text style={[styles.label, { color: textColor }]}>Location *</Text>
