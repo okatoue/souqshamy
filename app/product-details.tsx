@@ -78,12 +78,16 @@ export default function ProductDetailsScreen() {
   console.log('location:', location);
   console.log('locationCoordinates:', locationCoordinates);
 
+  console.log('CHECKPOINT 1: before refs');
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
 
+  console.log('CHECKPOINT 2: before useCreateListing');
   const { createListing, isLoading: isSubmitting } = useCreateListing();
+  console.log('CHECKPOINT 3: before useThemeColor');
   const backgroundColor = useThemeColor({}, 'background');
   const borderColor = useThemeColor({}, 'border');
+  console.log('CHECKPOINT 4: after hooks');
 
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
