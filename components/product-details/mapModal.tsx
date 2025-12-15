@@ -23,7 +23,7 @@ import { MAP_HTML } from './mapHtml';
 
 interface MapModalProps {
     visible: boolean;
-    currentLocation: string;
+    currentLocation: string | null;
     onSelectLocation: (location: string, coordinates: { latitude: number; longitude: number }) => void;
     onClose: () => void;
 }
