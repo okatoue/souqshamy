@@ -31,7 +31,11 @@ import { unformatPrice } from '@/lib/formatters';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
+  console.log('=== ProductDetailsScreen RENDER START ===');
+
   const params = useLocalSearchParams();
+  console.log('params:', JSON.stringify(params));
+
   const router = useRouter();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
@@ -70,6 +74,9 @@ export default function ProductDetailsScreen() {
     longitude: number;
   } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
+
+  console.log('location:', location);
+  console.log('locationCoordinates:', locationCoordinates);
 
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
@@ -219,6 +226,8 @@ export default function ProductDetailsScreen() {
     description.trim() !== '' &&
     price !== '' &&
     location !== null;
+
+  console.log('=== ProductDetailsScreen RENDER END - about to return JSX ===');
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
