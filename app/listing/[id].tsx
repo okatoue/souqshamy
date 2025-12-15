@@ -5,6 +5,7 @@ import {
     MoreFromSellerSection,
     SellerHeader,
 } from '@/components/listing';
+import LocationPreviewCard from '@/components/product-details/LocationPreviewCard';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useConversations } from '@/hooks/useConversations';
@@ -21,6 +22,7 @@ import {
     ActivityIndicator,
     Alert,
     Linking,
+    Platform,
     Pressable,
     ScrollView,
     StyleSheet,
@@ -241,6 +243,28 @@ export default function ListingDetailScreen() {
         navigateToListing(selectedListing);
     };
 
+    const handleOpenMaps = () => {
+        if (!listing?.location_lat || !listing?.location_lon) return;
+
+        const lat = listing.location_lat;
+        const lon = listing.location_lon;
+        const label = encodeURIComponent(listing.location || 'Location');
+
+        // Platform-specific URL
+        const url = Platform.select({
+            ios: `maps://app?daddr=${lat},${lon}&q=${label}`,
+            android: `geo:${lat},${lon}?q=${lat},${lon}(${label})`,
+            default: `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`
+        });
+
+        if (url) {
+            Linking.openURL(url).catch(() => {
+                // Fallback to Google Maps web URL if native fails
+                Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lon}`);
+            });
+        }
+    };
+
     // Loading state
     if (loading) {
         return (
@@ -367,6 +391,36 @@ export default function ListingDetailScreen() {
                             {listing.description}
                         </Text>
                     </View>
+
+                    {/* Location Section - with map if coordinates exist */}
+                    {listing.location_lat && listing.location_lon && (
+                        <View style={styles.locationSection}>
+                            <Text style={[styles.sectionTitle, { color: textColor }]}>Location</Text>
+                            <LocationPreviewCard
+                                location={listing.location}
+                                coordinates={{
+                                    latitude: listing.location_lat,
+                                    longitude: listing.location_lon
+                                }}
+                                radius={1000}
+                                onPress={handleOpenMaps}
+                                tapHintText="Open in Maps"
+                            />
+                        </View>
+                    )}
+
+                    {/* Location Section - text only if no coordinates */}
+                    {!listing.location_lat && listing.location && (
+                        <View style={styles.locationSection}>
+                            <Text style={[styles.sectionTitle, { color: textColor }]}>Location</Text>
+                            <View style={styles.locationTextOnly}>
+                                <Ionicons name="location-outline" size={18} color={placeholderColor} />
+                                <Text style={[styles.locationAddress, { color: textColor }]}>
+                                    {listing.location}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
 
                     {/* Listed By Section */}
                     {sellerProfile && (
@@ -497,6 +551,18 @@ const styles = StyleSheet.create({
     },
     descriptionSection: {
         marginBottom: SPACING.xl,
+    },
+    locationSection: {
+        marginBottom: SPACING.xl,
+    },
+    locationTextOnly: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    locationAddress: {
+        fontSize: 16,
+        flex: 1,
     },
     sectionTitle: {
         fontSize: 18,
