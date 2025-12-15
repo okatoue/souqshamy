@@ -1,8 +1,11 @@
+import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     Keyboard,
     Modal,
@@ -20,7 +23,7 @@ import { MAP_HTML } from './mapHtml';
 
 interface MapModalProps {
     visible: boolean;
-    currentLocation: string;
+    currentLocation: string | null;
     onSelectLocation: (location: string, coordinates: { latitude: number; longitude: number }) => void;
     onClose: () => void;
 }
@@ -36,6 +39,7 @@ export default function MapModal({
     const searchInputRef = useRef<TextInput>(null);
     const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
+    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const [selectedCoordinate, setSelectedCoordinate] = useState({
         latitude: 33.5138,
@@ -136,6 +140,44 @@ export default function MapModal({
         onSelectLocation(selectedLocationName, selectedCoordinate);
         onClose();
     };
+
+    const handleUseCurrentLocation = useCallback(async () => {
+        setIsFetchingLocation(true);
+
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+
+            if (status !== 'granted') {
+                Alert.alert(
+                    'Permission Required',
+                    'Please allow location access to use this feature',
+                    [{ text: 'OK' }]
+                );
+                setIsFetchingLocation(false);
+                return;
+            }
+
+            const position = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+
+            const { latitude, longitude } = position.coords;
+            setSelectedCoordinate({ latitude, longitude });
+
+            webViewRef.current?.injectJavaScript(`
+                moveToLocation(${latitude}, ${longitude}, 14);
+                true;
+            `);
+
+            const locationName = await reverseGeocode(latitude, longitude);
+            setSelectedLocationName(locationName);
+        } catch (error) {
+            console.error('Error getting current location:', error);
+            Alert.alert('Error', 'Could not get your current location. Please try again.');
+        } finally {
+            setIsFetchingLocation(false);
+        }
+    }, [reverseGeocode]);
 
     const showingSearch = isSearchFocused || searchQuery.length > 0;
 
@@ -265,6 +307,19 @@ export default function MapModal({
                         </View>
                     )}
                 </View>
+
+                {/* My Location Button - floating over map */}
+                <TouchableOpacity
+                    style={styles.myLocationButton}
+                    onPress={handleUseCurrentLocation}
+                    disabled={isFetchingLocation}
+                >
+                    {isFetchingLocation ? (
+                        <ActivityIndicator size="small" color={BRAND_COLOR} />
+                    ) : (
+                        <Ionicons name="locate" size={24} color={BRAND_COLOR} />
+                    )}
+                </TouchableOpacity>
 
                 {/* Bottom Confirm Button */}
                 <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 12 }]} pointerEvents="box-none">
@@ -413,5 +468,21 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 17,
         fontWeight: '600',
+    },
+    myLocationButton: {
+        position: 'absolute',
+        bottom: 100,
+        right: SPACING.lg,
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'white',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
     },
 });

@@ -25,10 +25,15 @@ import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/u
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
+import { unformatPrice } from '@/lib/formatters';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
+  console.log('=== ProductDetailsScreen RENDER START ===');
+
   const params = useLocalSearchParams();
+  console.log('params:', JSON.stringify(params));
+
   const router = useRouter();
   const { user } = useAuth();
 
@@ -56,25 +61,35 @@ export default function ProductDetailsScreen() {
   const [price, setPrice] = useState('');
   const [currency, setCurrency] = useState('SYP');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [sameAsPhone, setSameAsPhone] = useState(false);
 
-  // Location state
-  const [location, setLocation] = useState('Damascus'); // Default to Damascus
-  const [locationCoordinates, setLocationCoordinates] = useState({
-    latitude: 33.5138,
-    longitude: 36.2765,
-  });
+  // Location state - initially null (no location selected)
+  const [location, setLocation] = useState<string | null>(null);
+  const [locationCoordinates, setLocationCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
 
+  console.log('location:', location);
+  console.log('locationCoordinates:', locationCoordinates);
+
+  console.log('CHECKPOINT 1: before refs');
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
 
+  console.log('CHECKPOINT 2: before useCreateListing');
   const { createListing, isLoading: isSubmitting } = useCreateListing();
+  console.log('CHECKPOINT 3: before useThemeColor');
   const backgroundColor = useThemeColor({}, 'background');
 
+  console.log('CHECKPOINT 5: defining handleLocationSelect');
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
     setLocationCoordinates(coordinates);
   };
+  console.log('CHECKPOINT 6: after handleLocationSelect');
 
   // Handle category change from bottom sheet
   const handleCategoryChange = (category: Category, subcategory: Subcategory) => {
@@ -84,65 +99,47 @@ export default function ProductDetailsScreen() {
     setCurrentSubcategoryName(subcategory.name);
     setCurrentCategoryIcon(category.icon);
   };
+  console.log('CHECKPOINT 7: after handleCategoryChange');
 
   // Open category bottom sheet
   const handleOpenCategorySheet = () => {
     Keyboard.dismiss();
     categorySheetRef.current?.open();
   };
+  console.log('CHECKPOINT 8: after handleOpenCategorySheet');
 
-  // Much simpler handleSubmit - no lookups needed!
-  const handleSubmit = async () => {
-    // Check if user is authenticated
-    if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to post a listing');
-      router.push('/(auth)');
+  console.log('CHECKPOINT 8a: before submitListing definition');
+  // Submit listing to database
+  const submitListing = async () => {
+    console.log('INSIDE submitListing - this should not run during render');
+
+    // Safety check - this function should only be called after validation
+    if (!locationCoordinates || !location) {
+      console.error('submitListing called without location data');
       return;
     }
 
-    // Validation
-    if (!title.trim()) {
-      Alert.alert('Missing Information', 'Please add a title');
-      return;
-    }
-
-    if (!description.trim()) {
-      Alert.alert('Missing Information', 'Please add a description');
-      return;
-    }
-
-    if (price === '') {
-      Alert.alert('Missing Information', 'Please set a price (can be 0)');
-      return;
-    }
-
-    if (!phoneNumber.trim()) {
-      Alert.alert('Missing Information', 'Please add either a phone number or WhatsApp number');
-      return;
-    }
-
-    if (!location) {
-      Alert.alert('Missing Information', 'Please select a location');
-      return;
-    }
+    const finalWhatsapp = sameAsPhone ? phoneNumber.trim() : whatsappNumber.trim();
 
     const listingData = {
-      user_id: user.id,
-      title: title.trim(),
+      user_id: user!.id,
+      title: title.trim() || 'Untitled',
       category_id: currentCategoryId,
       subcategory_id: currentSubcategoryId,
       description: description.trim(),
-      price: parseFloat(price),
+      price: parseFloat(unformatPrice(price)),
       currency,
       phone_number: phoneNumber.trim() || null,
+      whatsapp_number: finalWhatsapp || null,
       images: images.length > 0 ? images : null,
       status: 'active' as const,
-      location,
+      location: location,
       location_lat: locationCoordinates.latitude,
       location_lon: locationCoordinates.longitude,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    console.log('CHECKPOINT 8b: after listingData creation in submitListing');
 
     const { error } = await createListing(listingData);
 
@@ -166,13 +163,89 @@ export default function ProductDetailsScreen() {
       ]
     );
   };
+  console.log('CHECKPOINT 8c: after submitListing definition');
 
+  // Handle form submission with validation
+  console.log('CHECKPOINT 8d: before handleSubmit definition');
+  const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!user) {
+      Alert.alert('Authentication Required', 'Please sign in to post a listing');
+      router.push('/(auth)');
+      return;
+    }
+
+    // Required field validation
+    if (!description.trim()) {
+      Alert.alert('Missing Information', 'Please add a description');
+      return;
+    }
+
+    if (price === '') {
+      Alert.alert('Missing Information', 'Please set a price (can be 0)');
+      return;
+    }
+
+    if (!location || !locationCoordinates) {
+      Alert.alert('Missing Information', 'Please select a location');
+      return;
+    }
+
+    // Warning for no images (not blocking)
+    if (images.length === 0) {
+      Alert.alert(
+        'No Images Added',
+        'Images boost views and drive sales. Are you sure you want to post without images?',
+        [
+          { text: 'Add Images', style: 'cancel' },
+          { text: 'Post Anyway', onPress: () => {
+            // Check contact info before submitting
+            const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
+            if (!hasContact) {
+              Alert.alert(
+                'No Contact Information',
+                "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+                [
+                  { text: 'Add Contact', style: 'cancel' },
+                  { text: 'Continue', onPress: () => submitListing() }
+                ]
+              );
+            } else {
+              submitListing();
+            }
+          }}
+        ]
+      );
+      return;
+    }
+
+    // Warning for no contact info (not blocking)
+    const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
+    if (!hasContact) {
+      Alert.alert(
+        'No Contact Information',
+        "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+        [
+          { text: 'Add Contact', style: 'cancel' },
+          { text: 'Continue', onPress: () => submitListing() }
+        ]
+      );
+      return;
+    }
+
+    submitListing();
+  };
+  console.log('CHECKPOINT 9: after handleSubmit');
+
+  // Only description, price, and location are required
+  console.log('CHECKPOINT 10: calculating isFormValid');
   const isFormValid =
-    title.trim() !== '' &&
     description.trim() !== '' &&
     price !== '' &&
-    phoneNumber.trim() !== '' &&
-    location !== '';
+    location !== null;
+  console.log('CHECKPOINT 11: isFormValid =', isFormValid);
+
+  console.log('=== ProductDetailsScreen RENDER END - about to return JSX ===');
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -227,6 +300,10 @@ export default function ProductDetailsScreen() {
             <ContactSection
               phoneNumber={phoneNumber}
               setPhoneNumber={setPhoneNumber}
+              whatsappNumber={whatsappNumber}
+              setWhatsappNumber={setWhatsappNumber}
+              sameAsPhone={sameAsPhone}
+              setSameAsPhone={setSameAsPhone}
             />
 
             <SubmitButton

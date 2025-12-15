@@ -177,8 +177,10 @@ export default function ListingDetailScreen() {
     };
 
     const handleWhatsApp = () => {
-        if (listing?.phone_number) {
-            const cleanNumber = listing.phone_number.replace(/\D/g, '');
+        // Use whatsapp_number if available, fall back to phone_number
+        const whatsappNum = listing?.whatsapp_number || listing?.phone_number;
+        if (whatsappNum) {
+            const cleanNumber = whatsappNum.replace(/\D/g, '');
             const whatsappUrl = `whatsapp://send?phone=${cleanNumber}`;
 
             Linking.openURL(whatsappUrl).catch(() =>
@@ -374,23 +376,27 @@ export default function ListingDetailScreen() {
                             {listing.description}
                         </Text>
 
-                        {/* WhatsApp & Call Buttons - only shown if phone number exists */}
-                        {listing.phone_number && listing.status !== 'sold' && !isOwnListing && (
+                        {/* WhatsApp & Call Buttons - shown if contact info exists */}
+                        {(listing.phone_number || listing.whatsapp_number) && listing.status !== 'sold' && !isOwnListing && (
                             <View style={styles.contactButtonsRow}>
-                                <Pressable
-                                    style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
-                                    onPress={handleWhatsApp}
-                                >
-                                    <Ionicons name="logo-whatsapp" size={20} color="white" />
-                                    <Text style={styles.contactButtonText}>WhatsApp</Text>
-                                </Pressable>
-                                <Pressable
-                                    style={[styles.contactButton, { backgroundColor: COLORS.callButton }]}
-                                    onPress={handleCall}
-                                >
-                                    <Ionicons name="call" size={20} color="white" />
-                                    <Text style={styles.contactButtonText}>Call</Text>
-                                </Pressable>
+                                {(listing.whatsapp_number || listing.phone_number) && (
+                                    <Pressable
+                                        style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
+                                        onPress={handleWhatsApp}
+                                    >
+                                        <Ionicons name="logo-whatsapp" size={20} color="white" />
+                                        <Text style={styles.contactButtonText}>WhatsApp</Text>
+                                    </Pressable>
+                                )}
+                                {listing.phone_number && (
+                                    <Pressable
+                                        style={[styles.contactButton, { backgroundColor: COLORS.callButton }]}
+                                        onPress={handleCall}
+                                    >
+                                        <Ionicons name="call" size={20} color="white" />
+                                        <Text style={styles.contactButtonText}>Call</Text>
+                                    </Pressable>
+                                )}
                             </View>
                         )}
                     </View>

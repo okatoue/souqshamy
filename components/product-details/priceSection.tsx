@@ -1,6 +1,7 @@
 import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { formatPriceInput } from '@/lib/formatters';
 import { Fontisto } from '@expo/vector-icons';
 import React from 'react';
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -28,6 +29,11 @@ export default function PriceSection({
     setCurrency(currency === 'SYP' ? 'USD' : 'SYP');
   };
 
+  const handlePriceChange = (text: string) => {
+    const formatted = formatPriceInput(text);
+    setPrice(formatted);
+  };
+
   return (
     <ThemedView variant="card" style={[styles.section, { borderColor }]}>
       <Text style={[styles.sectionTitle, { color: textColor }]}>Price</Text>
@@ -47,7 +53,7 @@ export default function PriceSection({
           placeholderTextColor={COLORS.placeholder}
           keyboardType="decimal-pad"
           value={price}
-          onChangeText={setPrice}
+          onChangeText={handlePriceChange}
           returnKeyType="done"
           blurOnSubmit={true}
           onSubmitEditing={Keyboard.dismiss}

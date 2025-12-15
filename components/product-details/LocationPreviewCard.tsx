@@ -15,7 +15,7 @@ interface LocationPreviewCardProps {
     coordinates: {
         latitude: number;
         longitude: number;
-    };
+    } | null;
     radius?: number; // Optional radius in meters
     onPress: () => void;
     tapHintText?: string; // Custom hint text (default: "Tap to edit")
@@ -96,14 +96,13 @@ export default function LocationPreviewCard({
     const mutedColor = useThemeColor({}, 'textMuted');
 
     // Generate map HTML with memoization to prevent unnecessary re-renders
+    // Use safe defaults if coordinates is somehow null (defensive programming)
+    const lat = coordinates?.latitude ?? 33.5138;
+    const lng = coordinates?.longitude ?? 36.2765;
+
     const mapHtml = useMemo(
-        () => generateStaticMapHtml(
-            coordinates.latitude,
-            coordinates.longitude,
-            radius,
-            BRAND_COLOR
-        ),
-        [coordinates.latitude, coordinates.longitude, radius]
+        () => generateStaticMapHtml(lat, lng, radius, BRAND_COLOR),
+        [lat, lng, radius]
     );
 
     return (
