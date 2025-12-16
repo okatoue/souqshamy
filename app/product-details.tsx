@@ -10,7 +10,7 @@ import {
   StyleSheet
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import CategoryInfo from '@/components/product-details/categoryInfo';
 import ContactSection from '@/components/product-details/contactSection';
@@ -38,6 +38,7 @@ export default function ProductDetailsScreen() {
 
   const router = useRouter();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   // Extract params - NOW WITH NUMERIC IDS!
   const {
@@ -90,8 +91,12 @@ export default function ProductDetailsScreen() {
   // Set Android navigation bar to match theme
   useEffect(() => {
     if (Platform.OS === 'android') {
+      // Set navigation bar background to match app theme
       NavigationBar.setBackgroundColorAsync(backgroundColor);
+      // Set button style: 'dark' = black icons (for light bg), 'light' = white icons (for dark bg)
       NavigationBar.setButtonStyleAsync(colorScheme === 'dark' ? 'light' : 'dark');
+      // Remove any border between app content and nav bar
+      NavigationBar.setBorderColorAsync('transparent');
     }
   }, [backgroundColor, colorScheme]);
 
@@ -269,6 +274,7 @@ export default function ProductDetailsScreen() {
 
           <ScrollView
             style={styles.scrollContainer}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
