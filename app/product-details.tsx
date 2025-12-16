@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import * as NavigationBar from 'expo-navigation-bar';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
@@ -26,6 +27,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
 import { useAuth } from '@/lib/auth_context';
 import { unformatPrice } from '@/lib/formatters';
+import { useAppColorScheme } from '@/lib/theme_context';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
@@ -83,6 +85,15 @@ export default function ProductDetailsScreen() {
   const { createListing, isLoading: isSubmitting } = useCreateListing();
   console.log('CHECKPOINT 3: before useThemeColor');
   const backgroundColor = useThemeColor({}, 'background');
+  const colorScheme = useAppColorScheme();
+
+  // Set Android navigation bar to match theme
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync(backgroundColor);
+      NavigationBar.setButtonStyleAsync(colorScheme === 'dark' ? 'light' : 'dark');
+    }
+  }, [backgroundColor, colorScheme]);
 
   console.log('CHECKPOINT 5: defining handleLocationSelect');
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
