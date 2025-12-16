@@ -3,7 +3,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ImageUploadSectionProps {
   images: string[];
@@ -11,8 +11,20 @@ interface ImageUploadSectionProps {
 }
 
 const MAX_IMAGES = 10;
-const IMAGE_WIDTH = 160;
-const IMAGE_HEIGHT = 200; // 4:5 aspect ratio
+
+// Calculate dynamic card width for peek effect
+// When 3+ images exist, show 2 full cards + ~35% of the 3rd card
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SECTION_HORIZONTAL_MARGIN = SPACING.xl * 2; // marginHorizontal: SPACING.xl on each side
+const AVAILABLE_WIDTH = SCREEN_WIDTH - SECTION_HORIZONTAL_MARGIN;
+const CARD_GAP = SPACING.md;
+const PEEK_RATIO = 0.35; // Show 35% of the 3rd card
+
+// Formula: (2 * cardWidth) + (1 * gap) + (PEEK_RATIO * cardWidth) = availableWidth
+// Solving: cardWidth * (2 + PEEK_RATIO) + gap = availableWidth
+// cardWidth = (availableWidth - gap) / (2 + PEEK_RATIO)
+const IMAGE_WIDTH = (AVAILABLE_WIDTH - CARD_GAP) / (2 + PEEK_RATIO);
+const IMAGE_HEIGHT = IMAGE_WIDTH * 1.25; // Maintain 4:5 aspect ratio
 
 export default function ImageUploadSection({ images, setImages }: ImageUploadSectionProps) {
   // Theme colors
