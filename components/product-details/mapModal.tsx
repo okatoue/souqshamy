@@ -1,4 +1,3 @@
-import { BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
+import { CurrentLocationButton } from '@/components/ui/locationPickerModal/components';
 import { useLocationSearch, useReverseGeocode } from '@/components/ui/locationPickerModal/hooks';
 import { MAP_HTML } from './mapHtml';
 
@@ -283,21 +283,13 @@ export default function MapModal({
                     )}
                 </View>
 
-                {/* My Location Button - floating over map */}
-                <TouchableOpacity
-                    style={styles.myLocationButton}
-                    onPress={handleUseCurrentLocation}
-                    disabled={isFetchingLocation}
-                >
-                    {isFetchingLocation ? (
-                        <ActivityIndicator size="small" color={BRAND_COLOR} />
-                    ) : (
-                        <Ionicons name="locate" size={24} color={BRAND_COLOR} />
-                    )}
-                </TouchableOpacity>
-
-                {/* Bottom Confirm Button */}
+                {/* Bottom Elements */}
                 <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 12 }]} pointerEvents="box-none">
+                    <CurrentLocationButton
+                        onPress={handleUseCurrentLocation}
+                        loading={isFetchingLocation}
+                    />
+
                     <TouchableOpacity
                         style={[styles.confirmButton, { backgroundColor: tintColor }]}
                         onPress={handleConfirm}
@@ -426,6 +418,7 @@ const styles = StyleSheet.create({
         right: 0,
         paddingHorizontal: 16,
         zIndex: 10,
+        gap: 12,
     },
     confirmButton: {
         flexDirection: 'row',
@@ -443,21 +436,5 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 17,
         fontWeight: '600',
-    },
-    myLocationButton: {
-        position: 'absolute',
-        bottom: 100,
-        right: SPACING.lg,
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: 'white',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 4,
-        elevation: 5,
     },
 });
