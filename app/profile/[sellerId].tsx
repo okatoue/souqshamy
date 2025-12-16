@@ -26,6 +26,7 @@ import {
     Dimensions,
     FlatList,
     Pressable,
+    ScrollView,
     Share,
     StyleSheet,
     Text,
@@ -36,6 +37,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_GAP = SPACING.sm;
 const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 2 - CARD_GAP) / 2;
+
+// Card height calculation for peek effect
+// Card has square image (cardWidth) + details section (~80-90px)
+const CARD_DETAILS_HEIGHT = 85; // Price + title (2 lines) + location + padding
+const CARD_HEIGHT = CARD_WIDTH + CARD_DETAILS_HEIGHT;
+
+// Calculate listings container height to show peek effect (2 full cards + ~35% of 3rd row)
+const getListingsContainerHeight = (listingsCount: number): number | undefined => {
+    if (listingsCount < 3) return undefined; // No height constraint for 0, 1, or 2 listings
+
+    // Show 1 full row (2 cards) + ~35% of the second row for peek effect
+    const PEEK_PERCENTAGE = 0.35;
+    const FULL_ROW_HEIGHT = CARD_HEIGHT + CARD_GAP; // One row + margin below
+    const PEEK_HEIGHT = CARD_HEIGHT * PEEK_PERCENTAGE;
+
+    return FULL_ROW_HEIGHT + PEEK_HEIGHT;
+};
 
 // Header component
 function Header({ textColor, onShare }: { textColor: string; onShare?: () => void }) {
@@ -114,21 +132,6 @@ export default function SellerProfileScreen() {
         </View>
     ), [mutedColor, textColor]);
 
-    const renderListHeader = useCallback(() => (
-        <>
-            {profile && <SellerProfileHeader profile={profile} />}
-
-            {/* TODO: Uncomment when implementing stats feature */}
-            {/* {stats && <SellerStatsCard stats={stats} />} */}
-
-            <SellerProfileTabs
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                listingsCount={listings.length}
-            />
-        </>
-    ), [profile, activeTab, listings.length]);
-
     // Loading state
     if (isLoading) {
         return (
@@ -149,32 +152,55 @@ export default function SellerProfileScreen() {
         );
     }
 
+    // Calculate listings container height for peek effect
+    const listingsContainerHeight = getListingsContainerHeight(listings.length);
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             <Header textColor={textColor} onShare={handleShare} />
 
-            {activeTab === 'listings' ? (
-                <FlatList
-                    data={listings}
-                    renderItem={renderListingItem}
-                    keyExtractor={(item) => item.id.toString()}
-                    numColumns={2}
-                    ListHeaderComponent={renderListHeader}
-                    ListEmptyComponent={renderEmptyListings}
-                    contentContainerStyle={styles.listContent}
-                    columnWrapperStyle={listings.length > 0 ? styles.gridRow : undefined}
-                    showsVerticalScrollIndicator={false}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {/* Profile Header */}
+                {profile && <SellerProfileHeader profile={profile} />}
+
+                {/* Tabs */}
+                <SellerProfileTabs
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    listingsCount={listings.length}
                 />
-            ) : (
-                <FlatList
-                    data={[]}
-                    renderItem={() => null}
-                    ListHeaderComponent={renderListHeader}
-                    ListEmptyComponent={renderRatingsTab}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-            )}
+
+                {/* Tab Content */}
+                {activeTab === 'listings' ? (
+                    listings.length > 0 ? (
+                        <View
+                            style={[
+                                styles.listingsContainer,
+                                listingsContainerHeight ? { height: listingsContainerHeight } : undefined,
+                            ]}
+                        >
+                            <FlatList
+                                data={listings}
+                                renderItem={renderListingItem}
+                                keyExtractor={(item) => item.id.toString()}
+                                numColumns={2}
+                                contentContainerStyle={styles.listingsContent}
+                                columnWrapperStyle={styles.gridRow}
+                                showsVerticalScrollIndicator={false}
+                                scrollEnabled={listings.length >= 3}
+                                nestedScrollEnabled={listings.length >= 3}
+                            />
+                        </View>
+                    ) : (
+                        renderEmptyListings()
+                    )
+                ) : (
+                    renderRatingsTab()
+                )}
+            </ScrollView>
         </SafeAreaView>
     );
 }
@@ -198,8 +224,14 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
     },
-    listContent: {
+    scrollContent: {
         paddingBottom: SPACING.xxxl,
+    },
+    listingsContainer: {
+        overflow: 'hidden', // Clip content for peek effect
+    },
+    listingsContent: {
+        paddingBottom: SPACING.sm,
     },
     gridRow: {
         paddingHorizontal: SPACING.lg,
