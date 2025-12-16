@@ -1,11 +1,10 @@
 import { BRAND_COLOR, SPACING } from '@/constants/theme';
+import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     FlatList,
     Keyboard,
     Modal,
@@ -39,7 +38,6 @@ export default function MapModal({
     const searchInputRef = useRef<TextInput>(null);
     const [isMapReady, setIsMapReady] = useState(false);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
-    const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const [selectedCoordinate, setSelectedCoordinate] = useState({
         latitude: 33.5138,
@@ -49,6 +47,21 @@ export default function MapModal({
 
     // Use shared hooks
     const { reverseGeocode } = useReverseGeocode();
+
+    // Handle current location with shared hook
+    const handleLocationReceived = useCallback((latitude: number, longitude: number) => {
+        setSelectedCoordinate({ latitude, longitude });
+        webViewRef.current?.injectJavaScript(`
+            moveToLocation(${latitude}, ${longitude}, 14);
+            true;
+        `);
+    }, []);
+
+    const { isFetchingLocation, handleUseCurrentLocation } = useCurrentLocation({
+        onLocationReceived: handleLocationReceived,
+        reverseGeocode,
+        onLocationNameReceived: setSelectedLocationName,
+    });
     const {
         searchQuery,
         setSearchQuery,
@@ -140,44 +153,6 @@ export default function MapModal({
         onSelectLocation(selectedLocationName, selectedCoordinate);
         onClose();
     };
-
-    const handleUseCurrentLocation = useCallback(async () => {
-        setIsFetchingLocation(true);
-
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync();
-
-            if (status !== 'granted') {
-                Alert.alert(
-                    'Permission Required',
-                    'Please allow location access to use this feature',
-                    [{ text: 'OK' }]
-                );
-                setIsFetchingLocation(false);
-                return;
-            }
-
-            const position = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
-
-            const { latitude, longitude } = position.coords;
-            setSelectedCoordinate({ latitude, longitude });
-
-            webViewRef.current?.injectJavaScript(`
-                moveToLocation(${latitude}, ${longitude}, 14);
-                true;
-            `);
-
-            const locationName = await reverseGeocode(latitude, longitude);
-            setSelectedLocationName(locationName);
-        } catch (error) {
-            console.error('Error getting current location:', error);
-            Alert.alert('Error', 'Could not get your current location. Please try again.');
-        } finally {
-            setIsFetchingLocation(false);
-        }
-    }, [reverseGeocode]);
 
     const showingSearch = isSearchFocused || searchQuery.length > 0;
 
