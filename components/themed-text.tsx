@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FONT_SIZES.hero,
     fontWeight: 'bold',
-    lineHeight: FONT_SIZES.hero,
+    lineHeight: Math.round(FONT_SIZES.hero * 1.15), // Room for descenders (g, y, p, q, j)
   },
   subtitle: {
     fontSize: FONT_SIZES.xl,
