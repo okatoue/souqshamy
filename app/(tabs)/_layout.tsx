@@ -1,9 +1,12 @@
-import { BRAND_COLOR } from '@/constants/theme';
+import { BRAND_COLOR, COLORS } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useAppData } from '@/lib/app_data_context';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Text, View } from 'react-native';
 
 export default function TabLayout() {
+  const { totalUnreadCount } = useAppData();
   const backgroundColor = useThemeColor({}, 'background');
   const inactiveColor = useThemeColor({}, 'tabIconDefault');
   const borderColor = useThemeColor({}, 'border');
@@ -34,7 +37,29 @@ export default function TabLayout() {
         options={{
           title: 'Chats',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
+            <View style={{ position: 'relative' }}>
+              <Ionicons name="chatbubbles" size={size} color={color} />
+              {totalUnreadCount > 0 && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -8,
+                    backgroundColor: COLORS.favorite,
+                    borderRadius: 10,
+                    minWidth: 18,
+                    height: 18,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 11, fontWeight: '600' }}>
+                    {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />

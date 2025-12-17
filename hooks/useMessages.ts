@@ -233,7 +233,9 @@ export function useMessages(conversationId: string | null) {
     useEffect(() => {
         if (!conversationId || !user) return;
 
-        const subscription = supabase
+        console.log('[useMessages] Setting up real-time subscription for:', conversationId);
+
+        const channel = supabase
             .channel(`messages-${conversationId}`)
             .on(
                 'postgres_changes',
@@ -244,12 +246,17 @@ export function useMessages(conversationId: string | null) {
                     filter: `conversation_id=eq.${conversationId}`
                 },
                 (payload) => {
+                    console.log('[useMessages] Received new message:', payload);
                     const newMessage = payload.new as Message;
 
                     // Only add if not already in state (avoid duplicates from optimistic update)
                     setMessages(prev => {
                         const exists = prev.some(msg => msg.id === newMessage.id);
-                        if (exists) return prev;
+                        if (exists) {
+                            console.log('[useMessages] Message already exists, skipping');
+                            return prev;
+                        }
+                        console.log('[useMessages] Adding new message to state');
                         return [...prev, newMessage];
                     });
 
@@ -259,10 +266,13 @@ export function useMessages(conversationId: string | null) {
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('[useMessages] Subscription status:', status);
+            });
 
         return () => {
-            subscription.unsubscribe();
+            console.log('[useMessages] Cleaning up subscription for:', conversationId);
+            channel.unsubscribe();
         };
     }, [conversationId, user, markMessagesAsRead]);
 

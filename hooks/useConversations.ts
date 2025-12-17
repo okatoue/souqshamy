@@ -254,6 +254,8 @@ export function useConversations() {
     useEffect(() => {
         if (!user) return;
 
+        console.log('[useConversations] Setting up real-time subscriptions');
+
         const subscription = supabase
             .channel('conversations-changes')
             .on(
@@ -264,7 +266,8 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
                 },
-                () => {
+                (payload) => {
+                    console.log('[useConversations] Conversation INSERT (buyer):', payload);
                     fetchConversations(false);
                 }
             )
@@ -276,7 +279,8 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
                 },
-                () => {
+                (payload) => {
+                    console.log('[useConversations] Conversation UPDATE (buyer):', payload);
                     fetchConversations(false);
                 }
             )
@@ -288,7 +292,8 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
                 },
-                () => {
+                (payload) => {
+                    console.log('[useConversations] Conversation INSERT (seller):', payload);
                     fetchConversations(false);
                 }
             )
@@ -300,13 +305,32 @@ export function useConversations() {
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
                 },
-                () => {
+                (payload) => {
+                    console.log('[useConversations] Conversation UPDATE (seller):', payload);
                     fetchConversations(false);
                 }
             )
-            .subscribe();
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages'
+                },
+                (payload) => {
+                    console.log('[useConversations] New message detected:', payload);
+                    // Refresh conversations when a new message is inserted
+                    // The database trigger updates conversation.last_message but we also
+                    // need to refresh to get the latest unread counts
+                    fetchConversations(false);
+                }
+            )
+            .subscribe((status) => {
+                console.log('[useConversations] Subscription status:', status);
+            });
 
         return () => {
+            console.log('[useConversations] Cleaning up subscriptions');
             subscription.unsubscribe();
         };
     }, [user, fetchConversations]);
