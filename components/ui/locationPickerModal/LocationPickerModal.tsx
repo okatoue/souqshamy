@@ -14,7 +14,6 @@ import {
     CloseButton,
     ConfirmButton,
     CurrentLocationButton,
-    RadiusSlider,
     SearchBar,
     SearchResults
 } from './components';
@@ -51,9 +50,6 @@ export default function LocationPickerModal({
     });
     const [selectedLocationName, setSelectedLocationName] = useState(currentLocation || DEFAULT_LOCATION_NAME);
     const [radius, setRadius] = useState(currentRadius || DEFAULT_RADIUS);
-    const [sliderValue, setSliderValue] = useState(currentRadius || DEFAULT_RADIUS);
-
-    const isSlidingRef = useRef(false);
 
     const { reverseGeocode } = useReverseGeocode();
 
@@ -87,8 +83,6 @@ export default function LocationPickerModal({
         if (visible) {
             setSelectedLocationName(currentLocation || DEFAULT_LOCATION_NAME);
             setRadius(currentRadius || DEFAULT_RADIUS);
-            setSliderValue(currentRadius || DEFAULT_RADIUS);
-            isSlidingRef.current = false;
             setIsMapReady(false);
             setIsConfirming(false);
             clearSearch();
@@ -124,11 +118,8 @@ export default function LocationPickerModal({
                 const locationName = await reverseGeocode(data.lat, data.lng);
                 setSelectedLocationName(locationName);
             } else if (data.type === 'radiusChanged' && data.radius !== undefined) {
-                if (!isSlidingRef.current) {
-                    const newRadius = Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, data.radius));
-                    setRadius(Math.round(newRadius));
-                    setSliderValue(newRadius);
-                }
+                const newRadius = Math.max(RADIUS_MIN, Math.min(RADIUS_MAX, data.radius));
+                setRadius(Math.round(newRadius));
             } else if (data.type === 'centerResponse' && data.lat !== undefined && data.lng !== undefined) {
                 // Received fresh coordinates from map - complete the confirm action
                 const freshCoordinates = { latitude: data.lat, longitude: data.lng };
@@ -141,28 +132,6 @@ export default function LocationPickerModal({
             setIsConfirming(false);
         }
     }, [reverseGeocode, selectedLocationName, radius, onConfirm, onClose]);
-
-    const handleSliderStart = useCallback(() => {
-        isSlidingRef.current = true;
-        webViewRef.current?.injectJavaScript(`onSliderStart(); true;`);
-    }, []);
-
-    const handleSliderChange = useCallback((value: number) => {
-        setSliderValue(value);
-        setRadius(Math.round(value));
-        webViewRef.current?.injectJavaScript(`onSliderChange(${value}); true;`);
-    }, []);
-
-    const handleSliderComplete = useCallback((value: number) => {
-        const finalValue = Math.round(value);
-        setRadius(finalValue);
-        setSliderValue(finalValue);
-        webViewRef.current?.injectJavaScript(`onSliderEnd(${finalValue}); true;`);
-
-        setTimeout(() => {
-            isSlidingRef.current = false;
-        }, 400);
-    }, []);
 
     const selectSearchResult = useCallback((result: SearchResult) => {
         const lat = parseFloat(result.lat);
@@ -261,13 +230,6 @@ export default function LocationPickerModal({
                     <CurrentLocationButton
                         onPress={handleUseCurrentLocation}
                         loading={isFetchingLocation}
-                    />
-
-                    <RadiusSlider
-                        value={sliderValue}
-                        onSlidingStart={handleSliderStart}
-                        onValueChange={handleSliderChange}
-                        onSlidingComplete={handleSliderComplete}
                     />
 
                     <ConfirmButton onPress={handleConfirm} loading={isConfirming} />
