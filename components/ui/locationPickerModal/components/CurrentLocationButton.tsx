@@ -45,6 +45,7 @@ const styles = StyleSheet.create({
     button: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'flex-start',
         paddingHorizontal: 14,
         paddingVertical: 10,
         borderRadius: 20,
