@@ -63,8 +63,8 @@ function generateStaticMapHtml(
       tap: false
     }).setView([${lat}, ${lng}], ${zoom});
 
-    L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-      maxZoom: 19,
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
       minZoom: 5
     }).addTo(map);
 

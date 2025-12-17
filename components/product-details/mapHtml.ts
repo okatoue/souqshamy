@@ -48,8 +48,8 @@ export const MAP_HTML = `
         maxBoundsViscosity: 1.0
       }).setView([lat, lng], 12);
 
-      // OpenStreetMap French tiles - better international/Arabic label support
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      // OpenStreetMap standard tiles - more reliable availability
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: MAX_ZOOM,
         minZoom: MIN_ZOOM
       }).addTo(map);

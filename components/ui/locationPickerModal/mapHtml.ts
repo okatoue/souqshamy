@@ -62,6 +62,7 @@ export const MAP_HTML = `
     var map;
     var isInitialized = false;
     var MIN_ZOOM = 5;
+    var MAX_ZOOM = 18; // OSM tiles max zoom
     var moveDebounceTimer = null;
     var sliderActive = false;
 
@@ -95,7 +96,7 @@ export const MAP_HTML = `
     function updateMaxZoom() {
       if (!map) return;
       var center = map.getCenter();
-      var maxZoom = calculateMaxZoomFor1km(center.lat);
+      var maxZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, calculateMaxZoomFor1km(center.lat)));
       map.setMaxZoom(maxZoom);
     }
 
@@ -103,7 +104,8 @@ export const MAP_HTML = `
       if (isInitialized) return;
       isInitialized = true;
 
-      var initialMaxZoom = calculateMaxZoomFor1km(lat);
+      // Clamp to valid OSM tile range
+      var initialMaxZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, calculateMaxZoomFor1km(lat)));
 
       map = L.map('map', {
         zoomControl: false,
@@ -116,8 +118,8 @@ export const MAP_HTML = `
         bounceAtZoomLimits: false
       }).setView([lat, lng], 10);
 
-      L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: 19,
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
         minZoom: MIN_ZOOM
       }).addTo(map);
 
@@ -170,7 +172,7 @@ export const MAP_HTML = `
       if (!map) return;
 
       var center = map.getCenter();
-      var maxZoom = calculateMaxZoomFor1km(center.lat);
+      var maxZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, calculateMaxZoomFor1km(center.lat)));
       var targetZoom = getZoomForRadius(targetRadiusKm, center.lat);
 
       targetZoom = Math.max(MIN_ZOOM, Math.min(maxZoom, targetZoom));
@@ -196,7 +198,7 @@ export const MAP_HTML = `
 
     function moveToLocation(lat, lng) {
       if (!map) return;
-      var maxZoom = calculateMaxZoomFor1km(lat);
+      var maxZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, calculateMaxZoomFor1km(lat)));
       map.setMaxZoom(maxZoom);
 
       var currentZoom = map.getZoom();
