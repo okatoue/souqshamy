@@ -30,7 +30,7 @@ export function CurrentLocationButton({ onPress, loading = false, disabled = fal
             ) : (
                 <Ionicons
                     name="navigate"
-                    size={18}
+                    size={16}
                     color={tintColor}
                 />
             )}
@@ -46,10 +46,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 20,
-        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 16,
+        gap: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.15,
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     buttonText: {
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: '500',
     },
 });
