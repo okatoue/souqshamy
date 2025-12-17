@@ -177,12 +177,9 @@ export default function ListingDetailScreen() {
     };
 
     const handleWhatsApp = () => {
-        // Use whatsapp_number if available, fall back to phone_number
-        const whatsappNum = listing?.whatsapp_number || listing?.phone_number;
-        if (whatsappNum) {
-            const cleanNumber = whatsappNum.replace(/\D/g, '');
+        if (listing?.whatsapp_number) {
+            const cleanNumber = listing.whatsapp_number.replace(/\D/g, '');
             const whatsappUrl = `whatsapp://send?phone=${cleanNumber}`;
-
             Linking.openURL(whatsappUrl).catch(() =>
                 Alert.alert('Error', 'WhatsApp is not installed')
             );
@@ -379,7 +376,7 @@ export default function ListingDetailScreen() {
                         {/* WhatsApp & Call Buttons - shown if contact info exists */}
                         {(listing.phone_number || listing.whatsapp_number) && listing.status !== 'sold' && !isOwnListing && (
                             <View style={styles.contactButtonsRow}>
-                                {(listing.whatsapp_number || listing.phone_number) && (
+                                {listing.whatsapp_number && (
                                     <Pressable
                                         style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
                                         onPress={handleWhatsApp}
