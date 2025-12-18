@@ -325,8 +325,11 @@ export function useConversations() {
                     fetchConversations(false);
                 }
             )
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 console.log('[useConversations] Subscription status:', status);
+                if (err) {
+                    console.error('[useConversations] Subscription error:', JSON.stringify(err, null, 2));
+                }
             });
 
         return () => {

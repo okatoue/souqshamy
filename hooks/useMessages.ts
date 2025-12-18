@@ -266,8 +266,11 @@ export function useMessages(conversationId: string | null) {
                     }
                 }
             )
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 console.log('[useMessages] Subscription status:', status);
+                if (err) {
+                    console.error('[useMessages] Subscription error:', JSON.stringify(err, null, 2));
+                }
             });
 
         return () => {

@@ -900,8 +900,11 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     fetchConversations(false);
                 }
             )
-            .subscribe((status) => {
+            .subscribe((status, err) => {
                 console.log('[AppData] Conversations subscription status:', status);
+                if (err) {
+                    console.error('[AppData] Subscription error:', JSON.stringify(err, null, 2));
+                }
             });
 
         return () => {
