@@ -251,11 +251,29 @@ export function useMessages(conversationId: string | null) {
 
                     // Only add if not already in state (avoid duplicates from optimistic update)
                     setMessages(prev => {
-                        const exists = prev.some(msg => msg.id === newMessage.id);
-                        if (exists) {
-                            console.log('[useMessages] Message already exists, skipping');
+                        // Check if message already exists by ID
+                        const existsById = prev.some(msg => msg.id === newMessage.id);
+                        if (existsById) {
+                            console.log('[useMessages] Message already exists by ID, skipping');
                             return prev;
                         }
+
+                        // Check if there's a temp message that matches (optimistic update)
+                        // This handles the race condition where real-time arrives before insert completes
+                        const tempMessageIndex = prev.findIndex(msg =>
+                            msg.id.startsWith('temp-') &&
+                            msg.sender_id === newMessage.sender_id &&
+                            msg.content === newMessage.content &&
+                            msg.conversation_id === newMessage.conversation_id
+                        );
+
+                        if (tempMessageIndex !== -1) {
+                            console.log('[useMessages] Replacing temp message with real message');
+                            const updated = [...prev];
+                            updated[tempMessageIndex] = newMessage;
+                            return updated;
+                        }
+
                         console.log('[useMessages] Adding new message to state');
                         return [...prev, newMessage];
                     });
