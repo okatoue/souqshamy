@@ -266,11 +266,16 @@ export function useMessages(conversationId: string | null) {
                     }
                 }
             )
+            .on('system', {}, (payload) => {
+                console.log('[useMessages] System event:', JSON.stringify(payload));
+            })
             .subscribe((status, err) => {
                 console.log('[useMessages] Subscription status:', status);
                 if (err) {
                     console.error('[useMessages] Subscription error:', JSON.stringify(err, null, 2));
                 }
+                // Log the channel state for debugging
+                console.log('[useMessages] Channel state:', channel.state);
             });
 
         return () => {
