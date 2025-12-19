@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { AudioPlayer, useAudioPlayer } from 'expo-audio';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Pressable,
@@ -8,6 +8,27 @@ import {
     Text,
     View
 } from 'react-native';
+
+// Seeded random number generator for consistent waveform per message
+const seededRandom = (seed: string) => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+        hash |= 0;
+    }
+    return () => {
+        hash = (hash * 1103515245 + 12345) & 0x7fffffff;
+        return (hash % 1000) / 1000;
+    };
+};
+
+const generateWaveform = (messageId: string, barCount: number): number[] => {
+    const rng = seededRandom(messageId);
+    return Array.from({ length: barCount }, () => 6 + rng() * 18);
+};
+
+const PLAYBACK_RATES = [1, 1.5, 2] as const;
+const BAR_COUNT = 28;
 
 interface VoiceMessageProps {
     messageId: string;
@@ -35,8 +56,12 @@ export function VoiceMessage({
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [audioDuration, setAudioDuration] = useState(duration);
+    const [playbackRate, setPlaybackRate] = useState<number>(1);
 
     const player = useAudioPlayer(audioUrl);
+
+    // Generate unique waveform heights based on messageId
+    const waveformHeights = useMemo(() => generateWaveform(messageId, BAR_COUNT), [messageId]);
 
     // Subscribe to player status updates for reactive UI
     useEffect(() => {
@@ -66,6 +91,8 @@ export function VoiceMessage({
                 if (playingMessageId === messageId) {
                     onPlay(null);
                 }
+                // Reset playback rate when playback finishes
+                setPlaybackRate(1);
             }
         });
 
@@ -101,6 +128,14 @@ export function VoiceMessage({
         }
     };
 
+    const cyclePlaybackRate = () => {
+        const currentIndex = PLAYBACK_RATES.indexOf(playbackRate as 1 | 1.5 | 2);
+        const nextIndex = (currentIndex + 1) % PLAYBACK_RATES.length;
+        const newRate = PLAYBACK_RATES[nextIndex];
+        setPlaybackRate(newRate);
+        player.setPlaybackRate(newRate);
+    };
+
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
@@ -133,26 +168,42 @@ export function VoiceMessage({
 
             {/* Waveform / Progress Bar */}
             <View style={styles.waveformContainer}>
-                <View style={styles.waveform}>
-                    {/* Background bars (decorative waveform) */}
-                    {[...Array(20)].map((_, i) => {
-                        const height = 8 + Math.sin(i * 0.8) * 8 + Math.random() * 4;
-                        const isActive = (i / 20) * 100 <= progress;
-                        return (
-                            <View
-                                key={i}
-                                style={[
-                                    styles.waveformBar,
-                                    {
-                                        height,
-                                        backgroundColor: isOwnMessage
-                                            ? isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'
-                                            : isActive ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.2)'
-                                    }
-                                ]}
-                            />
-                        );
-                    })}
+                <View style={styles.waveformRow}>
+                    <View style={styles.waveform}>
+                        {/* Background bars (decorative waveform) */}
+                        {waveformHeights.map((height, i) => {
+                            const isActive = (i / BAR_COUNT) * 100 <= progress;
+                            return (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.waveformBar,
+                                        {
+                                            height,
+                                            backgroundColor: isOwnMessage
+                                                ? isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'
+                                                : isActive ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.2)'
+                                        }
+                                    ]}
+                                />
+                            );
+                        })}
+                    </View>
+
+                    {/* Speed Control Button - show when playing, paused mid-playback, or rate !== 1 */}
+                    {(isPlaying || currentTime > 0 || playbackRate !== 1) && (
+                        <Pressable
+                            style={[
+                                styles.speedButton,
+                                { backgroundColor: isOwnMessage ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
+                            ]}
+                            onPress={cyclePlaybackRate}
+                        >
+                            <Text style={[styles.speedButtonText, { color: textColor }]}>
+                                {playbackRate}x
+                            </Text>
+                        </Pressable>
+                    )}
                 </View>
 
                 {/* Duration */}
@@ -174,13 +225,13 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 10,
         borderRadius: 18,
-        minWidth: 180,
-        maxWidth: 250,
+        minWidth: 220,
+        maxWidth: 300,
     },
     playButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -188,15 +239,30 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 10,
     },
+    waveformRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     waveform: {
         flexDirection: 'row',
         alignItems: 'center',
         height: 24,
         gap: 2,
+        flex: 1,
     },
     waveformBar: {
-        width: 3,
-        borderRadius: 1.5,
+        width: 3.5,
+        borderRadius: 1.75,
+    },
+    speedButton: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+        marginLeft: 6,
+    },
+    speedButtonText: {
+        fontSize: 10,
+        fontWeight: '600',
     },
     durationText: {
         fontSize: 11,
