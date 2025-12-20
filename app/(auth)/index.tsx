@@ -52,6 +52,11 @@ export default function AuthScreen() {
         { user_email: email }
       );
 
+      if (identitiesError) {
+        console.error('Error fetching auth providers:', identitiesError);
+      }
+      console.log('Auth providers for user:', identities);
+
       if (!identitiesError && identities && identities.length > 0) {
         const hasEmailProvider = identities.some(
           (i: { provider: string }) => i.provider === 'email'
