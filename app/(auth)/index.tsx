@@ -23,7 +23,7 @@ export default function AuthScreen() {
   const { signInWithGoogle, signInWithFacebook } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<'Google' | 'Facebook' | null>(null);
 
   const handleContinue = async () => {
     const trimmedInput = inputValue.trim();
@@ -101,23 +101,23 @@ export default function AuthScreen() {
   const handleSocialAuth = async (provider: string) => {
     if (provider === 'Google') {
       try {
-        setSocialLoading(true);
+        setLoadingProvider('Google');
         await signInWithGoogle();
         // Navigation happens automatically via auth state listener in _layout.tsx
       } catch (error) {
         // Error already handled in signInWithGoogle
       } finally {
-        setSocialLoading(false);
+        setLoadingProvider(null);
       }
     } else if (provider === 'Facebook') {
       try {
-        setSocialLoading(true);
+        setLoadingProvider('Facebook');
         await signInWithFacebook();
         // Navigation happens automatically via auth state listener in _layout.tsx
       } catch (error) {
         // Error already handled in signInWithFacebook
       } finally {
-        setSocialLoading(false);
+        setLoadingProvider(null);
       }
     } else {
       Alert.alert('Coming Soon', `${provider} login will be available soon!`);
@@ -139,16 +139,20 @@ export default function AuthScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
-          editable={!loading && !socialLoading}
+          editable={!loading && !loadingProvider}
           containerStyle={styles.inputContainer}
         />
       </View>
 
-      <AuthButton title="Continue" onPress={handleContinue} loading={loading} disabled={socialLoading} />
+      <AuthButton title="Continue" onPress={handleContinue} loading={loading} disabled={!!loadingProvider} />
 
       <AuthDivider />
 
-      <SocialAuthButtons onPress={handleSocialAuth} />
+      <SocialAuthButtons
+        onPress={handleSocialAuth}
+        loadingProvider={loadingProvider}
+        disabled={loading}
+      />
 
       <Text style={authStyles.footer}>
         By continuing, you agree to our{' '}
