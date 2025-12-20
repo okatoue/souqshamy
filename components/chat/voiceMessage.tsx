@@ -28,7 +28,7 @@ const generateWaveform = (messageId: string, barCount: number): number[] => {
 };
 
 const PLAYBACK_RATES = [1, 1.5, 2] as const;
-const BAR_COUNT = 28;
+const BAR_COUNT = 20;
 
 interface VoiceMessageProps {
     messageId: string;
@@ -236,12 +236,14 @@ const styles = StyleSheet.create({
     waveformContainer: {
         flex: 1,
         marginLeft: 10,
+        marginRight: 4,
     },
     waveform: {
         flexDirection: 'row',
         alignItems: 'center',
         height: 24,
         gap: 2,
+        overflow: 'hidden',
     },
     waveformBar: {
         width: 3.5,
