@@ -11,7 +11,7 @@ import {
   isValidEmail,
   useAuthStyles,
 } from '@/components/auth';
-import { checkUserAuthStatus, getProviderDisplayName } from '@/lib/auth-utils';
+import { checkUserAuthStatus, getProviderDisplayName, handleAuthError } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
@@ -92,7 +92,7 @@ export default function AuthScreen() {
         });
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      handleAuthError(error, 'signin');
     } finally {
       setLoading(false);
     }
