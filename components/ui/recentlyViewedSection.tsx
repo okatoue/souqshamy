@@ -4,10 +4,9 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
-import { MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
     Image,
     Pressable,
     ScrollView,
@@ -22,6 +21,20 @@ interface RecentlyViewedSectionProps {
     onClear?: () => void;
 }
 
+// Skeleton card component for loading state
+function SkeletonCard({ skeletonBg }: { skeletonBg: string }) {
+    return (
+        <View style={[styles.card, styles.skeletonCard]}>
+            <View style={[styles.skeletonImage, { backgroundColor: skeletonBg }]} />
+            <View style={styles.details}>
+                <View style={[styles.skeletonTitle, { backgroundColor: skeletonBg }]} />
+                <View style={[styles.skeletonPrice, { backgroundColor: skeletonBg }]} />
+                <View style={[styles.skeletonLocation, { backgroundColor: skeletonBg }]} />
+            </View>
+        </View>
+    );
+}
+
 export function RecentlyViewedSection({ listings, isLoading, onClear }: RecentlyViewedSectionProps) {
     // Theme colors
     const textColor = useThemeColor({}, 'text');
@@ -30,6 +43,7 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     const placeholderBg = useThemeColor({}, 'placeholder');
     const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
     const secondaryText = useThemeColor({}, 'textSecondary');
+    const skeletonBg = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'background');
 
     const handleItemPress = (listing: Listing) => {
         navigateToListing(listing);
@@ -41,75 +55,109 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
                 </View>
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={BRAND_COLOR} />
-                </View>
-            </View>
-        );
-    }
-
-    if (listings.length > 0) {
-        return (
-            <View style={styles.container}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
-                    {onClear && listings.length > 0 && (
-                        <Pressable onPress={onClear} style={styles.clearButton}>
-                            <Text style={[styles.clearButtonText, { color: BRAND_COLOR }]}>Clear</Text>
-                        </Pressable>
-                    )}
-                </View>
-
-                {/* Horizontal Scroll */}
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.scrollContent}
+                    scrollEnabled={false}
                 >
-                    {listings.map((listing) => (
-                        <Pressable
-                            key={listing.id}
-                            style={({ pressed }) => [
-                                styles.card,
-                                { backgroundColor: cardBg, borderColor },
-                                pressed && styles.cardPressed,
-                            ]}
-                            onPress={() => handleItemPress(listing)}
-                        >
-                            {/* Image */}
-                            {listing.images && listing.images.length > 0 ? (
-                                <Image
-                                    source={{ uri: getThumbnailUrl(listing.images[0], 300, 300, 75) }}
-                                    style={styles.image}
-                                    resizeMode="cover"
-                                />
-                            ) : (
-                                <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
-                                    <MaterialIcons name="image" size={30} color={placeholderIconColor} />
-                                </View>
-                            )}
-
-                            {/* Details */}
-                            <View style={styles.details}>
-                                <Text style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
-                                    {listing.title}
-                                </Text>
-                                <Text style={[styles.price, { color: BRAND_COLOR }]}>
-                                    {formatPrice(listing.price, listing.currency)}
-                                </Text>
-                                <Text style={[styles.location, { color: secondaryText }]} numberOfLines={1}>
-                                    {listing.location}
-                                </Text>
-                            </View>
-                        </Pressable>
+                    {[1, 2, 3].map((i) => (
+                        <SkeletonCard key={i} skeletonBg={skeletonBg} />
                     ))}
                 </ScrollView>
             </View>
         );
     }
 
-    return null;
+    // Empty state - show helpful message when no recently viewed items
+    if (listings.length === 0) {
+        return (
+            <View style={styles.container}>
+                <View style={styles.header} accessibilityRole="header">
+                    <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
+                </View>
+                <View style={styles.emptyState} accessibilityLabel="No recently viewed listings. Listings you view will appear here.">
+                    <Ionicons name="time-outline" size={48} color={secondaryText} />
+                    <Text style={[styles.emptyTitle, { color: textColor }]}>
+                        No Recently Viewed
+                    </Text>
+                    <Text style={[styles.emptySubtext, { color: secondaryText }]}>
+                        Listings you view will appear here
+                    </Text>
+                </View>
+            </View>
+        );
+    }
+
+    // Listings exist - render the list
+    return (
+        <View style={styles.container}>
+            {/* Header */}
+            <View style={styles.header} accessibilityRole="header">
+                <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
+                {onClear && listings.length > 0 && (
+                    <Pressable
+                        onPress={onClear}
+                        style={styles.clearButton}
+                        accessibilityLabel="Clear recently viewed items"
+                        accessibilityRole="button"
+                        accessibilityHint="Removes all items from your recently viewed history"
+                    >
+                        <Text style={[styles.clearButtonText, { color: BRAND_COLOR }]}>Clear</Text>
+                    </Pressable>
+                )}
+            </View>
+
+            {/* Horizontal Scroll */}
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                accessibilityRole="list"
+            >
+                {listings.map((listing) => (
+                    <Pressable
+                        key={listing.id}
+                        style={({ pressed }) => [
+                            styles.card,
+                            { backgroundColor: cardBg, borderColor },
+                            pressed && styles.cardPressed,
+                        ]}
+                        onPress={() => handleItemPress(listing)}
+                        accessibilityLabel={`${listing.title}, ${formatPrice(listing.price, listing.currency)}. Located in ${listing.location}. Tap to view details.`}
+                        accessibilityRole="button"
+                    >
+                        {/* Image */}
+                        {listing.images && listing.images.length > 0 ? (
+                            <Image
+                                source={{ uri: getThumbnailUrl(listing.images[0], 300, 300, 75) }}
+                                style={styles.image}
+                                resizeMode="cover"
+                                accessibilityIgnoresInvertColors
+                            />
+                        ) : (
+                            <View style={[styles.imagePlaceholder, { backgroundColor: placeholderBg }]}>
+                                <MaterialIcons name="image" size={30} color={placeholderIconColor} />
+                            </View>
+                        )}
+
+                        {/* Details */}
+                        <View style={styles.details}>
+                            <Text style={[styles.itemTitle, { color: textColor }]} numberOfLines={2}>
+                                {listing.title}
+                            </Text>
+                            <Text style={[styles.price, { color: BRAND_COLOR }]}>
+                                {formatPrice(listing.price, listing.currency)}
+                            </Text>
+                            <Text style={[styles.location, { color: secondaryText }]} numberOfLines={1}>
+                                {listing.location}
+                            </Text>
+                        </View>
+                    </Pressable>
+                ))}
+            </ScrollView>
+        </View>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -181,5 +229,48 @@ const styles = StyleSheet.create({
         height: 80,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: SPACING.xxl,
+        paddingHorizontal: SPACING.lg,
+    },
+    emptyTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginTop: SPACING.md,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        marginTop: SPACING.xs,
+        textAlign: 'center',
+    },
+    // Skeleton styles
+    skeletonCard: {
+        borderWidth: 0,
+        backgroundColor: 'transparent',
+    },
+    skeletonImage: {
+        width: '100%',
+        height: 100,
+        borderTopLeftRadius: BORDER_RADIUS.lg,
+        borderTopRightRadius: BORDER_RADIUS.lg,
+    },
+    skeletonTitle: {
+        height: 14,
+        width: '90%',
+        borderRadius: 4,
+        marginBottom: SPACING.xs,
+    },
+    skeletonPrice: {
+        height: 14,
+        width: '60%',
+        borderRadius: 4,
+        marginBottom: 4,
+    },
+    skeletonLocation: {
+        height: 10,
+        width: '70%',
+        borderRadius: 4,
     },
 });

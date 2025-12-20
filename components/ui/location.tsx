@@ -34,6 +34,9 @@ export function Location() {
                 <Pressable
                     onPress={() => setShowLocationPicker(true)}
                     style={styles.locationButton}
+                    accessibilityLabel={`Current location: ${getDisplayText()}. Tap to change location`}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens location picker to select your search area"
                 >
                     <ThemedText style={[styles.locationText, { color: textColor }]}>
                         {getDisplayText()}

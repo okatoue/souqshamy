@@ -216,13 +216,15 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                 backdropComponent={renderBackdrop}
                 onChange={handleSheetChanges}
             >
-                <View style={styles.contentContainer}>
-                    <View style={styles.header}>
+                <View style={styles.contentContainer} accessibilityViewIsModal={true}>
+                    <View style={styles.header} accessibilityRole="header">
                         {showCategories && selectedCategory && (
                             <TouchableOpacity
                                 style={styles.backButton}
                                 onPress={handleBackPress}
                                 activeOpacity={0.7}
+                                accessibilityLabel="Go back to categories"
+                                accessibilityRole="button"
                             >
                                 <Text style={[styles.backButtonText, { color: BRAND_COLOR }]}>
                                     {'‹ Back'}
@@ -241,6 +243,7 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                     <BottomSheetScrollView
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.scrollViewContent}
+                        accessibilityRole="list"
                     >
                         {showCategories ? (
                             selectedCategory
@@ -250,6 +253,8 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                         style={[styles.categoryItem, { backgroundColor: itemBackground }]}
                                         onPress={() => handleSubcategoryPress(subcategory)}
                                         activeOpacity={0.7}
+                                        accessibilityLabel={`Select ${subcategory.name}`}
+                                        accessibilityRole="button"
                                     >
                                         <Text style={[styles.categoryText, { color: textColor }]}>
                                             {subcategory.name}
@@ -262,6 +267,8 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                         style={[styles.categoryItem, { backgroundColor: itemBackground }]}
                                         onPress={() => handleCategoryPress(category)}
                                         activeOpacity={0.7}
+                                        accessibilityLabel={`${category.name} category. Tap to see subcategories`}
+                                        accessibilityRole="button"
                                     >
                                         <View style={styles.categoryContent}>
                                             <Text style={[styles.categoryIcon, { color: iconColor }]}>
