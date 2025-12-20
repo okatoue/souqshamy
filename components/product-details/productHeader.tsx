@@ -7,9 +7,10 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface ProductHeaderProps {
   onBack: () => void;
+  title?: string;
 }
 
-export default function ProductHeader({ onBack }: ProductHeaderProps) {
+export default function ProductHeader({ onBack, title = 'Product Details' }: ProductHeaderProps) {
   const iconColor = useThemeColor({}, 'text');
 
   return (
@@ -18,7 +19,7 @@ export default function ProductHeader({ onBack }: ProductHeaderProps) {
         <Ionicons name="arrow-back" size={24} color={iconColor} />
       </TouchableOpacity>
       <ThemedText type="title" style={styles.headerTitle}>
-        Product Details
+        {title}
       </ThemedText>
     </View>
   );

@@ -1,7 +1,8 @@
 import { BaseListingCard } from '@/components/ui/BaseListingCard';
-import { COLORS, SPACING, BORDER_RADIUS } from '@/constants/theme';
+import { BRAND_COLOR, COLORS, SPACING, BORDER_RADIUS } from '@/constants/theme';
 import { Listing } from '@/types/listing';
-import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -64,11 +65,26 @@ function ActionButtons({
   onSoftDelete,
   onPermanentDelete,
 }: ActionButtonsProps) {
+  const router = useRouter();
+
+  const handleEdit = (e: any) => {
+    e.stopPropagation();
+    router.push(`/listing/edit/${item.id}`);
+  };
+
   return (
     <View style={styles.actionButtons}>
       {/* ACTIVE LISTING BUTTONS */}
       {item.status === 'active' && (
         <>
+          <Pressable
+            style={[styles.actionButton, styles.editButton]}
+            onPress={handleEdit}
+          >
+            <Ionicons name="pencil" size={18} color={BRAND_COLOR} />
+            <Text style={[styles.actionButtonText, { color: BRAND_COLOR }]}>Edit</Text>
+          </Pressable>
+
           <Pressable
             style={[styles.actionButton, styles.successButton]}
             onPress={(e) => {
@@ -96,6 +112,14 @@ function ActionButtons({
       {/* SOLD LISTING BUTTONS */}
       {item.status === 'sold' && (
         <>
+          <Pressable
+            style={[styles.actionButton, styles.editButton]}
+            onPress={handleEdit}
+          >
+            <Ionicons name="pencil" size={18} color={BRAND_COLOR} />
+            <Text style={[styles.actionButtonText, { color: BRAND_COLOR }]}>Edit</Text>
+          </Pressable>
+
           <Pressable
             style={[styles.actionButton, styles.successButton]}
             onPress={(e) => {
@@ -215,6 +239,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     borderRadius: 6,
     marginRight: SPACING.md,
+  },
+  editButton: {
+    backgroundColor: 'rgba(31, 111, 235, 0.1)',
   },
   successButton: {
     backgroundColor: 'rgba(76, 175, 80, 0.1)',

@@ -128,6 +128,22 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
               </View>
             )}
 
+            {/* Make Cover button for non-first images */}
+            {index > 0 && (
+              <TouchableOpacity
+                style={styles.makeCoverButton}
+                onPress={() => {
+                  const newImages = [...images];
+                  const [moved] = newImages.splice(index, 1);
+                  newImages.unshift(moved);
+                  setImages(newImages);
+                }}
+              >
+                <Ionicons name="star" size={12} color="white" />
+                <Text style={styles.makeCoverText}>Cover</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Remove button */}
             <TouchableOpacity
               style={[styles.removeButton, SHADOWS.sm]}
@@ -208,6 +224,24 @@ const styles = StyleSheet.create({
   coverBadgeText: {
     color: 'white',
     fontSize: 12,
+    fontWeight: '600',
+  },
+  // Make Cover button
+  makeCoverButton: {
+    position: 'absolute',
+    bottom: SPACING.sm,
+    left: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.xs,
+    gap: 4,
+  },
+  makeCoverText: {
+    color: 'white',
+    fontSize: 11,
     fontWeight: '600',
   },
   // Remove button

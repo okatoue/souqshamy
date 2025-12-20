@@ -313,6 +313,15 @@ export default function ListingDetailScreen() {
                         <Ionicons name="chevron-back" size={28} color={textColor} />
                     </Pressable>
                     <View style={styles.headerRight}>
+                        {/* Edit button - only for owner */}
+                        {isOwnListing && (
+                            <Pressable
+                                onPress={() => router.push(`/listing/edit/${listing.id}`)}
+                                style={styles.headerButton}
+                            >
+                                <Ionicons name="pencil" size={22} color={BRAND_COLOR} />
+                            </Pressable>
+                        )}
                         <Pressable onPress={handleToggleFavorite} style={styles.headerButton}>
                             <Ionicons
                                 name={isFavorite ? "heart" : "heart-outline"}
