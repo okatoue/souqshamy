@@ -3,7 +3,8 @@ import { BRAND_COLOR, COLORS, SPACING, BORDER_RADIUS } from '@/constants/theme';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import React, { memo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 // =============================================================================
@@ -88,11 +89,15 @@ function ActionButtons({
     e.stopPropagation();
     if (isUpdating) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsUpdating(true);
     const success = await onUpdateStatus(item.id, 'sold');
     setIsUpdating(false);
 
-    if (!success) {
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to mark listing as sold. Please try again.');
     }
   };
@@ -102,11 +107,15 @@ function ActionButtons({
     e.stopPropagation();
     if (isUpdating) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsUpdating(true);
     const success = await onUpdateStatus(item.id, 'active');
     setIsUpdating(false);
 
-    if (!success) {
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to reactivate listing. Please try again.');
     }
   };
@@ -116,6 +125,7 @@ function ActionButtons({
     e.stopPropagation();
     if (isUpdating) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Remove Listing',
       'This will hide the listing from buyers. You can restore it later.',
@@ -129,7 +139,10 @@ function ActionButtons({
             const success = await onSoftDelete(item.id);
             setIsUpdating(false);
 
-            if (!success) {
+            if (success) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', 'Failed to remove listing. Please try again.');
             }
           },
@@ -143,11 +156,15 @@ function ActionButtons({
     e.stopPropagation();
     if (isUpdating) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsUpdating(true);
     const success = await onRestore(item.id);
     setIsUpdating(false);
 
-    if (!success) {
+    if (success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to restore listing. Please try again.');
     }
   };
@@ -157,6 +174,7 @@ function ActionButtons({
     e.stopPropagation();
     if (isUpdating) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
       'Delete Forever',
       'This will permanently delete this listing and all its images. This cannot be undone.',
@@ -170,7 +188,10 @@ function ActionButtons({
             const success = await onPermanentDelete(item.id);
             setIsUpdating(false);
 
-            if (!success) {
+            if (success) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } else {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
               Alert.alert('Error', 'Failed to delete listing. Please try again.');
             }
           },
@@ -285,8 +306,11 @@ function ActionButtons({
  * - Loading state during actions
  * - Confirmation dialogs for destructive actions
  * - Error alerts on failure
+ * - Haptic feedback for actions
+ *
+ * Memoized to prevent unnecessary re-renders when parent list updates.
  */
-export function ListingItem({
+function ListingItemComponent({
   item,
   onPress,
   onUpdateStatus,
@@ -324,6 +348,18 @@ export function ListingItem({
     </View>
   );
 }
+
+// Memoized export - only re-renders if item data changes
+export const ListingItem = memo(ListingItemComponent, (prevProps, nextProps) => {
+  // Only re-render if listing data changed
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.status === nextProps.item.status &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.price === nextProps.item.price &&
+    prevProps.item.updated_at === nextProps.item.updated_at
+  );
+});
 
 // =============================================================================
 // Styles
