@@ -24,31 +24,55 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
 
-  type UserStatus = 'new' | 'unverified' | 'verified';
+  type UserStatus = 'new' | 'unverified' | 'verified' | 'oauth-only';
 
-  const checkUserStatus = async (email: string): Promise<UserStatus> => {
+  const checkUserStatus = async (
+    email: string
+  ): Promise<{ status: UserStatus; provider?: string }> => {
     try {
-      const { data, error } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, email_verified')
         .eq('email', email)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error checking user status:', error);
-        return 'new'; // Default to new user on error
+      if (profileError) {
+        console.error('Error checking user status:', profileError);
+        return { status: 'new' };
       }
 
-      if (!data) {
+      if (!profile) {
         // No profile exists - new user
-        return 'new';
+        return { status: 'new' };
+      }
+
+      // Check if user has OAuth identity only (no password)
+      const { data: identities, error: identitiesError } = await supabase.rpc(
+        'get_user_auth_providers',
+        { user_email: email }
+      );
+
+      if (!identitiesError && identities && identities.length > 0) {
+        const hasEmailProvider = identities.some(
+          (i: { provider: string }) => i.provider === 'email'
+        );
+        if (!hasEmailProvider) {
+          // User only has OAuth providers - find which one
+          const oauthProvider = identities.find((i: { provider: string }) =>
+            ['google', 'facebook'].includes(i.provider)
+          );
+          return {
+            status: 'oauth-only',
+            provider: oauthProvider?.provider,
+          };
+        }
       }
 
       // Profile exists - check if verified
-      return data.email_verified ? 'verified' : 'unverified';
+      return { status: profile.email_verified ? 'verified' : 'unverified' };
     } catch (error) {
       console.error('Error checking user status:', error);
-      return 'new';
+      return { status: 'new' };
     }
   };
 
@@ -68,7 +92,7 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      const status = await checkUserStatus(trimmedInput);
+      const { status, provider } = await checkUserStatus(trimmedInput);
 
       if (status === 'new') {
         // New user - go to signup (password creation) screen
@@ -80,6 +104,19 @@ export default function AuthScreen() {
             isNewUser: 'true',
           },
         });
+      } else if (status === 'oauth-only') {
+        // User signed up with OAuth only - show alert
+        const providerName =
+          provider === 'google'
+            ? 'Google'
+            : provider === 'facebook'
+              ? 'Facebook'
+              : 'social login';
+        Alert.alert(
+          'Sign In Method',
+          `This account was created using ${providerName}. Please use the "${providerName}" button below to sign in.`,
+          [{ text: 'OK' }]
+        );
       } else if (status === 'unverified') {
         // Existing but unverified - resend code and go to verification screen
         try {
@@ -99,7 +136,7 @@ export default function AuthScreen() {
           },
         });
       } else {
-        // Verified user - go to login screen
+        // Verified user with password - go to login screen
         router.push({
           pathname: '/(auth)/password',
           params: {
