@@ -14,6 +14,8 @@ export function VoiceRecorder({
     const {
         recordingState,
         duration,
+        maxDuration,
+        isNearLimit,
         startRecording,
         pauseRecording,
         resumeRecording,
@@ -48,6 +50,8 @@ export function VoiceRecorder({
         <RecordingControls
             recordingState={recordingState}
             duration={duration}
+            maxDuration={maxDuration}
+            isNearLimit={isNearLimit}
             pulseAnim={pulseAnim}
             onCancel={cancelRecording}
             onPause={pauseRecording}

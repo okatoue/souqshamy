@@ -8,7 +8,7 @@ import {
 import LocationPreviewCard from '@/components/product-details/LocationPreviewCard';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useConversations } from '@/hooks/useConversations';
+import { useAppData } from '@/lib/app_data_context';
 import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
 import { formatPrice, UserProfile } from '@/lib/formatters';
@@ -75,8 +75,8 @@ export default function ListingDetailScreen() {
         listingId: params.id || ''
     });
 
-    // Chat
-    const { getOrCreateConversation } = useConversations();
+    // Chat - uses centralized AppDataContext (avoids duplicate real-time subscriptions)
+    const { getOrCreateConversation } = useAppData();
     const [isStartingChat, setIsStartingChat] = useState(false);
 
     // Theme colors

@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import { AudioPlayer, useAudioPlayer } from 'expo-audio';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -33,6 +34,7 @@ const BAR_COUNT_WITH_SPEED = 20;
 
 interface VoiceMessageProps {
     messageId: string;
+    /** Can be a full URL (legacy) or storage path (new) */
     audioUrl: string;
     duration: number;
     isOwnMessage: boolean;
@@ -41,6 +43,15 @@ interface VoiceMessageProps {
     playingMessageId: string | null;
     onPlay: (messageId: string | null) => void;
 }
+
+/**
+ * Check if the audio URL is a full URL or a storage path
+ * Full URLs start with http:// or https:// or file://
+ * Storage paths are relative paths like "conversationId/userId_timestamp.m4a"
+ */
+const isFullUrl = (url: string): boolean => {
+    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('file://');
+};
 
 export function VoiceMessage({
     messageId,
@@ -59,7 +70,52 @@ export function VoiceMessage({
     const [audioDuration, setAudioDuration] = useState(duration);
     const [playbackRate, setPlaybackRate] = useState<number>(1);
 
-    const player = useAudioPlayer(audioUrl);
+    // State for resolved audio URL (for storage paths)
+    const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
+    const [urlError, setUrlError] = useState<string | null>(null);
+    const [isResolvingUrl, setIsResolvingUrl] = useState(false);
+
+    // Resolve storage path to signed URL on mount
+    useEffect(() => {
+        const resolveAudioUrl = async () => {
+            // If it's already a full URL (legacy or local file), use it directly
+            if (isFullUrl(audioUrl)) {
+                setResolvedUrl(audioUrl);
+                return;
+            }
+
+            // It's a storage path - generate signed URL on demand
+            setIsResolvingUrl(true);
+            try {
+                // Generate signed URL with 1 hour expiry (refreshes on component remount)
+                const { data, error } = await supabase.storage
+                    .from('voice-messages')
+                    .createSignedUrl(audioUrl, 60 * 60); // 1 hour
+
+                if (error) {
+                    console.error('[VoiceMessage] Failed to generate signed URL:', error);
+                    setUrlError('Audio unavailable');
+                    return;
+                }
+
+                if (data?.signedUrl) {
+                    setResolvedUrl(data.signedUrl);
+                } else {
+                    setUrlError('Audio unavailable');
+                }
+            } catch (error) {
+                console.error('[VoiceMessage] Error resolving audio URL:', error);
+                setUrlError('Audio unavailable');
+            } finally {
+                setIsResolvingUrl(false);
+            }
+        };
+
+        resolveAudioUrl();
+    }, [audioUrl]);
+
+    // Use resolved URL for player (or empty string to prevent errors)
+    const player = useAudioPlayer(resolvedUrl || '');
 
     // Generate unique waveform heights based on messageId
     const waveformHeights = useMemo(() => generateWaveform(messageId, BAR_COUNT), [messageId]);
@@ -150,6 +206,49 @@ export function VoiceMessage({
     const visibleBarCount = showSpeedButton ? BAR_COUNT_WITH_SPEED : BAR_COUNT;
     const visibleBars = waveformHeights.slice(0, visibleBarCount);
 
+    // Error state - audio is unavailable
+    if (urlError) {
+        return (
+            <View style={[styles.container, styles.errorContainer, { backgroundColor: bubbleColor }]}>
+                <Ionicons name="alert-circle" size={20} color={textColor} style={{ opacity: 0.7 }} />
+                <Text style={[styles.errorText, { color: textColor }]}>{urlError}</Text>
+            </View>
+        );
+    }
+
+    // Loading state - resolving URL from storage path
+    if (isResolvingUrl || !resolvedUrl) {
+        return (
+            <View style={[styles.container, { backgroundColor: bubbleColor }]}>
+                <View style={[
+                    styles.playButton,
+                    { backgroundColor: isOwnMessage ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.1)' }
+                ]}>
+                    <ActivityIndicator size="small" color={textColor} />
+                </View>
+                <View style={styles.waveformContainer}>
+                    <View style={styles.waveform}>
+                        {visibleBars.map((height, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.waveformBar,
+                                    {
+                                        height,
+                                        backgroundColor: isOwnMessage ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)'
+                                    }
+                                ]}
+                            />
+                        ))}
+                    </View>
+                    <Text style={[styles.durationText, { color: textColor }]}>
+                        {formatTime(audioDuration)}
+                    </Text>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, { backgroundColor: bubbleColor }]}>
             {/* Play/Pause Button */}
@@ -160,6 +259,9 @@ export function VoiceMessage({
                 ]}
                 onPress={togglePlayback}
                 disabled={isLoading}
+                accessibilityRole="button"
+                accessibilityLabel={`Voice message, ${Math.floor(audioDuration)} seconds. ${isPlaying ? 'Playing' : 'Tap to play'}`}
+                accessibilityState={{ disabled: isLoading }}
             >
                 {isLoading ? (
                     <ActivityIndicator size="small" color={textColor} />
@@ -273,5 +375,16 @@ const styles = StyleSheet.create({
         marginTop: 4,
         opacity: 0.8,
         fontVariant: ['tabular-nums'],
+    },
+    // Error state styles
+    errorContainer: {
+        justifyContent: 'center',
+        gap: 8,
+        paddingVertical: 12,
+        minWidth: 160,
+    },
+    errorText: {
+        fontSize: 13,
+        opacity: 0.8,
     },
 });

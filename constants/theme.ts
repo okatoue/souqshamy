@@ -214,6 +214,12 @@ export const Colors = {
     // Bottom sheet
     handleIndicator: '#cbd5e1',
     sheetItemBackground: '#f8fafc',
+
+    // Chat colors
+    chatBubbleMine: '#007AFF',
+    chatBubbleOther: '#e5e5ea',
+    chatTextMine: '#ffffff',
+    chatTextOther: '#000000',
   },
   dark: {
     // Core colors
@@ -258,6 +264,12 @@ export const Colors = {
     // Bottom sheet
     handleIndicator: '#52525b',
     sheetItemBackground: '#27272a',
+
+    // Chat colors
+    chatBubbleMine: '#0A84FF',
+    chatBubbleOther: '#3a3a3c',
+    chatTextMine: '#ffffff',
+    chatTextOther: '#ffffff',
   },
 };
 

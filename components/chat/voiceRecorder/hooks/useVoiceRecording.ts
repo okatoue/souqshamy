@@ -11,6 +11,8 @@ interface UseVoiceRecordingOptions {
 interface UseVoiceRecordingResult {
     recordingState: RecordingState;
     duration: number;
+    maxDuration: number;
+    isNearLimit: boolean;
     startRecording: () => Promise<void>;
     pauseRecording: () => Promise<void>;
     resumeRecording: () => Promise<void>;
@@ -19,6 +21,9 @@ interface UseVoiceRecordingResult {
 }
 
 const RECORDING_OPTIONS = RecordingPresets.HIGH_QUALITY;
+
+// Maximum recording duration in seconds (5 minutes)
+const MAX_RECORDING_SECONDS = 300;
 
 export function useVoiceRecording({
     onSend,
@@ -32,6 +37,10 @@ export function useVoiceRecording({
     const isMounted = useRef(true);
     const pendingAction = useRef<'send' | 'cancel' | null>(null);
     const recordedDuration = useRef(0);
+    const shouldAutoStop = useRef(false);
+
+    // Compute remaining time and near-limit state
+    const isNearLimit = duration >= MAX_RECORDING_SECONDS - 30;
 
     // Track mounted state for cleanup
     useEffect(() => {
@@ -49,14 +58,24 @@ export function useVoiceRecording({
         }
     }, []);
 
-    // Start duration tracking
+    // Start duration tracking with auto-stop at max duration
     const startDurationTracking = useCallback(() => {
         clearDurationInterval();
+        shouldAutoStop.current = false;
         durationInterval.current = setInterval(() => {
             if (isMounted.current) {
                 setDuration(prev => {
-                    recordedDuration.current = prev + 1;
-                    return prev + 1;
+                    const next = prev + 1;
+                    recordedDuration.current = next;
+
+                    // Check if we've reached max duration
+                    if (next >= MAX_RECORDING_SECONDS) {
+                        clearDurationInterval();
+                        shouldAutoStop.current = true;
+                        return prev; // Don't increment past max
+                    }
+
+                    return next;
                 });
             }
         }, 1000);
@@ -203,6 +222,29 @@ export function useVoiceRecording({
             });
         };
     }, [audioRecorder, clearDurationInterval]);
+
+    // Auto-stop recording when max duration is reached
+    useEffect(() => {
+        if (shouldAutoStop.current && recordingState === 'recording') {
+            shouldAutoStop.current = false;
+            console.log('[VoiceRecording] Auto-stopping at max duration');
+
+            // Auto-send the recording
+            (async () => {
+                if (audioRecorder.isRecording) {
+                    setRecordingState('sending');
+                    audioRecorder.stop();
+
+                    // Wait for file to be written
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    if (audioRecorder.uri) {
+                        await processRecordedFile(audioRecorder.uri, 'send');
+                    }
+                }
+            })();
+        }
+    }, [duration, recordingState, audioRecorder, processRecordedFile]);
 
     const startRecording = useCallback(async () => {
         // Set preparing state immediately to prevent double-press
@@ -363,6 +405,8 @@ export function useVoiceRecording({
     return {
         recordingState,
         duration,
+        maxDuration: MAX_RECORDING_SECONDS,
+        isNearLimit,
         startRecording,
         pauseRecording,
         resumeRecording,
