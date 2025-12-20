@@ -10,6 +10,7 @@ import {
   PasswordRequirements,
   useAuthStyles,
 } from '@/components/auth';
+import { handleAuthError } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -84,8 +85,10 @@ export default function PasswordScreen() {
           pathname: '/(auth)/verify',
           params: { mode: 'signup-verification', email },
         });
+      } else {
+        // Use shared error handler for consistent error display
+        handleAuthError(error, isNewUser ? 'signup' : 'signin');
       }
-      // Other errors are handled in auth context
     } finally {
       setLoading(false);
     }

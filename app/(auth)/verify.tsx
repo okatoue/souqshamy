@@ -11,6 +11,7 @@ import {
   isValidEmail,
   useAuthTheme,
 } from '@/components/auth';
+import { handleAuthError } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -100,16 +101,16 @@ export default function VerifyScreen() {
       if (error) {
         await setPasswordResetInProgress(false);
         if (error.message.includes('User not found') || error.message.includes('No user found')) {
-          Alert.alert('Error', 'No account found with this email address');
+          Alert.alert('Account Not Found', 'No account found with this email address.');
         } else {
-          Alert.alert('Error', error.message);
+          handleAuthError(error, 'password-reset');
         }
       } else {
         setStep('code');
       }
     } catch (error: any) {
       await setPasswordResetInProgress(false);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      handleAuthError(error, 'password-reset');
     } finally {
       setLoading(false);
     }
@@ -146,7 +147,7 @@ export default function VerifyScreen() {
       });
 
       if (error) {
-        Alert.alert('Error', 'Invalid or expired code. Please try again.');
+        Alert.alert('Invalid Code', 'The code you entered is invalid or has expired. Please try again.');
         setCode(Array(content.codeLength).fill(''));
       } else {
         // SUCCESS - For signup verification, update the profile's email_verified flag
@@ -163,7 +164,7 @@ export default function VerifyScreen() {
         setStep(mode === 'password-reset' ? 'password' : 'success');
       }
     } catch (error: any) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      handleAuthError(error, 'verification');
       setCode(Array(content.codeLength).fill(''));
     } finally {
       setLoading(false);
@@ -188,13 +189,13 @@ export default function VerifyScreen() {
       const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
-        Alert.alert('Error', error.message);
+        handleAuthError(error, 'password-reset');
       } else {
         await setPasswordResetInProgress(false);
         setStep('success');
       }
     } catch (error: any) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      handleAuthError(error, 'password-reset');
     } finally {
       setLoading(false);
     }
@@ -214,9 +215,9 @@ export default function VerifyScreen() {
         });
 
         if (error) {
-          Alert.alert('Error', error.message);
+          handleAuthError(error, 'verification');
         } else {
-          Alert.alert('Success', 'A new verification code has been sent to your email.');
+          Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
         }
       } else {
         // Use signInWithOtp for password reset - don't set loading again
@@ -225,7 +226,7 @@ export default function VerifyScreen() {
         return;
       }
     } catch (error: any) {
-      Alert.alert('Error', 'Failed to resend verification code. Please try again.');
+      handleAuthError(error, 'verification');
     } finally {
       setLoading(false);
     }
