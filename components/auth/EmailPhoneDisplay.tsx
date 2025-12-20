@@ -7,8 +7,6 @@ import { useAuthColors } from './useAuthStyles';
 
 interface EmailPhoneDisplayProps {
   value: string;
-  /** @deprecated Phone support has been removed. This prop is ignored. */
-  isPhone?: boolean;
   onChangePress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
