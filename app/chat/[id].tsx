@@ -34,17 +34,21 @@ export default function ChatScreen() {
     const [isRecordingActive, setIsRecordingActive] = useState(false);
     const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
 
-    const { messages, isLoading, isSending, sendMessage, sendAudioMessage } = useMessages(conversationId);
+    const { messages, isLoading, isSending, sendMessage, sendAudioMessage, retryMessage, deleteFailedMessage } = useMessages(conversationId);
     const flatListRef = useRef<FlatList>(null);
 
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
-    const secondaryTextColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
-    const cardBg = useThemeColor({ light: '#fff', dark: '#1a1a1a' }, 'background');
-    const inputBg = useThemeColor({ light: '#f5f5f5', dark: '#2a2a2a' }, 'background');
-    const myMessageBg = '#007AFF';
-    const otherMessageBg = useThemeColor({ light: '#e5e5ea', dark: '#3a3a3c' }, 'background');
+    const secondaryTextColor = useThemeColor({}, 'textSecondary');
+    const borderColor = useThemeColor({}, 'border');
+    const cardBg = useThemeColor({}, 'cardBackground');
+    const inputBg = useThemeColor({}, 'inputBackground');
+    // Chat bubble colors from theme
+    const myMessageBg = useThemeColor({}, 'chatBubbleMine');
+    const otherMessageBg = useThemeColor({}, 'chatBubbleOther');
+    const myTextColor = useThemeColor({}, 'chatTextMine');
+    const otherTextColor = useThemeColor({}, 'chatTextOther');
+    const errorColor = '#FF3B30';
 
     useEffect(() => {
         const fetchConversation = async () => {
@@ -92,13 +96,7 @@ export default function ChatScreen() {
         fetchConversation();
     }, [conversationId, user]);
 
-    useEffect(() => {
-        if (messages.length > 0) {
-            setTimeout(() => {
-                flatListRef.current?.scrollToEnd({ animated: true });
-            }, 100);
-        }
-    }, [messages.length]);
+    // Note: Scroll to bottom is handled by FlatList's onContentSizeChange
 
     const handleSend = async () => {
         if (!messageText.trim() || isSending) return;
@@ -162,12 +160,22 @@ export default function ChatScreen() {
         }
     };
 
+    const handleRetry = useCallback(async (messageId: string) => {
+        await retryMessage(messageId);
+    }, [retryMessage]);
+
+    const handleDeleteFailed = useCallback((messageId: string) => {
+        deleteFailedMessage(messageId);
+    }, [deleteFailedMessage]);
+
     const renderMessage = ({ item, index }: { item: Message; index: number }) => {
         const isMyMessage = item.sender_id === user?.id;
         const showDateHeader = index === 0 ||
             new Date(item.created_at).toDateString() !==
             new Date(messages[index - 1].created_at).toDateString();
         const isAudioMessage = item.message_type === 'voice' && item.audio_url;
+        const isSendingMessage = item._status === 'sending';
+        const isFailedMessage = item._status === 'failed';
 
         return (
             <View>
@@ -183,46 +191,89 @@ export default function ChatScreen() {
                     isMyMessage ? styles.myMessageContainer : styles.otherMessageContainer
                 ]}>
                     {isAudioMessage ? (
-                        <View>
-                            <VoiceMessage
-                                messageId={item.id}
-                                audioUrl={item.audio_url!}
-                                duration={item.audio_duration || 0}
-                                isOwnMessage={isMyMessage}
-                                bubbleColor={isMyMessage ? myMessageBg : otherMessageBg}
-                                textColor={isMyMessage ? 'white' : textColor}
-                                playingMessageId={playingMessageId}
-                                onPlay={handleAudioPlay}
-                            />
-                            <Text style={[
-                                styles.audioMessageTime,
-                                {
-                                    color: secondaryTextColor,
-                                    textAlign: isMyMessage ? 'right' : 'left'
-                                }
-                            ]}>
-                                {formatTime(item.created_at)}
-                            </Text>
+                        <View style={isFailedMessage ? styles.failedMessageWrapper : undefined}>
+                            <View style={isFailedMessage ? [styles.failedBubbleOverlay] : undefined}>
+                                <VoiceMessage
+                                    messageId={item.id}
+                                    audioUrl={item.audio_url!}
+                                    duration={item.audio_duration || 0}
+                                    isOwnMessage={isMyMessage}
+                                    bubbleColor={isFailedMessage ? errorColor : (isMyMessage ? myMessageBg : otherMessageBg)}
+                                    textColor={isMyMessage ? myTextColor : otherTextColor}
+                                    playingMessageId={playingMessageId}
+                                    onPlay={handleAudioPlay}
+                                />
+                            </View>
+                            <View style={[styles.messageStatusRow, { justifyContent: isMyMessage ? 'flex-end' : 'flex-start' }]}>
+                                {isSendingMessage && (
+                                    <ActivityIndicator size="small" color={secondaryTextColor} style={styles.statusIndicator} />
+                                )}
+                                {isFailedMessage && (
+                                    <View style={styles.failedActions}>
+                                        <Pressable onPress={() => handleRetry(item.id)} style={styles.retryButton}>
+                                            <Ionicons name="refresh" size={14} color={errorColor} />
+                                            <Text style={[styles.retryText, { color: errorColor }]}>Retry</Text>
+                                        </Pressable>
+                                        <Pressable onPress={() => handleDeleteFailed(item.id)} style={styles.deleteButton}>
+                                            <Ionicons name="trash-outline" size={14} color={secondaryTextColor} />
+                                        </Pressable>
+                                    </View>
+                                )}
+                                {!isSendingMessage && !isFailedMessage && (
+                                    <Text style={[styles.audioMessageTime, { color: secondaryTextColor }]}>
+                                        {formatTime(item.created_at)}
+                                    </Text>
+                                )}
+                            </View>
+                            {isFailedMessage && (
+                                <Text style={[styles.failedText, { color: errorColor, textAlign: isMyMessage ? 'right' : 'left' }]}>
+                                    Failed to send
+                                </Text>
+                            )}
                         </View>
                     ) : (
-                        <View style={[
-                            styles.messageBubble,
-                            isMyMessage
-                                ? { backgroundColor: myMessageBg }
-                                : { backgroundColor: otherMessageBg }
-                        ]}>
-                            <Text style={[
-                                styles.messageText,
-                                { color: isMyMessage ? 'white' : textColor }
+                        <View style={isFailedMessage ? styles.failedMessageWrapper : undefined}>
+                            <View style={[
+                                styles.messageBubble,
+                                isMyMessage
+                                    ? { backgroundColor: isFailedMessage ? errorColor : myMessageBg }
+                                    : { backgroundColor: otherMessageBg },
+                                isFailedMessage && styles.failedBubble
                             ]}>
-                                {item.content}
-                            </Text>
-                            <Text style={[
-                                styles.messageTime,
-                                { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
-                            ]}>
-                                {formatTime(item.created_at)}
-                            </Text>
+                                <Text style={[
+                                    styles.messageText,
+                                    { color: isMyMessage ? myTextColor : otherTextColor }
+                                ]}>
+                                    {item.content}
+                                </Text>
+                                <View style={styles.messageStatusRow}>
+                                    {isSendingMessage && (
+                                        <ActivityIndicator size="small" color={isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor} style={styles.statusIndicator} />
+                                    )}
+                                    {!isSendingMessage && !isFailedMessage && (
+                                        <Text style={[
+                                            styles.messageTime,
+                                            { color: isMyMessage ? 'rgba(255,255,255,0.7)' : secondaryTextColor }
+                                        ]}>
+                                            {formatTime(item.created_at)}
+                                        </Text>
+                                    )}
+                                    {isFailedMessage && (
+                                        <Ionicons name="alert-circle" size={14} color="rgba(255,255,255,0.9)" />
+                                    )}
+                                </View>
+                            </View>
+                            {isFailedMessage && (
+                                <View style={[styles.failedActions, { justifyContent: isMyMessage ? 'flex-end' : 'flex-start' }]}>
+                                    <Pressable onPress={() => handleRetry(item.id)} style={styles.retryButton}>
+                                        <Ionicons name="refresh" size={14} color={errorColor} />
+                                        <Text style={[styles.retryText, { color: errorColor }]}>Retry</Text>
+                                    </Pressable>
+                                    <Pressable onPress={() => handleDeleteFailed(item.id)} style={styles.deleteButton}>
+                                        <Ionicons name="trash-outline" size={14} color={secondaryTextColor} />
+                                    </Pressable>
+                                </View>
+                            )}
                         </View>
                     )}
                 </View>
@@ -340,6 +391,8 @@ export default function ChatScreen() {
                             onChangeText={setMessageText}
                             multiline
                             maxLength={1000}
+                            accessibilityLabel="Message input"
+                            accessibilityHint="Type a message to send"
                         />
                     )}
 
@@ -349,6 +402,9 @@ export default function ChatScreen() {
                             style={styles.sendButton}
                             onPress={handleSend}
                             disabled={isSending}
+                            accessibilityRole="button"
+                            accessibilityLabel="Send message"
+                            accessibilityState={{ disabled: isSending }}
                         >
                             <Ionicons name="send" size={20} color="white" />
                         </Pressable>
@@ -534,5 +590,49 @@ const styles = StyleSheet.create({
         fontSize: 11,
         marginTop: 4,
         paddingHorizontal: 4,
+    },
+    // Failed message styles
+    failedMessageWrapper: {
+        maxWidth: '80%',
+    },
+    failedBubble: {
+        opacity: 0.9,
+    },
+    failedBubbleOverlay: {
+        opacity: 0.9,
+    },
+    failedText: {
+        fontSize: 11,
+        marginTop: 2,
+        paddingHorizontal: 4,
+    },
+    failedActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+        gap: 12,
+    },
+    retryButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        gap: 4,
+    },
+    retryText: {
+        fontSize: 12,
+        fontWeight: '500',
+    },
+    deleteButton: {
+        padding: 4,
+    },
+    messageStatusRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        marginTop: 4,
+    },
+    statusIndicator: {
+        marginLeft: 4,
     },
 });

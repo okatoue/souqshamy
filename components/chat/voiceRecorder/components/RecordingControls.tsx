@@ -13,6 +13,8 @@ import { RecordingIndicator } from './RecordingIndicator';
 interface RecordingControlsProps {
     recordingState: RecordingState;
     duration: number;
+    maxDuration: number;
+    isNearLimit: boolean;
     pulseAnim: Animated.Value;
     onCancel: () => void;
     onPause: () => void;
@@ -26,6 +28,8 @@ interface RecordingControlsProps {
 export function RecordingControls({
     recordingState,
     duration,
+    maxDuration,
+    isNearLimit,
     pulseAnim,
     onCancel,
     onPause,
@@ -55,6 +59,8 @@ export function RecordingControls({
             <RecordingIndicator
                 recordingState={recordingState}
                 duration={duration}
+                maxDuration={maxDuration}
+                isNearLimit={isNearLimit}
                 pulseAnim={pulseAnim}
                 textColor={textColor}
             />

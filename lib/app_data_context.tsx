@@ -55,7 +55,7 @@ interface AppDataContextType {
     totalUnreadCount: number;
     fetchConversations: (refresh?: boolean) => Promise<void>;
     deleteConversation: (conversationId: string) => Promise<boolean>;
-    getOrCreateConversation: (listingId: string, sellerId: string) => Promise<string | null>;
+    getOrCreateConversation: (listingId: number | string, sellerId: string) => Promise<string | null>;
 
     // User Listings
     userListings: Listing[];
@@ -338,7 +338,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     // ========== GET OR CREATE CONVERSATION ==========
     const getOrCreateConversation = useCallback(async (
-        listingId: string,
+        listingId: number | string,
         sellerId: string
     ): Promise<string | null> => {
         if (!user) return null;

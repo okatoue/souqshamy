@@ -43,6 +43,14 @@ export interface Message {
     audio_duration?: number | null;
     /** Message type: 'text' or 'voice' */
     message_type?: 'text' | 'voice';
+
+    // Local-only fields for message status tracking (not persisted to database)
+    /** Message send status - only exists for optimistic messages */
+    _status?: 'sending' | 'sent' | 'failed';
+    /** Error message if send failed */
+    _error?: string;
+    /** Local file URI for failed voice messages (allows retry) */
+    _localUri?: string;
 }
 
 export interface CreateConversationDTO {

@@ -6,6 +6,8 @@ import { formatDuration } from '../utils';
 interface RecordingIndicatorProps {
     recordingState: RecordingState;
     duration: number;
+    maxDuration: number;
+    isNearLimit: boolean;
     pulseAnim: Animated.Value;
     textColor: string;
 }
@@ -13,10 +15,19 @@ interface RecordingIndicatorProps {
 export function RecordingIndicator({
     recordingState,
     duration,
+    maxDuration,
+    isNearLimit,
     pulseAnim,
     textColor,
 }: RecordingIndicatorProps) {
+    const remainingSeconds = maxDuration - duration;
+
     const getStatusText = () => {
+        // Show remaining time warning when near limit
+        if (isNearLimit && recordingState === 'recording') {
+            return `${remainingSeconds}s left`;
+        }
+
         switch (recordingState) {
             case 'recording':
                 return 'Recording...';
@@ -43,7 +54,10 @@ export function RecordingIndicator({
             <Text style={[styles.duration, { color: textColor }]}>
                 {formatDuration(duration)}
             </Text>
-            <Text style={[styles.status, { color: textColor }]}>
+            <Text style={[
+                styles.status,
+                { color: isNearLimit ? '#FF9500' : textColor }
+            ]}>
                 {getStatusText()}
             </Text>
         </View>

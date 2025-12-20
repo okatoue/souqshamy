@@ -162,6 +162,9 @@ export default function ChatsScreen() {
                     isEditMode && isSelected && styles.selectedItem
                 ]}
                 onPress={() => isEditMode ? toggleSelection(item.id) : handleConversationPress(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Conversation with ${item.other_user.display_name || 'User'} about ${item.listing?.title || 'listing'}${item.unread_count > 0 ? `. ${item.unread_count} unread message${item.unread_count > 1 ? 's' : ''}` : ''}`}
+                accessibilityHint={isEditMode ? 'Double tap to select' : 'Double tap to open conversation'}
             >
                 {/* Selection checkbox in edit mode */}
                 {isEditMode && (

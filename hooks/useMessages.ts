@@ -60,14 +60,19 @@ export function useMessages(conversationId: string | null) {
     const sendMessage = useCallback(async (content: string): Promise<boolean> => {
         if (!conversationId || !user || !content.trim()) return false;
 
+        // Generate unique temp ID for tracking
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
         // Create optimistic message to show immediately
         const optimisticMessage: Message = {
-            id: `temp-${Date.now()}`,
+            id: tempId,
             conversation_id: conversationId,
             sender_id: user.id,
             content: content.trim(),
             is_read: false,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            message_type: 'text',
+            _status: 'sending'
         };
 
         // Add message to state immediately (optimistic update)
@@ -88,11 +93,11 @@ export function useMessages(conversationId: string | null) {
 
             if (error) throw error;
 
-            // Replace optimistic message with real message from server
+            // Replace optimistic message with real message from server (status becomes 'sent')
             if (data) {
                 setMessages(prev =>
                     prev.map(msg =>
-                        msg.id === optimisticMessage.id ? data : msg
+                        msg.id === tempId ? { ...data, _status: 'sent' as const } : msg
                     )
                 );
             }
@@ -100,8 +105,15 @@ export function useMessages(conversationId: string | null) {
             return true;
         } catch (error) {
             console.error('Error sending message:', error);
-            // Remove optimistic message on failure
-            setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+            // Mark message as failed instead of removing
+            const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+            setMessages(prev =>
+                prev.map(msg =>
+                    msg.id === tempId
+                        ? { ...msg, _status: 'failed' as const, _error: errorMessage }
+                        : msg
+                )
+            );
             return false;
         } finally {
             setIsSending(false);
@@ -112,9 +124,12 @@ export function useMessages(conversationId: string | null) {
     const sendAudioMessage = useCallback(async (uri: string, duration: number): Promise<boolean> => {
         if (!conversationId || !user) return false;
 
+        // Generate unique temp ID for tracking
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
         // Create optimistic message to show immediately
         const optimisticMessage: Message = {
-            id: `temp-${Date.now()}`,
+            id: tempId,
             conversation_id: conversationId,
             sender_id: user.id,
             content: '',
@@ -122,7 +137,9 @@ export function useMessages(conversationId: string | null) {
             audio_url: uri, // Use local URI temporarily
             audio_duration: duration,
             is_read: false,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
+            _status: 'sending',
+            _localUri: uri // Store for retry
         };
 
         // Add message to state immediately (optimistic update)
@@ -151,35 +168,11 @@ export function useMessages(conversationId: string | null) {
                 throw uploadError;
             }
 
-            // Get signed URL for the uploaded audio (private bucket)
-            // Using 1 year expiry for voice messages
-            // Add retry logic with delay to handle R2 eventual consistency
-            let audioUrl: string | null = null;
-            for (let attempt = 1; attempt <= 3; attempt++) {
-                // Small delay to allow R2 to propagate the upload
-                if (attempt > 1) {
-                    await new Promise(resolve => setTimeout(resolve, 500 * attempt));
-                }
+            // Store the storage path (not signed URL) - VoiceMessage component generates signed URLs on-demand
+            // This allows for shorter-lived URLs that refresh when messages are viewed
+            const storagePath = uploadData.path;
 
-                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                    .from('voice-messages')
-                    .createSignedUrl(uploadData.path, 60 * 60 * 24 * 365); // 1 year
-
-                if (!signedUrlError && signedUrlData) {
-                    audioUrl = signedUrlData.signedUrl;
-                    break;
-                }
-
-                if (attempt === 3) {
-                    throw signedUrlError;
-                }
-            }
-
-            if (!audioUrl) {
-                throw new Error('Failed to generate signed URL');
-            }
-
-            // Insert message record
+            // Insert message record with storage path
             const { data, error } = await supabase
                 .from('messages')
                 .insert({
@@ -187,7 +180,7 @@ export function useMessages(conversationId: string | null) {
                     sender_id: user.id,
                     content: '',
                     message_type: 'voice',
-                    audio_url: audioUrl,
+                    audio_url: storagePath, // Store path, not signed URL
                     audio_duration: duration,
                 })
                 .select()
@@ -197,16 +190,16 @@ export function useMessages(conversationId: string | null) {
                 throw error;
             }
 
-            // Replace optimistic message with real message from server
+            // Replace optimistic message with real message from server (status becomes 'sent')
             if (data) {
                 setMessages(prev =>
                     prev.map(msg =>
-                        msg.id === optimisticMessage.id ? data : msg
+                        msg.id === tempId ? { ...data, _status: 'sent' as const } : msg
                     )
                 );
             }
 
-            // Clean up local file
+            // Clean up local file after successful send
             try {
                 await FileSystem.deleteAsync(uri, { idempotent: true });
             } catch {
@@ -216,8 +209,15 @@ export function useMessages(conversationId: string | null) {
             return true;
         } catch (error) {
             console.error('[VoiceMessage] Error sending audio message:', error);
-            // Remove optimistic message on failure
-            setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
+            // Mark message as failed instead of removing (keeps local URI for retry)
+            const errorMessage = error instanceof Error ? error.message : 'Failed to send voice message';
+            setMessages(prev =>
+                prev.map(msg =>
+                    msg.id === tempId
+                        ? { ...msg, _status: 'failed' as const, _error: errorMessage }
+                        : msg
+                )
+            );
             return false;
         } finally {
             setIsSending(false);
@@ -228,6 +228,32 @@ export function useMessages(conversationId: string | null) {
     useEffect(() => {
         fetchMessages();
     }, [fetchMessages]);
+
+    // Retry sending a failed message
+    const retryMessage = useCallback(async (messageId: string): Promise<boolean> => {
+        const failedMessage = messages.find(m => m.id === messageId && m._status === 'failed');
+        if (!failedMessage) {
+            console.log('[useMessages] No failed message found with ID:', messageId);
+            return false;
+        }
+
+        // Remove the failed message from state first
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+
+        // Retry based on message type
+        if (failedMessage.message_type === 'voice' && failedMessage._localUri) {
+            console.log('[useMessages] Retrying voice message:', failedMessage._localUri);
+            return sendAudioMessage(failedMessage._localUri, failedMessage.audio_duration || 0);
+        } else {
+            console.log('[useMessages] Retrying text message:', failedMessage.content);
+            return sendMessage(failedMessage.content);
+        }
+    }, [messages, sendMessage, sendAudioMessage]);
+
+    // Delete a failed message without retrying
+    const deleteFailedMessage = useCallback((messageId: string): void => {
+        setMessages(prev => prev.filter(m => m.id !== messageId));
+    }, []);
 
     // Subscribe to real-time message updates
     useEffect(() => {
@@ -259,18 +285,35 @@ export function useMessages(conversationId: string | null) {
                         }
 
                         // Check if there's a temp message that matches (optimistic update)
-                        // This handles the race condition where real-time arrives before insert completes
-                        const tempMessageIndex = prev.findIndex(msg =>
-                            msg.id.startsWith('temp-') &&
-                            msg.sender_id === newMessage.sender_id &&
-                            msg.content === newMessage.content &&
-                            msg.conversation_id === newMessage.conversation_id
-                        );
+                        // Match by sender, content (for text) or message_type (for voice),
+                        // and timestamp proximity (within 10 seconds)
+                        const tempMessageIndex = prev.findIndex(msg => {
+                            if (!msg.id.startsWith('temp-')) return false;
+                            if (msg.sender_id !== newMessage.sender_id) return false;
+                            if (msg.conversation_id !== newMessage.conversation_id) return false;
+
+                            // For text messages, match by content
+                            if (newMessage.message_type !== 'voice') {
+                                if (msg.content !== newMessage.content) return false;
+                            }
+
+                            // For voice messages, match by type and approximate duration
+                            if (newMessage.message_type === 'voice') {
+                                if (msg.message_type !== 'voice') return false;
+                            }
+
+                            // Check timestamp proximity (within 10 seconds)
+                            const timeDiff = Math.abs(
+                                new Date(msg.created_at).getTime() -
+                                new Date(newMessage.created_at).getTime()
+                            );
+                            return timeDiff < 10000;
+                        });
 
                         if (tempMessageIndex !== -1) {
                             console.log('[useMessages] Replacing temp message with real message');
                             const updated = [...prev];
-                            updated[tempMessageIndex] = newMessage;
+                            updated[tempMessageIndex] = { ...newMessage, _status: 'sent' as const };
                             return updated;
                         }
 
@@ -308,6 +351,8 @@ export function useMessages(conversationId: string | null) {
         isSending,
         sendMessage,
         sendAudioMessage,
+        retryMessage,
+        deleteFailedMessage,
         fetchMessages,
         markMessagesAsRead
     };
