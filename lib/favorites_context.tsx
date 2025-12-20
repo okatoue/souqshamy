@@ -4,11 +4,18 @@ import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
-import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+
+// Cache TTL: 5 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
+// Background refresh threshold: 1 minute (refresh if cache is older than this)
+const CACHE_REFRESH_THRESHOLD_MS = 60 * 1000;
 
 interface CachedFavorites {
   listings: Listing[];
   ids: string[];
+  timestamp: number;
 }
 
 interface FavoritesContextType {
@@ -17,10 +24,10 @@ interface FavoritesContextType {
   isLoading: boolean;
   isRefreshing: boolean;
   fetchFavorites: (refresh?: boolean, showLoading?: boolean) => Promise<void>;
-  isFavorite: (listingId: string) => boolean;
-  addFavorite: (listingId: string) => Promise<boolean>;
+  isFavorite: (listingId: string | number) => boolean;
+  addFavorite: (listingId: string | number) => Promise<boolean>;
   removeFavorite: (listingId: string | number) => Promise<boolean>;
-  toggleFavorite: (listingId: string) => Promise<boolean>;
+  toggleFavorite: (listingId: string | number) => Promise<boolean>;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
@@ -35,13 +42,32 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
   const loadCachedFavorites = useCallback(async (): Promise<CachedFavorites | null> => {
     if (!user) return null;
-    return readCache<CachedFavorites>(CACHE_KEYS.FAVORITES, { userId: user.id });
+
+    const cached = await readCache<CachedFavorites>(CACHE_KEYS.FAVORITES, { userId: user.id });
+
+    if (!cached) return null;
+
+    // Check if cache has expired
+    if (cached.timestamp && Date.now() - cached.timestamp > CACHE_TTL_MS) {
+      console.log('[Favorites] Cache expired, will refresh');
+      return null;
+    }
+
+    return cached;
   }, [user]);
 
   const saveCachedFavorites = useCallback(
     async (listings: Listing[], ids: string[]) => {
       if (!user) return;
-      await writeCache<CachedFavorites>(CACHE_KEYS.FAVORITES, { listings, ids }, user.id);
+      await writeCache<CachedFavorites>(
+        CACHE_KEYS.FAVORITES,
+        {
+          listings,
+          ids,
+          timestamp: Date.now(),
+        },
+        user.id
+      );
     },
     [user]
   );
@@ -94,7 +120,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
         setFavoriteIds(new Set(listingIds));
 
-        const { data: listings, error: listingsError } = await listingsApi.getByIds(listingIds);
+        // Include inactive listings so users can see sold/unavailable items in their favorites
+        const { data: listings, error: listingsError } = await listingsApi.getByIds(
+          listingIds,
+          { includeInactive: true }
+        );
 
         if (listingsError) throw listingsError;
 
@@ -104,9 +134,14 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         await saveCachedFavorites(listingData, listingIds);
       } catch (error) {
         console.error('[Favorites] Error in fetchFavorites:', error);
+
+        // CRITICAL: Clear stale cache on error to prevent showing outdated data
+        await clearCache(CACHE_KEYS.FAVORITES);
+
         // On error, set empty state to prevent stale data
         setFavorites([]);
         setFavoriteIds(new Set());
+
         if (refresh) {
           handleError(error, {
             context: 'FavoritesContext.fetchFavorites',
@@ -170,11 +205,19 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       const cached = await loadCachedFavorites();
 
       if (cached && cached.listings.length > 0) {
+        // Use cache immediately
         setFavorites(cached.listings);
         setFavoriteIds(new Set(cached.ids));
         setIsLoading(false);
-        fetchFavorites(false, false);
+
+        // Only background refresh if cache is older than the refresh threshold
+        // This prevents double fetch when cache is fresh
+        const cacheAge = cached.timestamp ? Date.now() - cached.timestamp : Infinity;
+        if (cacheAge > CACHE_REFRESH_THRESHOLD_MS) {
+          fetchFavorites(false, false);
+        }
       } else {
+        // No valid cache, fetch fresh
         await fetchFavorites(false, true);
       }
 
@@ -185,24 +228,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, [user, loadCachedFavorites, fetchFavorites]);
 
   const isFavorite = useCallback(
-    (listingId: string) => {
-      return favoriteIds.has(listingId);
+    (listingId: string | number): boolean => {
+      return favoriteIds.has(String(listingId));
     },
     [favoriteIds]
   );
 
   const addFavorite = useCallback(
-    async (listingId: string) => {
+    async (listingId: string | number): Promise<boolean> => {
       if (!user) {
         showAuthRequiredAlert();
         return false;
       }
 
+      const id = String(listingId);
+
       // Optimistic update IMMEDIATELY before API call
-      setFavoriteIds((prev) => new Set([...prev, listingId]));
+      setFavoriteIds((prev) => new Set([...prev, id]));
 
       try {
-        const { error } = await favoritesApi.add(user.id, listingId);
+        const { error } = await favoritesApi.add(user.id, id);
 
         if (error) throw error;
 
@@ -214,7 +259,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         // Revert on failure
         setFavoriteIds((prev) => {
           const newSet = new Set(prev);
-          newSet.delete(listingId);
+          newSet.delete(id);
           return newSet;
         });
 
@@ -273,27 +318,42 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleFavorite = useCallback(
-    async (listingId: string) => {
-      if (isFavorite(listingId)) {
-        return removeFavorite(listingId);
+    async (listingId: string | number): Promise<boolean> => {
+      const id = String(listingId);
+      if (isFavorite(id)) {
+        return removeFavorite(id);
       } else {
-        return addFavorite(listingId);
+        return addFavorite(id);
       }
     },
     [isFavorite, addFavorite, removeFavorite]
   );
 
-  const value: FavoritesContextType = {
-    favorites,
-    favoriteIds,
-    isLoading,
-    isRefreshing,
-    fetchFavorites,
-    isFavorite,
-    addFavorite,
-    removeFavorite,
-    toggleFavorite,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo<FavoritesContextType>(
+    () => ({
+      favorites,
+      favoriteIds,
+      isLoading,
+      isRefreshing,
+      fetchFavorites,
+      isFavorite,
+      addFavorite,
+      removeFavorite,
+      toggleFavorite,
+    }),
+    [
+      favorites,
+      favoriteIds,
+      isLoading,
+      isRefreshing,
+      fetchFavorites,
+      isFavorite,
+      addFavorite,
+      removeFavorite,
+      toggleFavorite,
+    ]
+  );
 
   return <FavoritesContext.Provider value={value}>{children}</FavoritesContext.Provider>;
 }

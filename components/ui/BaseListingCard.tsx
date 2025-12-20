@@ -82,6 +82,12 @@ export function BaseListingCard({
   const cardBg = useThemeColor({}, 'cardBackground');
   const primaryColor = useThemeColor({}, 'primary');
 
+  // Build accessibility label
+  const statusText = listing.status !== 'active'
+    ? listing.status === 'sold' ? ', Sold' : ', Unavailable'
+    : '';
+  const accessibilityLabel = `${listing.title}, ${formatPrice(listing.price, listing.currency)}${statusText}. Tap to view details.`;
+
   return (
     <View style={[styles.cardContainer, { backgroundColor: cardBg, borderColor }]}>
       {/* Main pressable content area */}
@@ -91,6 +97,8 @@ export function BaseListingCard({
           styles.mainContent,
           pressed && styles.pressed,
         ]}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole="button"
       >
         {/* Header with category and optional status badge */}
         {(showCategory || statusBadge) && (

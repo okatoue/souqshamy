@@ -1,10 +1,10 @@
-import { BORDER_RADIUS, COLORS, SHADOWS, SPACING } from '@/constants/theme';
+import { FavoriteButton } from '@/components/ui/FavoriteButton';
+import { BORDER_RADIUS, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
 import { Listing } from '@/types/listing';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
     Image,
@@ -27,10 +27,6 @@ export function ListingGridCard({ listing, onPress, cardWidth }: ListingGridCard
     const placeholderBg = useThemeColor({}, 'placeholder');
     const placeholderIconColor = useThemeColor({}, 'placeholderIcon');
     const secondaryText = useThemeColor({}, 'textSecondary');
-
-    const { isFavorite, handleToggle: handleToggleFavorite } = useFavoriteToggle({
-        listingId: listing.id.toString()
-    });
 
     const imageSize = cardWidth;
 
@@ -58,22 +54,14 @@ export function ListingGridCard({ listing, onPress, cardWidth }: ListingGridCard
                 )}
 
                 {/* Favorite Button */}
-                <Pressable
-                    style={styles.favoriteButton}
-                    onPress={(e) => {
-                        e.stopPropagation();
-                        handleToggleFavorite();
-                    }}
-                    hitSlop={8}
-                >
-                    <View style={styles.favoriteIconBg}>
-                        <Ionicons
-                            name={isFavorite ? "heart" : "heart-outline"}
-                            size={18}
-                            color={isFavorite ? COLORS.favorite : 'white'}
-                        />
-                    </View>
-                </Pressable>
+                <View style={styles.favoriteButton}>
+                    <FavoriteButton
+                        listingId={listing.id}
+                        size={18}
+                        showBackground
+                        inactiveColor="white"
+                    />
+                </View>
             </View>
 
             {/* Details */}
@@ -122,14 +110,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: SPACING.sm,
         right: SPACING.sm,
-    },
-    favoriteIconBg: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        justifyContent: 'center',
-        alignItems: 'center',
     },
     details: {
         padding: SPACING.sm,

@@ -133,19 +133,29 @@ export const listingsApi = {
 
     /**
      * Fetches listings by multiple IDs.
+     * @param ids - Array of listing IDs to fetch
+     * @param options.includeInactive - If true, includes sold/inactive listings (for favorites)
      */
-    async getByIds(ids: string[]): Promise<ApiResponse<Listing[]>> {
+    async getByIds(
+        ids: string[],
+        options?: { includeInactive?: boolean }
+    ): Promise<ApiResponse<Listing[]>> {
         try {
             if (ids.length === 0) {
                 return { data: [], error: null };
             }
 
-            const { data, error } = await supabase
+            let query = supabase
                 .from('listings')
                 .select('*')
-                .in('id', ids)
-                .eq('status', 'active')
-                .order('created_at', { ascending: false });
+                .in('id', ids);
+
+            // Only filter by status if not including inactive
+            if (!options?.includeInactive) {
+                query = query.eq('status', 'active');
+            }
+
+            const { data, error } = await query.order('created_at', { ascending: false });
 
             if (error) throw error;
             return { data: data || [], error: null };

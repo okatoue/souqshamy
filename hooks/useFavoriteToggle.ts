@@ -1,8 +1,9 @@
+import * as Haptics from 'expo-haptics';
 import { useCallback } from 'react';
 import { useFavorites } from './useFavorites';
 
 interface UseFavoriteToggleOptions {
-  listingId: string;
+  listingId: string | number;
 }
 
 interface UseFavoriteToggleResult {
@@ -11,20 +12,35 @@ interface UseFavoriteToggleResult {
 }
 
 /**
- * Custom hook for managing favorite toggle with instant feedback.
+ * Custom hook for managing favorite toggle with instant feedback and haptics.
  * Since FavoritesContext handles optimistic updates, the UI updates
  * immediately without any loading state.
+ *
+ * Accepts both string and number listingId for flexibility.
+ * Provides haptic feedback: medium tap for add, light tap for remove.
  */
 export function useFavoriteToggle({ listingId }: UseFavoriteToggleOptions): UseFavoriteToggleResult {
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
-  const handleToggle = useCallback(() => {
+  const id = String(listingId);
+  const currentlyFavorite = checkIsFavorite(id);
+
+  const handleToggle = useCallback(async () => {
+    // Haptic feedback - different for add vs remove
+    if (currentlyFavorite) {
+      // Removing - light tap
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      // Adding - medium tap (more satisfying)
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+
     // Fire and forget - context handles optimistic update and rollback
-    toggleFavorite(listingId);
-  }, [listingId, toggleFavorite]);
+    await toggleFavorite(id);
+  }, [id, toggleFavorite, currentlyFavorite]);
 
   return {
-    isFavorite: checkIsFavorite(listingId),
+    isFavorite: currentlyFavorite,
     handleToggle,
   };
 }

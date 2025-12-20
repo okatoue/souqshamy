@@ -6,10 +6,10 @@ import {
     SellerHeader,
 } from '@/components/listing';
 import LocationPreviewCard from '@/components/product-details/LocationPreviewCard';
+import { FavoriteButton } from '@/components/ui/FavoriteButton';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
-import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 import { useAuth } from '@/lib/auth_context';
 import { formatPrice, UserProfile } from '@/lib/formatters';
 import { addToRecentlyViewed } from '@/lib/recentlyViewed';
@@ -69,11 +69,6 @@ export default function ListingDetailScreen() {
     const [sellerProfile, setSellerProfile] = useState<UserProfile | null>(null);
     const [sellerListings, setSellerListings] = useState<Listing[]>([]);
     const [sellerListingsLoading, setSellerListingsLoading] = useState(false);
-
-    // Favorites - instant toggle, no loading spinner
-    const { isFavorite, handleToggle: handleToggleFavorite } = useFavoriteToggle({
-        listingId: params.id || ''
-    });
 
     // Chat - uses centralized AppDataContext (avoids duplicate real-time subscriptions)
     const { getOrCreateConversation } = useAppData();
@@ -322,13 +317,12 @@ export default function ListingDetailScreen() {
                                 <Ionicons name="pencil" size={22} color={BRAND_COLOR} />
                             </Pressable>
                         )}
-                        <Pressable onPress={handleToggleFavorite} style={styles.headerButton}>
-                            <Ionicons
-                                name={isFavorite ? "heart" : "heart-outline"}
-                                size={24}
-                                color={isFavorite ? COLORS.favorite : textColor}
-                            />
-                        </Pressable>
+                        <FavoriteButton
+                            listingId={params.id || ''}
+                            size={24}
+                            inactiveColor={textColor}
+                            style={styles.headerButton}
+                        />
                         <Pressable onPress={handleShare} style={styles.headerButton}>
                             <Ionicons name="share-outline" size={24} color={textColor} />
                         </Pressable>
