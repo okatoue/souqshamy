@@ -10,11 +10,18 @@ export function UserIcon() {
     const { profile } = useProfile();
 
     return (
-        <Pressable onPress={() => router.push('/user')} style={styles.container}>
+        <Pressable
+            onPress={() => router.push('/user')}
+            style={styles.container}
+            accessibilityLabel="Open account menu"
+            accessibilityRole="button"
+            accessibilityHint="Navigate to your account settings and profile"
+        >
             {profile?.avatar_url ? (
                 <Image
                     source={{ uri: profile.avatar_url }}
                     style={styles.avatar}
+                    accessibilityIgnoresInvertColors
                 />
             ) : (
                 <View style={styles.iconWrapper}>

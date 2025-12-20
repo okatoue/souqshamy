@@ -1,3 +1,4 @@
+import { HomeErrorBoundary } from '@/components/home/HomeErrorBoundary';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CategoriesList } from '@/components/ui/CategoriesList';
@@ -13,11 +14,12 @@ import { useAppData } from '@/lib/app_data_context';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Keyboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Auto-detect location on first launch (when no saved preference exists)
   useAutoLocationDetection();
@@ -26,6 +28,7 @@ export default function HomeScreen() {
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
   const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
   const dividerColor = useThemeColor({}, 'border');
+  const tintColor = useThemeColor({}, 'tint');
 
   // Consume pre-fetched data from global context
   const {
@@ -41,6 +44,16 @@ export default function HomeScreen() {
       refreshRecentlyViewed();
     }, [refreshRecentlyViewed])
   );
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshRecentlyViewed();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshRecentlyViewed]);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -58,49 +71,59 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-      {/* Fixed Header Section - stays at top */}
-      <ScreenHeader
-        leftAction={<UserIcon />}
-        rightAction={<Location />}
-        showBorder={false}
-      />
-
-      {/* Scrollable Content Section */}
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
-          <SearchBar
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onSubmitEditing={handleSearch}
-            onFocus={handleSearchBarFocus}
-            placeholder="Search all listings..."
-            showIcon={true}
-            showClearButton={true}
-            style={styles.searchBarContent}
-          />
-        </ThemedView>
-
-        <ThemedView style={styles.titleContainer}>
-          <ThemedText type="title">All Categories</ThemedText>
-        </ThemedView>
-
-        <CategoriesList />
-
-        <View style={[styles.headerDivider, { backgroundColor: dividerColor }]} />
-
-        {/* Recently Viewed Section - Below Categories */}
-        <RecentlyViewedSection
-          listings={recentlyViewed}
-          isLoading={isLoadingRecent}
-          onClear={clearRecentlyViewed}
+    <HomeErrorBoundary>
+      <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
+        {/* Fixed Header Section - stays at top */}
+        <ScreenHeader
+          leftAction={<UserIcon />}
+          rightAction={<Location />}
+          showBorder={false}
         />
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* Scrollable Content Section */}
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={tintColor}
+              colors={[tintColor]} // Android
+            />
+          }
+        >
+          <ThemedView style={[styles.searchContainer, { backgroundColor: searchContainerBg, borderColor: searchContainerBorder }]}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSearch}
+              onFocus={handleSearchBarFocus}
+              placeholder="Search all listings..."
+              showIcon={true}
+              showClearButton={true}
+              style={styles.searchBarContent}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.titleContainer}>
+            <ThemedText type="title">All Categories</ThemedText>
+          </ThemedView>
+
+          <CategoriesList />
+
+          <View style={[styles.headerDivider, { backgroundColor: dividerColor }]} />
+
+          {/* Recently Viewed Section - Below Categories */}
+          <RecentlyViewedSection
+            listings={recentlyViewed}
+            isLoading={isLoadingRecent}
+            onClear={clearRecentlyViewed}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    </HomeErrorBoundary>
   );
 }
 

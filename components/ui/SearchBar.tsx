@@ -45,7 +45,7 @@ export function SearchBar({
   const iconColor = useThemeColor({ light: '#666', dark: '#888' }, 'icon');
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, style]} accessibilityRole="search">
       {showIcon && (
         <Ionicons name="search" size={20} color={iconColor} style={styles.icon} />
       )}
@@ -56,10 +56,17 @@ export function SearchBar({
         onChangeText={handleChangeText}
         style={[styles.input, { color: textColor }]}
         returnKeyType="search"
+        accessibilityLabel="Search for listings"
+        accessibilityHint="Enter keywords to search for listings"
         {...props}
       />
       {showClearButton && value && value.length > 0 && (
-        <Pressable onPress={handleClear} style={styles.clearButton}>
+        <Pressable
+          onPress={handleClear}
+          style={styles.clearButton}
+          accessibilityLabel="Clear search"
+          accessibilityRole="button"
+        >
           <Ionicons name="close-circle" size={18} color={iconColor} />
         </Pressable>
       )}

@@ -1,19 +1,12 @@
+import { getCategoryIcon } from '@/assets/categoryAssets';
 import categoriesData from '@/assets/categories.json';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Dimensions, Image, ImageSourcePropType, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-// Import custom category icons
-import BuyAndSellIcon from '@/assets/images/BuyAndSell.png';
-import CarsIcon from '@/assets/images/Cars.png';
-import JobsIcon from '@/assets/images/Jobs.png';
-import PetsIcon from '@/assets/images/Pets.png';
-import RealEstateIcon from '@/assets/images/RealEstate.png';
-import ServicesIcon from '@/assets/images/Services.png';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_COLUMNS = 3;
@@ -27,40 +20,6 @@ interface CategoryDisplayItem {
     image: ImageSourcePropType;  // Custom PNG image for category
 }
 
-// Map category IDs to their icons (IDs match categories.json)
-const categoryDisplayData: CategoryDisplayItem[] = [
-    {
-        id: 1,  // Buy & Sell
-        name: 'Buy & Sell',
-        image: BuyAndSellIcon,
-    },
-    {
-        id: 2,  // Cars
-        name: 'Cars',
-        image: CarsIcon,
-    },
-    {
-        id: 3,  // Real Estate
-        name: 'Real Estate',
-        image: RealEstateIcon,
-    },
-    {
-        id: 4,  // Jobs
-        name: 'Jobs',
-        image: JobsIcon,
-    },
-    {
-        id: 5,  // Services
-        name: 'Services',
-        image: ServicesIcon,
-    },
-    {
-        id: 6,  // Pets
-        name: 'Pets',
-        image: PetsIcon,
-    }
-];
-
 export function CategoriesList() {
     const textColor = useThemeColor({}, 'text');
     const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
@@ -70,18 +29,31 @@ export function CategoriesList() {
     // Get the Buy & Sell category data (ID 1) from categories.json
     const buySellCategory = categoriesData.categories.find(c => c.id === 1);
 
+    // Build category display data from categories.json + categoryAssets
+    // This ensures category names come from the single source of truth (JSON)
+    // while icons come from the centralized asset map
+    const categoryDisplayData = useMemo<CategoryDisplayItem[]>(() => {
+        return categoriesData.categories
+            .filter(category => getCategoryIcon(category.id) !== null)
+            .map(category => ({
+                id: category.id,
+                name: category.name,
+                image: getCategoryIcon(category.id)!,
+            }));
+    }, []);
+
     const handleCategoryPress = (category: CategoryDisplayItem) => {
         // Buy & Sell (id: 1) opens the bottom sheet for subcategory selection
         if (category.id === 1) {
             bottomSheetRef.current?.open();
         } else {
             // All other categories navigate directly with numeric ID
-            const categoryFromJson = categoriesData.categories.find(c => c.id === category.id);
+            // Name comes from the unified categoryDisplayData (derived from categories.json)
             router.push({
                 pathname: '/category/[id]',
                 params: {
                     id: category.id.toString(),
-                    name: categoryFromJson?.name || category.name
+                    name: category.name
                 }
             });
         }
@@ -109,7 +81,7 @@ export function CategoriesList() {
         <>
             <View style={styles.gridContainer}>
                 {/* First row */}
-                <View style={styles.gridRow}>
+                <View style={styles.gridRow} accessibilityRole="list">
                     {row1.map((category) => (
                         <Pressable
                             key={category.id}
@@ -117,11 +89,16 @@ export function CategoriesList() {
                             style={({ pressed }) => [
                                 styles.categoryButton,
                                 pressed && styles.categoryButtonPressed
-                            ]}>
+                            ]}
+                            accessibilityLabel={`Browse ${category.name} category`}
+                            accessibilityRole="button"
+                            accessibilityHint={category.id === 1 ? 'Opens subcategory selection' : 'Shows listings in this category'}
+                        >
                             <Image
                                 source={category.image}
                                 style={styles.categoryImage}
                                 resizeMode="contain"
+                                accessibilityIgnoresInvertColors
                             />
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
@@ -129,7 +106,7 @@ export function CategoriesList() {
                 </View>
 
                 {/* Second row */}
-                <View style={styles.gridRow}>
+                <View style={styles.gridRow} accessibilityRole="list">
                     {row2.map((category) => (
                         <Pressable
                             key={category.id}
@@ -137,11 +114,16 @@ export function CategoriesList() {
                             style={({ pressed }) => [
                                 styles.categoryButton,
                                 pressed && styles.categoryButtonPressed
-                            ]}>
+                            ]}
+                            accessibilityLabel={`Browse ${category.name} category`}
+                            accessibilityRole="button"
+                            accessibilityHint="Shows listings in this category"
+                        >
                             <Image
                                 source={category.image}
                                 style={styles.categoryImage}
                                 resizeMode="contain"
+                                accessibilityIgnoresInvertColors
                             />
                             <Text style={[styles.categoryName, { color: textColor }]}>{category.name}</Text>
                         </Pressable>
@@ -155,13 +137,16 @@ export function CategoriesList() {
                 title="Buy & Sell Categories"
                 showCategories={false}
             >
-                <View style={{ paddingBottom: 20 }}>
+                <View style={{ paddingBottom: 20 }} accessibilityRole="list">
                     {buySellCategory?.subcategories.map((subcategory) => (
                         <TouchableOpacity
                             key={subcategory.id}
                             style={[styles.sheetItem, { backgroundColor: itemBackground }]}
                             onPress={() => handleSubcategoryPress(subcategory)}
                             activeOpacity={0.7}
+                            accessibilityLabel={`Select ${subcategory.name}`}
+                            accessibilityRole="button"
+                            accessibilityHint="Shows listings in this subcategory"
                         >
                             <Text style={[styles.sheetItemText, { color: textColor }]}>
                                 {subcategory.name}

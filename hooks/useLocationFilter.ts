@@ -1,5 +1,15 @@
+import {
+    BoundingBox,
+    calculateBoundingBox,
+    calculateDistance,
+    isLocationFilterActive,
+} from '@/lib/location-utils';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
+
+// Re-export types and utilities for backward compatibility
+export type { BoundingBox } from '@/lib/location-utils';
+export { calculateBoundingBox, isLocationFilterActive } from '@/lib/location-utils';
 
 const LOCATION_STORAGE_KEY = '@3antar_location_filter';
 
@@ -9,55 +19,11 @@ export interface LocationFilter {
     radius: number; // in km
 }
 
-export interface BoundingBox {
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
-}
-
 const DEFAULT_LOCATION: LocationFilter = {
     name: 'دمشق',
     coordinates: { latitude: 33.5138, longitude: 36.2765 },
     radius: 25,
 };
-
-/**
- * Calculate a bounding box from a center point and radius.
- * This is used for efficient database queries (bounding box pre-filtering).
- *
- * @param latitude - Center latitude in degrees
- * @param longitude - Center longitude in degrees
- * @param radiusKm - Radius in kilometers
- * @returns BoundingBox with min/max lat/lon
- */
-export function calculateBoundingBox(
-    latitude: number,
-    longitude: number,
-    radiusKm: number
-): BoundingBox {
-    // Earth's radius in km
-    const EARTH_RADIUS_KM = 6371;
-
-    // 1 degree of latitude is approximately 111.32 km
-    const KM_PER_DEGREE_LAT = 111.32;
-
-    // Calculate latitude delta
-    const latDelta = radiusKm / KM_PER_DEGREE_LAT;
-
-    // Calculate longitude delta (varies by latitude)
-    // At higher latitudes, 1 degree of longitude covers less distance
-    const latRadians = latitude * (Math.PI / 180);
-    const kmPerDegreeLon = KM_PER_DEGREE_LAT * Math.cos(latRadians);
-    const lonDelta = kmPerDegreeLon > 0 ? radiusKm / kmPerDegreeLon : radiusKm / KM_PER_DEGREE_LAT;
-
-    return {
-        minLat: latitude - latDelta,
-        maxLat: latitude + latDelta,
-        minLon: longitude - lonDelta,
-        maxLon: longitude + lonDelta,
-    };
-}
 
 export function useLocationFilter() {
     const [locationFilter, setLocationFilter] = useState<LocationFilter>(DEFAULT_LOCATION);
@@ -129,20 +95,10 @@ export function useLocationFilter() {
         listingLon: number
     ): boolean => {
         // If radius is 100km or more, consider it "all of Syria"
-        if (locationFilter.radius >= 100) return true;
+        if (!isLocationFilterActive(locationFilter.radius)) return true;
 
         const { latitude: filterLat, longitude: filterLon } = locationFilter.coordinates;
-
-        // Haversine formula for distance calculation
-        const R = 6371; // Earth's radius in km
-        const dLat = (listingLat - filterLat) * Math.PI / 180;
-        const dLon = (listingLon - filterLon) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(filterLat * Math.PI / 180) * Math.cos(listingLat * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
+        const distance = calculateDistance(filterLat, filterLon, listingLat, listingLon);
 
         return distance <= locationFilter.radius;
     }, [locationFilter]);
@@ -151,7 +107,7 @@ export function useLocationFilter() {
     // Returns null if location filtering should be disabled (large radius)
     const getBoundingBox = useCallback((): BoundingBox | null => {
         // If radius is 100km or more, consider it "all of Syria" - no bounding box needed
-        if (locationFilter.radius >= 100) return null;
+        if (!isLocationFilterActive(locationFilter.radius)) return null;
 
         const { latitude, longitude } = locationFilter.coordinates;
         return calculateBoundingBox(latitude, longitude, locationFilter.radius);
