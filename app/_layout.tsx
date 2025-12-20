@@ -4,14 +4,11 @@ import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
-import { setInitialUrl } from '@/lib/initialUrl';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import * as Linking from 'expo-linking';
-import { useURL } from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -121,57 +118,12 @@ const styles = StyleSheet.create({
   },
 });
 
-// Component to capture URLs at the earliest possible moment
-function UrlCapture() {
-  const url = useURL();
-  const hasCaptured = useRef(false);
-
-  // Capture URL from useURL hook (might work for warm starts)
-  useEffect(() => {
-    if (url && !hasCaptured.current) {
-      if (url.includes('auth/callback')) {
-        setInitialUrl(url);
-        hasCaptured.current = true;
-      }
-    }
-  }, [url]);
-
-  // Also try to capture initial URL on mount
-  useEffect(() => {
-    const captureInitial = async () => {
-      try {
-        // Try getInitialURL
-        const initialUrl = await Linking.getInitialURL();
-
-        if (initialUrl && initialUrl.includes('auth/callback') && !hasCaptured.current) {
-          setInitialUrl(initialUrl);
-          hasCaptured.current = true;
-        }
-      } catch (e) {
-        // Silently handle URL capture errors
-      }
-    };
-
-    captureInitial();
-
-    // Also listen for URL events
-    const subscription = Linking.addEventListener('url', (event) => {
-      if (event.url && event.url.includes('auth/callback') && !hasCaptured.current) {
-        setInitialUrl(event.url);
-        hasCaptured.current = true;
-      }
-    });
-
-    return () => subscription.remove();
-  }, []);
-
-  return null;
-}
+// Note: URL capture for OAuth callbacks is now handled by AuthProvider in lib/auth_context.tsx
+// The global deep link handler there captures auth callback URLs before expo-router processes them
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <UrlCapture />
       <ThemeProvider>
         <BottomSheetModalProvider>
           <AuthProvider>

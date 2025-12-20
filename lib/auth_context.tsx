@@ -1,4 +1,10 @@
 // lib/auth_context.tsx
+import {
+    extractAuthTokensFromUrl,
+    handleAuthError,
+    isAuthCallbackUrl,
+    safeReloadApp,
+} from '@/lib/auth-utils';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
@@ -7,21 +13,6 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
-
-// Safe reload function that works in both development and production
-const safeReloadApp = async () => {
-    try {
-        // Only attempt to use expo-updates in production builds
-        // In development (Expo Go), this module doesn't exist
-        const Updates = require('expo-updates');
-        if (Updates.reloadAsync) {
-            await Updates.reloadAsync();
-        }
-    } catch (error) {
-        // expo-updates not available (development mode)
-        // The session is already set, so navigation will handle the redirect
-    }
-};
 
 // Required for web browser auth session
 WebBrowser.maybeCompleteAuthSession();
@@ -68,9 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [isPasswordResetInProgress, setIsPasswordResetInProgressState] = useState(false);
     const hasProcessedDeepLink = useRef(false);
 
-    // Process auth callback URL and extract tokens
+    // Process auth callback URL and extract tokens using shared utility
     const processAuthCallbackUrl = async (url: string): Promise<boolean> => {
-        if (!url.includes('auth/callback')) {
+        if (!isAuthCallbackUrl(url)) {
             return false;
         }
 
@@ -79,27 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const urlObj = new URL(url);
-            const fragment = urlObj.hash.substring(1);
+            const { accessToken, refreshToken, error: urlError } = extractAuthTokensFromUrl(url);
 
-            let accessToken: string | null = null;
-            let refreshToken: string | null = null;
-
-            if (fragment) {
-                const params = new URLSearchParams(fragment);
-                accessToken = params.get('access_token');
-                refreshToken = params.get('refresh_token');
-            }
-
-            // Also check query params (some flows use this)
-            if (!accessToken || !refreshToken) {
-                accessToken = accessToken || urlObj.searchParams.get('access_token');
-                refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
+            // Check for error in URL
+            if (urlError) {
+                console.error('[Auth] Error in callback URL:', urlError);
+                return false;
             }
 
             if (accessToken && refreshToken) {
                 hasProcessedDeepLink.current = true;
-                const { data, error: sessionError } = await supabase.auth.setSession({
+                const { error: sessionError } = await supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken,
                 });
@@ -113,12 +94,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 // Reload the app to properly initialize Supabase client
                 await safeReloadApp();
                 return true;
-            }
-
-            // Check for error in URL
-            const errorParam = urlObj.searchParams.get('error');
-            if (errorParam) {
-                console.error('[Auth] Error in callback URL:', errorParam);
             }
 
             return false;
@@ -438,18 +413,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
 
                 if (result.type === 'success' && result.url) {
+                    // Extract tokens using shared utility
+                    const { accessToken, refreshToken, error: urlError } = extractAuthTokensFromUrl(result.url);
 
-                    // Extract the access token and refresh token from the URL
-                    const url = new URL(result.url);
-
-                    // Check for hash fragment (Supabase returns tokens in hash)
-                    const hashParams = new URLSearchParams(url.hash.substring(1));
-                    const accessToken = hashParams.get('access_token');
-                    const refreshToken = hashParams.get('refresh_token');
+                    if (urlError) {
+                        throw new Error(urlError);
+                    }
 
                     if (accessToken && refreshToken) {
                         // Set the session with the tokens
-                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                        const { error: sessionError } = await supabase.auth.setSession({
                             access_token: accessToken,
                             refresh_token: refreshToken,
                         });
@@ -461,19 +434,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         // Reload the app to properly initialize the Supabase client with the new session
                         await safeReloadApp();
                     } else {
-                        // Check for error in URL
-                        const errorParam = url.searchParams.get('error');
-                        const errorDescription = url.searchParams.get('error_description');
-
-                        if (errorParam) {
-                            throw new Error(errorDescription || errorParam);
-                        }
-
                         // Check if we got a code instead (authorization code flow)
+                        const url = new URL(result.url);
                         const code = url.searchParams.get('code');
                         if (code) {
                             // Exchange the code for a session
-                            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
                             if (exchangeError) {
                                 throw exchangeError;
@@ -489,31 +455,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error('Failed to get authentication URL');
             }
         } catch (error: any) {
-            console.error('[Auth] Google Sign-In error:', error);
-
-            // Handle specific error cases
-            const errorMessage = error.message?.toLowerCase() || '';
-
-            if (
-                errorMessage.includes('already registered') ||
-                errorMessage.includes('already exists') ||
-                errorMessage.includes('user_already_exists')
-            ) {
-                Alert.alert(
-                    'Account Already Exists',
-                    'An account with this email already exists. Please sign in with your password, then link your Google account from Settings.',
-                    [{ text: 'OK' }]
-                );
-                return;
+            // Use shared error handler for OAuth errors
+            const handled = handleAuthError(error, 'oauth', {
+                customMessage: error.message || 'Failed to sign in with Google'
+            });
+            if (!handled) {
+                throw error;
             }
-
-            if (errorMessage.includes('cancel') || errorMessage.includes('dismiss')) {
-                // User cancelled - don't show error
-                return;
-            }
-
-            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Google');
-            throw error;
         }
     };
 
@@ -542,18 +490,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 );
 
                 if (result.type === 'success' && result.url) {
+                    // Extract tokens using shared utility
+                    const { accessToken, refreshToken, error: urlError } = extractAuthTokensFromUrl(result.url);
 
-                    // Extract the access token and refresh token from the URL
-                    const url = new URL(result.url);
-
-                    // Check for hash fragment (Supabase returns tokens in hash)
-                    const hashParams = new URLSearchParams(url.hash.substring(1));
-                    const accessToken = hashParams.get('access_token');
-                    const refreshToken = hashParams.get('refresh_token');
+                    if (urlError) {
+                        throw new Error(urlError);
+                    }
 
                     if (accessToken && refreshToken) {
                         // Set the session with the tokens
-                        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                        const { error: sessionError } = await supabase.auth.setSession({
                             access_token: accessToken,
                             refresh_token: refreshToken,
                         });
@@ -562,23 +508,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                             throw sessionError;
                         }
 
-                        // The Supabase client doesn't properly initialize after manual setSession().
-                        // Reload the app to force a fresh initialization where getSession() works normally.
+                        // Reload the app to properly initialize the Supabase client with the new session
                         await safeReloadApp();
                     } else {
-                        // Check for error in URL
-                        const errorParam = url.searchParams.get('error');
-                        const errorDescription = url.searchParams.get('error_description');
-
-                        if (errorParam) {
-                            throw new Error(errorDescription || errorParam);
-                        }
-
                         // Check if we got a code instead (authorization code flow)
+                        const url = new URL(result.url);
                         const code = url.searchParams.get('code');
                         if (code) {
                             // Exchange the code for a session
-                            const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+                            const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
                             if (exchangeError) {
                                 throw exchangeError;
@@ -594,31 +532,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 throw new Error('Failed to get authentication URL');
             }
         } catch (error: any) {
-            console.error('[Auth] Facebook Sign-In error:', error);
-
-            // Handle specific error cases
-            const errorMessage = error.message?.toLowerCase() || '';
-
-            if (
-                errorMessage.includes('already registered') ||
-                errorMessage.includes('already exists') ||
-                errorMessage.includes('user_already_exists')
-            ) {
-                Alert.alert(
-                    'Account Already Exists',
-                    'An account with this email already exists. Please sign in with your password, then link your Facebook account from Settings.',
-                    [{ text: 'OK' }]
-                );
-                return;
+            // Use shared error handler for OAuth errors
+            const handled = handleAuthError(error, 'oauth', {
+                customMessage: error.message || 'Failed to sign in with Facebook'
+            });
+            if (!handled) {
+                throw error;
             }
-
-            if (errorMessage.includes('cancel') || errorMessage.includes('dismiss')) {
-                // User cancelled - don't show error
-                return;
-            }
-
-            Alert.alert('Sign In Error', error.message || 'Failed to sign in with Facebook');
-            throw error;
         }
     };
 
