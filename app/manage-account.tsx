@@ -1,12 +1,14 @@
+import { SettingsMenuItem, SettingsSection } from '@/components/settings';
 import { ThemedText } from '@/components/themed-text';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getProviderDisplayName, isOAuthOnlyUser, OAuthProvider } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
+import { exportUserData, shareExportedData } from '@/lib/dataExport';
 import { supabase } from '@/lib/supabase';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -22,79 +24,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type MenuItemProps = {
-    icon: React.ReactNode;
-    title: string;
-    subtitle?: string;
-    onPress: () => void;
-    showChevron?: boolean;
-    danger?: boolean;
-};
-
-function MenuItem({ icon, title, subtitle, onPress, showChevron = true, danger = false }: MenuItemProps) {
-    const textColor = useThemeColor({}, 'text');
-    const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
-    const pressedBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
-    const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
-
-    return (
-        <Pressable
-            style={({ pressed }) => [
-                styles.menuItem,
-                { borderBottomColor: borderColor },
-                pressed && { backgroundColor: pressedBg },
-            ]}
-            onPress={onPress}
-        >
-            <View style={styles.menuItemLeft}>
-                <View style={styles.iconContainer}>
-                    {icon}
-                </View>
-                <View style={styles.menuItemText}>
-                    <Text style={[styles.menuItemTitle, { color: danger ? '#FF3B30' : textColor }]}>
-                        {title}
-                    </Text>
-                    {subtitle && (
-                        <Text style={[styles.menuItemSubtitle, { color: subtitleColor }]}>
-                            {subtitle}
-                        </Text>
-                    )}
-                </View>
-            </View>
-            {showChevron && (
-                <Ionicons name="chevron-forward" size={20} color={chevronColor} />
-            )}
-        </Pressable>
-    );
-}
-
-type SectionProps = {
-    title?: string;
-    children: React.ReactNode;
-};
-
-function Section({ title, children }: SectionProps) {
-    const sectionBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
-    const titleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-
-    return (
-        <View style={styles.section}>
-            {title && (
-                <Text style={[styles.sectionTitle, { color: titleColor }]}>{title}</Text>
-            )}
-            <View style={[styles.sectionContent, { backgroundColor: sectionBg }]}>
-                {children}
-            </View>
-        </View>
-    );
-}
-
 export default function ManageAccountScreen() {
     const { user, signOut } = useAuth();
     const backgroundColor = useThemeColor({}, 'background');
-    const iconColor = useThemeColor({}, 'icon');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'border');
+    const iconColor = useThemeColor({}, 'icon');
     const inputBackground = useThemeColor({ light: '#f5f5f5', dark: '#1c1c1e' }, 'background');
     const textColor = useThemeColor({}, 'text');
     const labelColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
@@ -120,6 +54,9 @@ export default function ManageAccountScreen() {
     // OAuth user detection state - uses shared utility for consistent detection
     const [isOAuthUser, setIsOAuthUser] = useState(false);
     const [oauthProvider, setOAuthProvider] = useState<OAuthProvider | undefined>(undefined);
+
+    // Data export state
+    const [isExporting, setIsExporting] = useState(false);
 
     // Check if user signed in via OAuth (no password) using shared utility
     useEffect(() => {
@@ -238,6 +175,24 @@ export default function ManageAccountScreen() {
         );
     };
 
+    const handleExportData = async () => {
+        if (!user?.id) return;
+
+        setIsExporting(true);
+        try {
+            const filePath = await exportUserData(user.id);
+            await shareExportedData(filePath);
+        } catch (error: any) {
+            Alert.alert(
+                'Export Failed',
+                error.message || 'Failed to export your data. Please try again.',
+                [{ text: 'OK' }]
+            );
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handleConfirmDelete = async () => {
         // Different validation for OAuth vs password users
         if (isOAuthUser) {
@@ -321,26 +276,39 @@ export default function ManageAccountScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {/* Security Section */}
-                    <Section title="SECURITY">
-                        <MenuItem
-                            icon={<Ionicons name="lock-closed-outline" size={22} color={iconColor} />}
+                    <SettingsSection title="SECURITY">
+                        <SettingsMenuItem
+                            icon="lock-closed-outline"
                             title="Change Password"
-                            subtitle="Update your account password"
+                            subtitle={isOAuthUser ? 'Not available for social login' : 'Update your account password'}
                             onPress={handleChangePassword}
+                            disabled={isOAuthUser}
                         />
-                    </Section>
+                    </SettingsSection>
+
+                    {/* Your Data Section */}
+                    <SettingsSection title="YOUR DATA">
+                        <SettingsMenuItem
+                            icon="download-outline"
+                            title="Export My Data"
+                            subtitle="Download a copy of your data"
+                            onPress={handleExportData}
+                            disabled={isExporting}
+                            rightElement={isExporting ? <ActivityIndicator size="small" color={BRAND_COLOR} /> : undefined}
+                        />
+                    </SettingsSection>
 
                     {/* Danger Zone Section */}
-                    <Section title="DANGER ZONE">
-                        <MenuItem
-                            icon={<MaterialIcons name="delete-outline" size={22} color="#FF3B30" />}
+                    <SettingsSection title="DANGER ZONE">
+                        <SettingsMenuItem
+                            icon="trash-outline"
                             title="Delete Account"
                             subtitle="Permanently delete your account"
                             onPress={handleDeleteAccount}
-                            showChevron={false}
-                            danger
+                            showArrow={false}
+                            destructive
                         />
-                    </Section>
+                    </SettingsSection>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -695,50 +663,6 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingVertical: SPACING.lg,
-    },
-    section: {
-        marginBottom: 25,
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        marginLeft: 20,
-        marginBottom: 8,
-        letterSpacing: 0.5,
-    },
-    sectionContent: {
-        marginHorizontal: 15,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    menuItemLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    iconContainer: {
-        width: 32,
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    menuItemText: {
-        flex: 1,
-    },
-    menuItemTitle: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    menuItemSubtitle: {
-        fontSize: 13,
-        marginTop: 2,
     },
     // Modal styles
     modalContainer: {

@@ -1,17 +1,13 @@
+import { SettingsMenuItem, SettingsSection, ThemePicker, ThemePickerRefProps } from '@/components/settings';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
-import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
+import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useAuth } from '@/lib/auth_context';
 import { useProfile } from '@/hooks/userProfile';
-import { ThemePreference, useThemeContext } from '@/lib/theme_context';
-import {
-    Feather,
-    Ionicons,
-    MaterialCommunityIcons,
-    MaterialIcons
-} from '@expo/vector-icons';
+import { getAppInfo } from '@/lib/appInfo';
+import { useAuth } from '@/lib/auth_context';
+import { useThemeContext } from '@/lib/theme_context';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
 import {
@@ -21,85 +17,16 @@ import {
     ScrollView,
     StyleSheet,
     Text,
-    TouchableOpacity,
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Theme option configuration
-const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { value: 'light', label: 'Light', icon: 'sunny-outline' },
-    { value: 'dark', label: 'Dark', icon: 'moon-outline' },
-    { value: 'system', label: 'System Settings', icon: 'phone-portrait-outline' },
-];
-
-type MenuItemProps = {
-    icon: React.ReactNode;
-    title: string;
-    subtitle?: string;
-    onPress: () => void;
-    showChevron?: boolean;
-    danger?: boolean;
+// Theme labels for display
+const THEME_LABELS: Record<string, string> = {
+    light: 'Light',
+    dark: 'Dark',
+    system: 'System Settings',
 };
-
-function MenuItem({ icon, title, subtitle, onPress, showChevron = true, danger = false }: MenuItemProps) {
-    const textColor = useThemeColor({}, 'text');
-    const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-    const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
-    const pressedBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
-    const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
-
-    return (
-        <Pressable
-            style={({ pressed }) => [
-                styles.menuItem,
-                { borderBottomColor: borderColor },
-                pressed && { backgroundColor: pressedBg },
-            ]}
-            onPress={onPress}
-        >
-            <View style={styles.menuItemLeft}>
-                <View style={styles.iconContainer}>
-                    {icon}
-                </View>
-                <View style={styles.menuItemText}>
-                    <Text style={[styles.menuItemTitle, { color: danger ? '#FF3B30' : textColor }]}>
-                        {title}
-                    </Text>
-                    {subtitle && (
-                        <Text style={[styles.menuItemSubtitle, { color: subtitleColor }]}>
-                            {subtitle}
-                        </Text>
-                    )}
-                </View>
-            </View>
-            {showChevron && (
-                <Ionicons name="chevron-forward" size={20} color={chevronColor} />
-            )}
-        </Pressable>
-    );
-}
-
-type SectionProps = {
-    title?: string;
-    children: React.ReactNode;
-};
-
-function Section({ title, children }: SectionProps) {
-    const sectionBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
-    const titleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
-
-    return (
-        <View style={styles.section}>
-            {title && (
-                <Text style={[styles.sectionTitle, { color: titleColor }]}>{title}</Text>
-            )}
-            <View style={[styles.sectionContent, { backgroundColor: sectionBg }]}>
-                {children}
-            </View>
-        </View>
-    );
-}
 
 export default function UserScreen() {
     const { user, signOut } = useAuth();
@@ -112,9 +39,9 @@ export default function UserScreen() {
     const cardBackground = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
     const chevronColor = useThemeColor({ light: '#999', dark: '#666' }, 'icon');
 
-    // Theme context and bottom sheet
-    const { themePreference, setThemePreference } = useThemeContext();
-    const themeSheetRef = useRef<BottomSheetRefProps>(null);
+    // Theme context and picker ref
+    const { themePreference } = useThemeContext();
+    const themePickerRef = useRef<ThemePickerRefProps>(null);
 
     // Refresh profile when screen comes into focus
     useFocusEffect(
@@ -124,21 +51,10 @@ export default function UserScreen() {
         }, [fetchProfile])
     );
 
-    // Get current theme subtitle
-    const getThemeSubtitle = () => {
-        const option = THEME_OPTIONS.find(o => o.value === themePreference);
-        return option?.label || 'System Settings';
-    };
-
-    // Open theme bottom sheet
-    const handleOpenThemeSheet = useCallback(() => {
-        themeSheetRef.current?.open();
+    // Open theme picker
+    const handleOpenThemePicker = useCallback(() => {
+        themePickerRef.current?.open();
     }, []);
-
-    // Handle theme option selection (auto-save with immediate effect)
-    const handleThemeSelect = useCallback((theme: ThemePreference) => {
-        setThemePreference(theme);
-    }, [setThemePreference]);
 
     const handleLogout = () => {
         Alert.alert(
@@ -165,10 +81,6 @@ export default function UserScreen() {
     const handleComingSoon = (feature: string) => {
         Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
     };
-
-    // Theme option item colors
-    const itemBackground = useThemeColor({}, 'sheetItemBackground');
-    const checkmarkColor = BRAND_COLOR;
 
     // If not logged in, show sign in prompt
     if (!user) {
@@ -248,104 +160,72 @@ export default function UserScreen() {
                 </Pressable>
 
                 {/* Account Settings Section */}
-                <Section title="ACCOUNT SETTINGS">
-                    <MenuItem
-                        icon={<MaterialIcons name="manage-accounts" size={22} color={iconColor} />}
+                <SettingsSection title="ACCOUNT SETTINGS">
+                    <SettingsMenuItem
+                        icon="settings-outline"
                         title="Manage Account"
                         subtitle="Password, delete account"
                         onPress={() => router.push('/manage-account')}
                     />
-                </Section>
+                </SettingsSection>
 
                 {/* App Settings Section */}
-                <Section title="APP SETTINGS">
-                    <MenuItem
-                        icon={<Ionicons name="color-palette-outline" size={22} color={iconColor} />}
+                <SettingsSection title="APP SETTINGS">
+                    <SettingsMenuItem
+                        icon="color-palette-outline"
                         title="App Theme"
-                        subtitle={getThemeSubtitle()}
-                        onPress={handleOpenThemeSheet}
+                        subtitle={THEME_LABELS[themePreference] || 'System Settings'}
+                        onPress={handleOpenThemePicker}
                     />
-                    <MenuItem
-                        icon={<Ionicons name="notifications-outline" size={22} color={iconColor} />}
+                    <SettingsMenuItem
+                        icon="notifications-outline"
                         title="Notification Preferences"
                         subtitle="Push notifications, email alerts"
-                        onPress={() => handleComingSoon('Notification Preferences')}
+                        onPress={() => router.push('/notification-settings')}
                     />
-                </Section>
+                </SettingsSection>
 
                 {/* Support & Legal Section */}
-                <Section title="SUPPORT & LEGAL">
-                    <MenuItem
-                        icon={<Feather name="help-circle" size={22} color={iconColor} />}
+                <SettingsSection title="SUPPORT & LEGAL">
+                    <SettingsMenuItem
+                        icon="help-circle-outline"
                         title="Help"
                         subtitle="FAQs and support"
-                        onPress={() => handleComingSoon('Help')}
+                        onPress={() => router.push('/help')}
                     />
-                    <MenuItem
-                        icon={<Ionicons name="document-text-outline" size={22} color={iconColor} />}
+                    <SettingsMenuItem
+                        icon="document-text-outline"
                         title="Privacy Policy"
-                        onPress={() => handleComingSoon('Privacy Policy')}
+                        onPress={() => router.push('/legal/privacy-policy')}
                     />
-                    <MenuItem
-                        icon={<Ionicons name="document-outline" size={22} color={iconColor} />}
+                    <SettingsMenuItem
+                        icon="document-outline"
                         title="Terms of Use"
-                        onPress={() => handleComingSoon('Terms of Use')}
+                        onPress={() => router.push('/legal/terms-of-use')}
                     />
-                </Section>
+                </SettingsSection>
 
                 {/* Logout Section */}
-                <Section>
-                    <MenuItem
-                        icon={<MaterialIcons name="logout" size={22} color="#FF3B30" />}
+                <SettingsSection>
+                    <SettingsMenuItem
+                        icon="log-out-outline"
                         title="Log Out"
                         onPress={handleLogout}
-                        showChevron={false}
-                        danger
+                        showArrow={false}
+                        destructive
                     />
-                </Section>
+                </SettingsSection>
 
                 {/* App Version */}
                 <View style={styles.versionContainer}>
                     <Text style={[styles.versionText, { color: subtitleColor }]}>
-                        Katoo v1.0.0
+                        {getAppInfo().name} v{getAppInfo().version}
                     </Text>
                 </View>
             </ScrollView>
 
-            {/* Theme Selection Bottom Sheet */}
-            <BottomSheet
-                ref={themeSheetRef}
-                title="App Theme"
-                snapPoints={['40%']}
-            >
-                <View style={styles.themeSheetContent}>
-                    {THEME_OPTIONS.map((option) => (
-                        <TouchableOpacity
-                            key={option.value}
-                            style={[styles.themeOption, { backgroundColor: itemBackground }]}
-                            onPress={() => handleThemeSelect(option.value)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.themeOptionLeft}>
-                                <Ionicons
-                                    name={option.icon}
-                                    size={22}
-                                    color={iconColor}
-                                    style={styles.themeOptionIcon}
-                                />
-                                <Text style={[styles.themeOptionText, { color: textColor }]}>
-                                    {option.label}
-                                </Text>
-                            </View>
-                            {themePreference === option.value && (
-                                <View style={styles.checkmarkContainer}>
-                                    <Ionicons name="checkmark" size={26} color={checkmarkColor} />
-                                </View>
-                            )}
-                        </TouchableOpacity>
-                    ))}
-                </View>
-            </BottomSheet>
+            {/* Theme Picker */}
+            <ThemePicker ref={themePickerRef} />
         </SafeAreaView>
     );
 }
@@ -398,50 +278,6 @@ const styles = StyleSheet.create({
     userSince: {
         fontSize: 14,
     },
-    section: {
-        marginBottom: 25,
-    },
-    sectionTitle: {
-        fontSize: 13,
-        fontWeight: '600',
-        marginLeft: 20,
-        marginBottom: 8,
-        letterSpacing: 0.5,
-    },
-    sectionContent: {
-        marginHorizontal: 15,
-        borderRadius: 12,
-        overflow: 'hidden',
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    menuItemLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        flex: 1,
-    },
-    iconContainer: {
-        width: 32,
-        alignItems: 'center',
-        marginRight: 12,
-    },
-    menuItemText: {
-        flex: 1,
-    },
-    menuItemTitle: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    menuItemSubtitle: {
-        fontSize: 13,
-        marginTop: 2,
-    },
     versionContainer: {
         alignItems: 'center',
         marginTop: 10,
@@ -488,35 +324,5 @@ const styles = StyleSheet.create({
     signUpLinkText: {
         color: '#007AFF',
         fontSize: 15,
-    },
-    // Theme sheet styles
-    themeSheetContent: {
-        paddingHorizontal: SPACING.sm,
-    },
-    themeOption: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: SPACING.lg,
-        paddingHorizontal: SPACING.xl,
-        marginVertical: SPACING.xs,
-        borderRadius: BORDER_RADIUS.lg,
-    },
-    themeOptionLeft: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    themeOptionIcon: {
-        marginRight: SPACING.md,
-    },
-    themeOptionText: {
-        fontSize: 16,
-        fontWeight: '500',
-    },
-    checkmarkContainer: {
-        width: 28,
-        height: 28,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 });
