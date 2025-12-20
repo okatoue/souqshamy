@@ -168,42 +168,25 @@ export function VoiceMessage({
 
             {/* Waveform / Progress Bar */}
             <View style={styles.waveformContainer}>
-                <View style={styles.waveformRow}>
-                    <View style={styles.waveform}>
-                        {/* Background bars (decorative waveform) */}
-                        {waveformHeights.map((height, i) => {
-                            const isActive = (i / BAR_COUNT) * 100 <= progress;
-                            return (
-                                <View
-                                    key={i}
-                                    style={[
-                                        styles.waveformBar,
-                                        {
-                                            height,
-                                            backgroundColor: isOwnMessage
-                                                ? isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'
-                                                : isActive ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.2)'
-                                        }
-                                    ]}
-                                />
-                            );
-                        })}
-                    </View>
-
-                    {/* Speed Control Button - show when playing, paused mid-playback, or rate !== 1 */}
-                    {(isPlaying || currentTime > 0 || playbackRate !== 1) && (
-                        <Pressable
-                            style={[
-                                styles.speedButton,
-                                { backgroundColor: isOwnMessage ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
-                            ]}
-                            onPress={cyclePlaybackRate}
-                        >
-                            <Text style={[styles.speedButtonText, { color: textColor }]}>
-                                {playbackRate}x
-                            </Text>
-                        </Pressable>
-                    )}
+                <View style={styles.waveform}>
+                    {/* Background bars (decorative waveform) */}
+                    {waveformHeights.map((height, i) => {
+                        const isActive = (i / BAR_COUNT) * 100 <= progress;
+                        return (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.waveformBar,
+                                    {
+                                        height,
+                                        backgroundColor: isOwnMessage
+                                            ? isActive ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)'
+                                            : isActive ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.2)'
+                                    }
+                                ]}
+                            />
+                        );
+                    })}
                 </View>
 
                 {/* Duration */}
@@ -214,6 +197,21 @@ export function VoiceMessage({
                     }
                 </Text>
             </View>
+
+            {/* Speed Control Button - show when playing, paused mid-playback, or rate !== 1 */}
+            {(isPlaying || currentTime > 0 || playbackRate !== 1) && (
+                <Pressable
+                    style={[
+                        styles.speedButton,
+                        { backgroundColor: isOwnMessage ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
+                    ]}
+                    onPress={cyclePlaybackRate}
+                >
+                    <Text style={[styles.speedButtonText, { color: textColor }]}>
+                        {playbackRate}x
+                    </Text>
+                </Pressable>
+            )}
         </View>
     );
 }
@@ -239,29 +237,27 @@ const styles = StyleSheet.create({
         flex: 1,
         marginLeft: 10,
     },
-    waveformRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
     waveform: {
         flexDirection: 'row',
         alignItems: 'center',
         height: 24,
         gap: 2,
-        flex: 1,
     },
     waveformBar: {
         width: 3.5,
         borderRadius: 1.75,
     },
     speedButton: {
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 8,
-        marginLeft: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+        marginLeft: 8,
+        minWidth: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     speedButtonText: {
-        fontSize: 10,
+        fontSize: 12,
         fontWeight: '600',
     },
     durationText: {
