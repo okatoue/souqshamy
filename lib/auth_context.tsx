@@ -51,6 +51,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const PASSWORD_RESET_FLAG = '@password_reset_in_progress';
+const PASSWORD_RESET_TTL_MS = 30 * 60 * 1000; // 30 minutes TTL for password reset flag
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -132,12 +133,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
-    // Load initial password reset state
+    // Load initial password reset state with TTL check
     useEffect(() => {
         const loadPasswordResetState = async () => {
             try {
                 const value = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
-                setIsPasswordResetInProgressState(value === 'true');
+                if (value) {
+                    // Parse stored timestamp
+                    const timestamp = parseInt(value, 10);
+                    const now = Date.now();
+
+                    if (isNaN(timestamp) || now - timestamp > PASSWORD_RESET_TTL_MS) {
+                        // Flag is expired or invalid - clear it
+                        await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
+                        setIsPasswordResetInProgressState(false);
+                    } else {
+                        // Flag is still valid
+                        setIsPasswordResetInProgressState(true);
+                    }
+                } else {
+                    setIsPasswordResetInProgressState(false);
+                }
             } catch (error) {
                 console.error('Error loading password reset state:', error);
             }
@@ -145,11 +161,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loadPasswordResetState();
     }, []);
 
-    // Function to set password reset state
+    // Function to set password reset state (stores timestamp for TTL)
     const setPasswordResetInProgress = async (value: boolean) => {
         try {
             if (value) {
-                await AsyncStorage.setItem(PASSWORD_RESET_FLAG, 'true');
+                // Store current timestamp for TTL tracking
+                await AsyncStorage.setItem(PASSWORD_RESET_FLAG, Date.now().toString());
             } else {
                 await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             }
@@ -217,11 +234,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setSession(session);
                 setUser(session?.user ?? null);
 
-                // Check if we're in password reset flow
-                const isResetting = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
+                // Check if we're in password reset flow (with TTL check)
+                const resetTimestamp = await AsyncStorage.getItem(PASSWORD_RESET_FLAG);
+                let isResetting = false;
+
+                if (resetTimestamp) {
+                    const timestamp = parseInt(resetTimestamp, 10);
+                    const now = Date.now();
+                    isResetting = !isNaN(timestamp) && now - timestamp <= PASSWORD_RESET_TTL_MS;
+
+                    // Auto-clear expired flag
+                    if (!isResetting) {
+                        await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
+                    }
+                }
 
                 // Only update profile on sign in if NOT resetting password
-                if (event === 'SIGNED_IN' && session?.user && isResetting !== 'true') {
+                if (event === 'SIGNED_IN' && session?.user && !isResetting) {
                     // Extract OAuth-specific metadata fields with fallback chain
                     const displayName = session.user.user_metadata?.full_name
                         || session.user.user_metadata?.name
@@ -242,7 +271,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 // Update the in-memory state
-                setIsPasswordResetInProgressState(isResetting === 'true');
+                setIsPasswordResetInProgressState(isResetting);
             }
         );
 
