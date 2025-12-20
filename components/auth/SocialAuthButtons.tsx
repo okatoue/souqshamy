@@ -1,11 +1,10 @@
 // components/auth/SocialAuthButtons.tsx
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { AUTH_COLORS, isSmallScreen } from './constants';
 import { useAuthTheme } from './useAuthStyles';
 
-type SocialProvider = 'google' | 'facebook' | 'telegram';
+type SocialProvider = 'google' | 'facebook';
 
 interface SocialAuthButtonsProps {
   onPress: (provider: string) => void;
@@ -31,17 +30,9 @@ function FacebookIcon() {
   );
 }
 
-function TelegramIcon() {
-  return (
-    <View style={[styles.iconContainer, styles.telegramIcon]}>
-      <Ionicons name="paper-plane" size={12} color="white" />
-    </View>
-  );
-}
-
 export function SocialAuthButtons({
   onPress,
-  providers = ['google', 'facebook', 'telegram'],
+  providers = ['google', 'facebook'],
   style,
 }: SocialAuthButtonsProps) {
   const { styles: authStyles, colors } = useAuthTheme();
@@ -52,8 +43,6 @@ export function SocialAuthButtons({
         return { icon: <GoogleIcon borderColor={colors.border} />, label: 'Continue with Google' };
       case 'facebook':
         return { icon: <FacebookIcon />, label: 'Continue with Facebook' };
-      case 'telegram':
-        return { icon: <TelegramIcon />, label: 'Log in with Telegram' };
     }
   };
 
@@ -111,9 +100,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  telegramIcon: {
-    backgroundColor: AUTH_COLORS.telegram,
-    borderRadius: 10,
   },
 });

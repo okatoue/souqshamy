@@ -13,7 +13,6 @@ export { NoticeBox } from './NoticeBox';
 export { OTPInput } from './OTPInput';
 export { PasswordRequirements } from './PasswordRequirements';
 export { SocialAuthButtons } from './SocialAuthButtons';
-export { SyriaFlag } from './SyriaFlag';
 
 // Styles and constants
 export { authStyles, createAuthStyles } from './styles';
@@ -36,11 +35,7 @@ export { useAuthStyles, useAuthColors, useAuthTheme } from './useAuthStyles';
 
 // Validation utilities
 export {
-  cleanPhoneNumber,
-  detectPhoneNumber,
-  formatPhoneInput,
   isValidEmail,
-  isValidPhoneNumber,
   passwordsMatch,
   validatePassword,
 } from './validation';
