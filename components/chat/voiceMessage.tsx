@@ -28,7 +28,8 @@ const generateWaveform = (messageId: string, barCount: number): number[] => {
 };
 
 const PLAYBACK_RATES = [1, 1.5, 2] as const;
-const BAR_COUNT = 20;
+const BAR_COUNT = 28;
+const BAR_COUNT_WITH_SPEED = 20;
 
 interface VoiceMessageProps {
     messageId: string;
@@ -144,6 +145,11 @@ export function VoiceMessage({
 
     const progress = audioDuration > 0 ? (currentTime / audioDuration) * 100 : 0;
 
+    // Show speed button when playing, paused mid-playback, or rate !== 1
+    const showSpeedButton = isPlaying || currentTime > 0 || playbackRate !== 1;
+    const visibleBarCount = showSpeedButton ? BAR_COUNT_WITH_SPEED : BAR_COUNT;
+    const visibleBars = waveformHeights.slice(0, visibleBarCount);
+
     return (
         <View style={[styles.container, { backgroundColor: bubbleColor }]}>
             {/* Play/Pause Button */}
@@ -170,8 +176,8 @@ export function VoiceMessage({
             <View style={styles.waveformContainer}>
                 <View style={styles.waveform}>
                     {/* Background bars (decorative waveform) */}
-                    {waveformHeights.map((height, i) => {
-                        const isActive = (i / BAR_COUNT) * 100 <= progress;
+                    {visibleBars.map((height, i) => {
+                        const isActive = (i / visibleBarCount) * 100 <= progress;
                         return (
                             <View
                                 key={i}
@@ -198,8 +204,8 @@ export function VoiceMessage({
                 </Text>
             </View>
 
-            {/* Speed Control Button - show when playing, paused mid-playback, or rate !== 1 */}
-            {(isPlaying || currentTime > 0 || playbackRate !== 1) && (
+            {/* Speed Control Button */}
+            {showSpeedButton && (
                 <Pressable
                     style={[
                         styles.speedButton,
