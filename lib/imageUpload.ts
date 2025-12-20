@@ -205,3 +205,55 @@ export async function uploadListingImages(
     const publicUrls = await Promise.all(uploadPromises);
     return publicUrls;
 }
+
+/**
+ * Deletes listing images from storage.
+ * Extracts storage paths from public URLs and removes files.
+ *
+ * @param imageUrls - Array of public URLs to delete
+ * @returns Promise<{ deleted: number; failed: number }>
+ */
+export async function deleteListingImages(
+    imageUrls: string[]
+): Promise<{ deleted: number; failed: number }> {
+    if (!imageUrls || imageUrls.length === 0) {
+        return { deleted: 0, failed: 0 };
+    }
+
+    let deleted = 0;
+    let failed = 0;
+
+    for (const url of imageUrls) {
+        try {
+            // Extract storage path from public URL
+            // URL format: https://{host}/storage/v1/object/public/listing-images/{userId}/{filename}
+            const urlObj = new URL(url);
+            const pathMatch = urlObj.pathname.match(/\/listing-images\/(.+)$/);
+
+            if (!pathMatch) {
+                console.warn('[ImageUpload] Could not extract path from URL:', url);
+                failed++;
+                continue;
+            }
+
+            const storagePath = pathMatch[1];
+
+            const { error } = await supabase.storage
+                .from(LISTING_IMAGES_BUCKET)
+                .remove([storagePath]);
+
+            if (error) {
+                console.error('[ImageUpload] Failed to delete:', storagePath, error);
+                failed++;
+            } else {
+                deleted++;
+            }
+        } catch (error) {
+            console.error('[ImageUpload] Error deleting image:', url, error);
+            failed++;
+        }
+    }
+
+    console.log(`[ImageUpload] Deleted ${deleted}/${imageUrls.length} images, ${failed} failed`);
+    return { deleted, failed };
+}

@@ -3,6 +3,7 @@
 
 import { useAuth } from '@/lib/auth_context';
 import { getDisplayName } from '@/lib/formatters';
+import { deleteListingImages } from '@/lib/imageUpload';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails } from '@/types/chat';
 import { Listing } from '@/types/listing';
@@ -472,6 +473,9 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     text: 'Delete',
                     style: 'destructive',
                     onPress: async () => {
+                        // Get listing to find images before deleting
+                        const listing = userListings.find(l => l.id === listingId);
+
                         try {
                             const { error } = await supabase
                                 .from('listings')
@@ -480,6 +484,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                                 .eq('user_id', user?.id);
 
                             if (error) throw error;
+
+                            // Delete images from storage (fire and forget, don't block on failure)
+                            if (listing?.images && listing.images.length > 0) {
+                                deleteListingImages(listing.images).catch(err => {
+                                    console.error('[AppData] Failed to cleanup images:', err);
+                                });
+                            }
 
                             setUserListings(prev => {
                                 const updated = prev.filter(l => l.id !== listingId);
@@ -496,7 +507,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                 }
             ]
         );
-    }, [user, saveCachedUserListings]);
+    }, [user, userListings, saveCachedUserListings]);
 
     const handleUpdateStatus = useCallback(async (listing: Listing, newStatus: 'active' | 'sold') => {
         try {

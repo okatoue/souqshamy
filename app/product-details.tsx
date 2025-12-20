@@ -75,7 +75,7 @@ export default function ProductDetailsScreen() {
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
 
-  const { createListing, isLoading: isSubmitting } = useCreateListing();
+  const { createListing, isLoading: isSubmitting, uploadProgress } = useCreateListing();
   const backgroundColor = useThemeColor({}, 'background');
   const colorScheme = useAppColorScheme();
 
@@ -140,7 +140,7 @@ export default function ProductDetailsScreen() {
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await createListing(listingData);
+    const { error, warning } = await createListing(listingData);
 
     if (error) {
       Alert.alert(
@@ -151,16 +151,25 @@ export default function ProductDetailsScreen() {
       return;
     }
 
-    Alert.alert(
-      'Success!',
-      'Your listing has been created',
-      [
-        {
-          text: 'OK',
-          onPress: () => router.replace('/(tabs)/listings')
-        }
-      ]
-    );
+    if (warning) {
+      // Show warning but still navigate to success
+      Alert.alert(
+        'Listing Created',
+        warning + '\n\nYou can add more images by editing the listing.',
+        [{ text: 'OK', onPress: () => router.replace('/(tabs)/listings') }]
+      );
+    } else {
+      Alert.alert(
+        'Success!',
+        'Your listing has been created',
+        [
+          {
+            text: 'OK',
+            onPress: () => router.replace('/(tabs)/listings')
+          }
+        ]
+      );
+    }
   };
 
   // Handle form submission with validation
@@ -303,6 +312,7 @@ export default function ProductDetailsScreen() {
               onPress={handleSubmit}
               disabled={!isFormValid || isSubmitting}
               loading={isSubmitting}
+              uploadProgress={uploadProgress}
             />
           </ScrollView>
         </KeyboardAvoidingView>
