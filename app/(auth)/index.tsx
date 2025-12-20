@@ -11,6 +11,7 @@ import {
   isValidEmail,
   useAuthStyles,
 } from '@/components/auth';
+import { checkUserAuthStatus, getProviderDisplayName } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
@@ -23,63 +24,6 @@ export default function AuthScreen() {
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
-
-  type UserStatus = 'new' | 'unverified' | 'verified' | 'oauth-only';
-
-  const checkUserStatus = async (
-    email: string
-  ): Promise<{ status: UserStatus; provider?: string }> => {
-    try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email_verified')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error checking user status:', profileError);
-        return { status: 'new' };
-      }
-
-      if (!profile) {
-        // No profile exists - new user
-        return { status: 'new' };
-      }
-
-      // Check if user has OAuth identity only (no password)
-      const { data: identities, error: identitiesError } = await supabase.rpc(
-        'get_user_auth_providers',
-        { user_email: email }
-      );
-
-      if (identitiesError) {
-        console.error('Error fetching auth providers:', identitiesError);
-      }
-      console.log('Auth providers for user:', identities);
-
-      if (!identitiesError && identities && identities.length > 0) {
-        const hasEmailProvider = identities.some(
-          (i: { provider: string }) => i.provider === 'email'
-        );
-        if (!hasEmailProvider) {
-          // User only has OAuth providers - find which one
-          const oauthProvider = identities.find((i: { provider: string }) =>
-            ['google', 'facebook'].includes(i.provider)
-          );
-          return {
-            status: 'oauth-only',
-            provider: oauthProvider?.provider,
-          };
-        }
-      }
-
-      // Profile exists - check if verified
-      return { status: profile.email_verified ? 'verified' : 'unverified' };
-    } catch (error) {
-      console.error('Error checking user status:', error);
-      return { status: 'new' };
-    }
-  };
 
   const handleContinue = async () => {
     const trimmedInput = inputValue.trim();
@@ -97,7 +41,8 @@ export default function AuthScreen() {
     setLoading(true);
 
     try {
-      const { status, provider } = await checkUserStatus(trimmedInput);
+      // Use shared utility for consistent user status checking
+      const { status, provider } = await checkUserAuthStatus(trimmedInput);
 
       if (status === 'new') {
         // New user - go to signup (password creation) screen
@@ -111,12 +56,7 @@ export default function AuthScreen() {
         });
       } else if (status === 'oauth-only') {
         // User signed up with OAuth only - show alert
-        const providerName =
-          provider === 'google'
-            ? 'Google'
-            : provider === 'facebook'
-              ? 'Facebook'
-              : 'social login';
+        const providerName = getProviderDisplayName(provider);
         Alert.alert(
           'Sign In Method',
           `This account was created using ${providerName}. Please use the "${providerName}" button below to sign in.`,

@@ -1,11 +1,12 @@
 import { ThemedText } from '@/components/themed-text';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getProviderDisplayName, isOAuthOnlyUser, OAuthProvider } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -116,8 +117,21 @@ export default function ManageAccountScreen() {
     const [showDeletePassword, setShowDeletePassword] = useState(false);
     const [confirmationPhrase, setConfirmationPhrase] = useState('');
 
-    // Check if user signed in via OAuth (no password)
-    const isOAuthUser = user?.app_metadata?.provider && user.app_metadata.provider !== 'email';
+    // OAuth user detection state - uses shared utility for consistent detection
+    const [isOAuthUser, setIsOAuthUser] = useState(false);
+    const [oauthProvider, setOAuthProvider] = useState<OAuthProvider | undefined>(undefined);
+
+    // Check if user signed in via OAuth (no password) using shared utility
+    useEffect(() => {
+        const checkOAuthStatus = async () => {
+            if (user?.email) {
+                const { isOAuthOnly, provider } = await isOAuthOnlyUser(user.email);
+                setIsOAuthUser(isOAuthOnly);
+                setOAuthProvider(provider);
+            }
+        };
+        checkOAuthStatus();
+    }, [user?.email]);
 
     const handleBack = () => {
         router.back();
@@ -282,14 +296,6 @@ export default function ManageAccountScreen() {
             Alert.alert('Error', error.message || 'An unexpected error occurred.');
             setIsDeleting(false);
         }
-    };
-
-    // Get the provider name for display
-    const getProviderName = () => {
-        const provider = user?.app_metadata?.provider;
-        if (provider === 'google') return 'Google';
-        if (provider === 'facebook') return 'Facebook';
-        return 'social login';
     };
 
     return (
@@ -561,7 +567,7 @@ export default function ManageAccountScreen() {
                                 /* OAuth User: Type DELETE to confirm */
                                 <View style={styles.inputGroup}>
                                     <Text style={[styles.label, { color: labelColor }]}>
-                                        You signed in with {getProviderName()}. Type{' '}
+                                        You signed in with {getProviderDisplayName(oauthProvider)}. Type{' '}
                                         <Text style={{ fontWeight: '700', color: '#FF3B30' }}>DELETE</Text>
                                         {' '}to confirm account deletion.
                                     </Text>
