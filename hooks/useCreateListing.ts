@@ -1,5 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { decode } from 'base64-arraybuffer';
+import { Image } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { CreateListingDTO, Listing } from '@/types/listing';
 import { useState } from 'react';
@@ -8,6 +10,8 @@ const LISTING_IMAGES_BUCKET = 'listing-images';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 const UPLOAD_TIMEOUT_MS = 60000;
+const MAX_IMAGE_DIMENSION = 1920; // Max width or height
+const JPEG_QUALITY = 0.8;
 
 // Upload progress tracking
 export interface UploadProgress {
@@ -63,23 +67,67 @@ async function testStorageConnectivity(): Promise<boolean> {
     }
 }
 
+/**
+ * Get image dimensions
+ */
+function getImageSize(uri: string): Promise<{ width: number; height: number }> {
+    return new Promise((resolve, reject) => {
+        Image.getSize(
+            uri,
+            (width, height) => resolve({ width, height }),
+            (error) => reject(error)
+        );
+    });
+}
+
+/**
+ * Optimizes an image before upload.
+ * Resizes if larger than MAX_IMAGE_DIMENSION and compresses.
+ */
+async function optimizeImage(uri: string): Promise<string> {
+    try {
+        // Get image dimensions
+        const { width, height } = await getImageSize(uri);
+
+        const actions: ImageManipulator.Action[] = [];
+
+        // Resize if needed
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+            if (width > height) {
+                actions.push({ resize: { width: MAX_IMAGE_DIMENSION } });
+            } else {
+                actions.push({ resize: { height: MAX_IMAGE_DIMENSION } });
+            }
+            console.log(`[ImageOptimize] Resizing image from ${width}x${height}`);
+        }
+
+        // Process image (compress even if not resizing)
+        const result = await ImageManipulator.manipulateAsync(
+            uri,
+            actions,
+            {
+                compress: JPEG_QUALITY,
+                format: ImageManipulator.SaveFormat.JPEG,
+            }
+        );
+
+        return result.uri;
+    } catch (error) {
+        console.warn('[ImageOptimize] Optimization failed, using original:', error);
+        return uri; // Fall back to original
+    }
+}
+
 async function uploadSingleImage(uri: string, userId: string): Promise<string | null> {
-    const base64 = await FileSystem.readAsStringAsync(uri, {
+    // Optimize image first
+    const optimizedUri = await optimizeImage(uri);
+    const base64 = await FileSystem.readAsStringAsync(optimizedUri, {
         encoding: FileSystem.EncodingType.Base64,
     });
 
-    const uriParts = uri.split('.');
-    const extension = uriParts[uriParts.length - 1]?.toLowerCase() || 'jpg';
-
-    const mimeTypes: Record<string, string> = {
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'heic': 'image/heic',
-    };
-    const contentType = mimeTypes[extension] || 'image/jpeg';
+    // After optimization, images are always JPEG
+    const extension = 'jpg';
+    const contentType = 'image/jpeg';
 
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 8);

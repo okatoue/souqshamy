@@ -21,12 +21,25 @@ export default function DescriptionSection({
   const inputBg = useThemeColor({}, 'inputBackground');
   const mutedColor = useThemeColor({}, 'textMuted');
 
+  // Character count color based on usage
+  const charCount = description.length;
+  const isNearLimit = charCount > MAX_DESCRIPTION_LENGTH * 0.9;
+  const isOverLimit = charCount >= MAX_DESCRIPTION_LENGTH;
+  const countColor = isOverLimit ? COLORS.error : isNearLimit ? COLORS.warning : mutedColor;
+
   return (
     <View>
       <ThemedView variant="card" style={[styles.section, { borderColor }]}>
         <Text style={[styles.sectionTitle, { color: textColor }]}>Description</Text>
         <TextInput
-          style={[styles.descriptionInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
+          style={[
+            styles.descriptionInput,
+            {
+              backgroundColor: inputBg,
+              borderColor: isOverLimit ? COLORS.error : borderColor,
+              color: textColor
+            }
+          ]}
           placeholder="Describe your item in detail..."
           placeholderTextColor={COLORS.placeholder}
           multiline
@@ -40,8 +53,8 @@ export default function DescriptionSection({
           onSubmitEditing={Keyboard.dismiss}
         />
       </ThemedView>
-      <Text style={[styles.characterCount, { color: mutedColor }]}>
-        {description.length}/{MAX_DESCRIPTION_LENGTH}
+      <Text style={[styles.characterCount, { color: countColor }]}>
+        {charCount.toLocaleString()}/{MAX_DESCRIPTION_LENGTH.toLocaleString()}
       </Text>
     </View>
   );

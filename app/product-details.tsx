@@ -1,13 +1,16 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
-  StyleSheet
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,8 +26,10 @@ import ProductHeader from '@/components/product-details/productHeader';
 import SubmitButton from '@/components/product-details/submitButton';
 import TitleSection from '@/components/product-details/titleSection';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
+import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useCreateListing } from '@/hooks/useCreateListing';
+import { ListingDraft, useDraft } from '@/hooks/useDraft';
 import { useAuth } from '@/lib/auth_context';
 import { unformatPrice } from '@/lib/formatters';
 import { useAppColorScheme } from '@/lib/theme_context';
@@ -74,9 +79,15 @@ export default function ProductDetailsScreen() {
 
   // Refs
   const categorySheetRef = useRef<CategoryBottomSheetRefProps>(null);
+  const autoSaveInterval = useRef<NodeJS.Timeout | null>(null);
 
   const { createListing, isLoading: isSubmitting, uploadProgress } = useCreateListing();
+  const { hasDraft, isLoading: isDraftLoading, saveDraft, loadDraft, clearDraft } = useDraft();
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+
   const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const cardBg = useThemeColor({}, 'cardBackground');
   const colorScheme = useAppColorScheme();
 
   // Set Android navigation bar to match theme
@@ -90,6 +101,93 @@ export default function ProductDetailsScreen() {
       NavigationBar.setBorderColorAsync('transparent');
     }
   }, [backgroundColor, colorScheme]);
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    if (!isDraftLoading && hasDraft) {
+      setShowDraftPrompt(true);
+    }
+  }, [isDraftLoading, hasDraft]);
+
+  // Build current draft state
+  const getCurrentDraft = useCallback((): Omit<ListingDraft, 'savedAt'> => ({
+    title,
+    description,
+    price,
+    currency: currency as 'SYP' | 'USD',
+    images: images.filter(img => !img.startsWith('http')), // Only local URIs
+    location,
+    locationCoordinates,
+    phoneNumber,
+    whatsappNumber,
+    sameAsPhone,
+    categoryId: currentCategoryId,
+    subcategoryId: currentSubcategoryId,
+    categoryName: currentCategoryName,
+    subcategoryName: currentSubcategoryName,
+    categoryIcon: currentCategoryIcon,
+  }), [
+    title, description, price, currency, images, location, locationCoordinates,
+    phoneNumber, whatsappNumber, sameAsPhone, currentCategoryId, currentSubcategoryId,
+    currentCategoryName, currentSubcategoryName, currentCategoryIcon
+  ]);
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    if (isSubmitting || showDraftPrompt) return;
+
+    autoSaveInterval.current = setInterval(() => {
+      const draft = getCurrentDraft();
+      // Only save if there's meaningful content
+      const hasContent =
+        draft.title.trim() !== '' ||
+        draft.description.trim() !== '' ||
+        draft.price !== '' ||
+        draft.images.length > 0;
+
+      if (hasContent) {
+        saveDraft(draft);
+      }
+    }, 30000);
+
+    return () => {
+      if (autoSaveInterval.current) {
+        clearInterval(autoSaveInterval.current);
+      }
+    };
+  }, [isSubmitting, showDraftPrompt, getCurrentDraft, saveDraft]);
+
+  // Handle draft restoration
+  const handleRestoreDraft = async () => {
+    const draft = await loadDraft();
+    if (draft) {
+      setTitle(draft.title);
+      setDescription(draft.description);
+      setPrice(draft.price);
+      setCurrency(draft.currency);
+      // Note: Local image URIs may no longer be valid after app restart
+      // Only restore if we have a reasonable expectation they exist
+      if (draft.images.length > 0) {
+        setImages(draft.images);
+      }
+      setLocation(draft.location);
+      setLocationCoordinates(draft.locationCoordinates);
+      setPhoneNumber(draft.phoneNumber);
+      setWhatsappNumber(draft.whatsappNumber);
+      setSameAsPhone(draft.sameAsPhone);
+      setCurrentCategoryId(draft.categoryId);
+      setCurrentSubcategoryId(draft.subcategoryId);
+      setCurrentCategoryName(draft.categoryName);
+      setCurrentSubcategoryName(draft.subcategoryName);
+      setCurrentCategoryIcon(draft.categoryIcon);
+    }
+    setShowDraftPrompt(false);
+  };
+
+  const handleDiscardDraft = async () => {
+    await clearDraft();
+    setShowDraftPrompt(false);
+  };
 
   const handleLocationSelect = (selectedLocation: string, coordinates: { latitude: number; longitude: number }) => {
     setLocation(selectedLocation);
@@ -150,6 +248,9 @@ export default function ProductDetailsScreen() {
       );
       return;
     }
+
+    // Clear draft on successful submission
+    await clearDraft();
 
     if (warning) {
       // Show warning but still navigate to success
@@ -248,6 +349,41 @@ export default function ProductDetailsScreen() {
     price !== '' &&
     location !== null;
 
+  // Draft restoration prompt
+  if (showDraftPrompt) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'left', 'right']}>
+          <ProductHeader onBack={() => router.back()} />
+          <View style={styles.draftPromptContainer}>
+            <View style={[styles.draftPromptCard, { backgroundColor: cardBg }]}>
+              <Text style={[styles.draftPromptTitle, { color: textColor }]}>
+                Unsaved Draft Found
+              </Text>
+              <Text style={[styles.draftPromptText, { color: textColor }]}>
+                You have an unsaved listing draft. Would you like to restore it or start fresh?
+              </Text>
+              <View style={styles.draftPromptButtons}>
+                <Pressable
+                  style={[styles.draftButton, styles.draftButtonSecondary]}
+                  onPress={handleDiscardDraft}
+                >
+                  <Text style={styles.draftButtonSecondaryText}>Discard</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.draftButton, styles.draftButtonPrimary]}
+                  onPress={handleRestoreDraft}
+                >
+                  <Text style={styles.draftButtonPrimaryText}>Restore</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'left', 'right']}>
@@ -341,5 +477,60 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+  },
+  // Draft prompt styles
+  draftPromptContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.xl,
+  },
+  draftPromptCard: {
+    width: '100%',
+    padding: SPACING.xl,
+    borderRadius: BORDER_RADIUS.lg,
+    alignItems: 'center',
+  },
+  draftPromptTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: SPACING.md,
+  },
+  draftPromptText: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: SPACING.xl,
+    opacity: 0.8,
+  },
+  draftPromptButtons: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+    width: '100%',
+  },
+  draftButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  draftButtonPrimary: {
+    backgroundColor: BRAND_COLOR,
+  },
+  draftButtonPrimaryText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  draftButtonSecondary: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: BRAND_COLOR,
+  },
+  draftButtonSecondaryText: {
+    color: BRAND_COLOR,
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
