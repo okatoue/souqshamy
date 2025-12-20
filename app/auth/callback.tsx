@@ -2,13 +2,18 @@
 // This route handles OAuth redirects and email verification deep links
 // It extracts tokens from the URL fragment and sets the Supabase session
 
-import { supabase } from '@/lib/supabase';
 import { BRAND_COLOR } from '@/constants/theme';
-import { getCapturedInitialUrl, waitForCapturedUrl, clearCapturedUrl } from '@/lib/initialUrl';
+import {
+  extractAuthTokensFromUrl,
+  isAuthCallbackUrl,
+  safeReloadApp,
+} from '@/lib/auth-utils';
+import { clearCapturedUrl, getCapturedInitialUrl, waitForCapturedUrl } from '@/lib/initialUrl';
+import { supabase } from '@/lib/supabase';
 import * as Linking from 'expo-linking';
-import { useRouter, useLocalSearchParams, useGlobalSearchParams } from 'expo-router';
-import { useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { useGlobalSearchParams, useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthCallback() {
   const router = useRouter();
@@ -31,7 +36,7 @@ export default function AuthCallback() {
     hasProcessedUrl.current = true;
 
     try {
-      const { data, error: sessionError } = await supabase.auth.setSession({
+      const { error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken,
       });
@@ -44,14 +49,10 @@ export default function AuthCallback() {
       clearCapturedUrl();
 
       // Reload the app to properly initialize Supabase client with new session
-      try {
-        const Updates = require('expo-updates');
-        if (Updates.reloadAsync) {
-          await Updates.reloadAsync();
-        }
-      } catch (reloadError) {
-        router.replace('/(tabs)');
-      }
+      // Falls back to navigation in development mode
+      await safeReloadApp();
+      // If safeReloadApp didn't reload (dev mode), navigate manually
+      router.replace('/(tabs)');
     } catch (err: any) {
       console.error('[AuthCallback] Error:', err);
       setError(err.message || 'An error occurred during authentication');
@@ -63,25 +64,14 @@ export default function AuthCallback() {
     }
   };
 
-  // Process URL string to extract tokens
+  // Process URL string to extract tokens using shared utility
   const processAuthUrl = async (authUrl: string): Promise<boolean> => {
     try {
-      const urlObj = new URL(authUrl);
-      const fragment = urlObj.hash.substring(1);
+      const { accessToken, refreshToken, error: urlError } = extractAuthTokensFromUrl(authUrl);
 
-      let accessToken: string | null = null;
-      let refreshToken: string | null = null;
-
-      if (fragment) {
-        const params = new URLSearchParams(fragment);
-        accessToken = params.get('access_token');
-        refreshToken = params.get('refresh_token');
-      }
-
-      // Also check query params (some flows use this)
-      if (!accessToken || !refreshToken) {
-        accessToken = accessToken || urlObj.searchParams.get('access_token');
-        refreshToken = refreshToken || urlObj.searchParams.get('refresh_token');
+      if (urlError) {
+        console.error('[AuthCallback] URL error:', urlError);
+        return false;
       }
 
       if (accessToken && refreshToken) {
@@ -114,7 +104,7 @@ export default function AuthCallback() {
       // Method 2: Check captured URL from initialUrl module
       const capturedUrl = await waitForCapturedUrl();
 
-      if (capturedUrl && capturedUrl.includes('auth/callback')) {
+      if (capturedUrl && isAuthCallbackUrl(capturedUrl)) {
         const processed = await processAuthUrl(capturedUrl);
         if (processed) return;
       }
@@ -123,7 +113,7 @@ export default function AuthCallback() {
       try {
         const initialUrl = await Linking.getInitialURL();
 
-        if (initialUrl && initialUrl.includes('auth/callback')) {
+        if (initialUrl && isAuthCallbackUrl(initialUrl)) {
           const processed = await processAuthUrl(initialUrl);
           if (processed) return;
         }
@@ -154,7 +144,7 @@ export default function AuthCallback() {
   // Listen for URL events (app already open / foreground)
   useEffect(() => {
     const subscription = Linking.addEventListener('url', (event) => {
-      if (event.url && event.url.includes('auth/callback')) {
+      if (event.url && isAuthCallbackUrl(event.url)) {
         processAuthUrl(event.url);
       }
     });
