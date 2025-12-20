@@ -2,6 +2,7 @@
 // Global data pre-fetching context to eliminate waterfall effect on tab screens
 
 import { useAuth } from '@/lib/auth_context';
+import { listingsApi } from '@/lib/api';
 import { getDisplayName } from '@/lib/formatters';
 import { deleteListingImages } from '@/lib/imageUpload';
 import { supabase } from '@/lib/supabase';
@@ -63,9 +64,11 @@ interface AppDataContextType {
     userListingsLoading: boolean;
     userListingsRefreshing: boolean;
     fetchUserListings: (refresh?: boolean, showLoading?: boolean) => Promise<void>;
-    handleSoftDelete: (listingId: number) => Promise<void>;
-    handlePermanentDelete: (listingId: number) => Promise<void>;
-    handleUpdateStatus: (listing: Listing, newStatus: 'active' | 'sold') => Promise<void>;
+    // Refactored: These return success/failure boolean, UI layer handles confirmations
+    softDeleteListing: (listingId: number) => Promise<boolean>;
+    permanentDeleteListing: (listingId: number) => Promise<boolean>;
+    updateListingStatus: (listingId: number, newStatus: 'active' | 'sold') => Promise<boolean>;
+    restoreListing: (listingId: number) => Promise<boolean>;
 
     // Recently Viewed
     recentlyViewed: Listing[];
@@ -425,114 +428,195 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     }, [user, saveCachedUserListings, clearUserListingsCache]);
 
     // ========== USER LISTINGS MUTATIONS ==========
-    const handleSoftDelete = useCallback(async (listingId: number) => {
-        Alert.alert(
-            'Remove Listing',
-            'This will remove the listing from your active/sold items.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Remove',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            const { error } = await supabase
-                                .from('listings')
-                                .update({ status: 'inactive' })
-                                .eq('id', listingId)
-                                .eq('user_id', user?.id);
+    // Refactored: No UI confirmations here - those are handled in the UI layer
+    // All methods return boolean for success/failure, enabling proper error handling
 
-                            if (error) throw error;
+    /**
+     * Soft delete a listing by setting its status to 'inactive'.
+     * Returns true on success, false on failure.
+     * UI layer should handle confirmation dialogs.
+     */
+    const softDeleteListing = useCallback(async (listingId: number): Promise<boolean> => {
+        if (!user) return false;
 
-                            setUserListings(prev => {
-                                const updated = prev.map(l =>
-                                    l.id === listingId ? { ...l, status: 'inactive' as const } : l
-                                );
-                                saveCachedUserListings(updated);
-                                return updated;
-                            });
+        // Store previous state for potential rollback (Phase 2 will add proper rollback)
+        const previousListings = [...userListings];
 
-                            Alert.alert('Success', 'Listing moved to removed items');
-                        } catch (error) {
-                            console.error('Remove error:', error);
-                            Alert.alert('Error', 'Failed to remove listing');
-                        }
-                    }
-                }
-            ]
+        // Optimistic update
+        setUserListings(prev =>
+            prev.map(l =>
+                l.id === listingId ? { ...l, status: 'inactive' as const } : l
+            )
         );
-    }, [user, saveCachedUserListings]);
 
-    const handlePermanentDelete = useCallback(async (listingId: number) => {
-        Alert.alert(
-            'Delete Permanently',
-            'Are you sure you want to permanently delete this listing? This cannot be undone.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        // Get listing to find images before deleting
-                        const listing = userListings.find(l => l.id === listingId);
+        try {
+            const { error } = await listingsApi.updateStatus(listingId, user.id, 'inactive');
 
-                        try {
-                            const { error } = await supabase
-                                .from('listings')
-                                .delete()
-                                .eq('id', listingId)
-                                .eq('user_id', user?.id);
+            if (error) {
+                // Rollback on error
+                setUserListings(previousListings);
+                console.error('[AppData] Soft delete error:', error);
+                return false;
+            }
 
-                            if (error) throw error;
+            // Update cache with new state
+            const updatedListings = userListings.map(l =>
+                l.id === listingId ? { ...l, status: 'inactive' as const } : l
+            );
+            await saveCachedUserListings(updatedListings);
 
-                            // Delete images from storage (fire and forget, don't block on failure)
-                            if (listing?.images && listing.images.length > 0) {
-                                deleteListingImages(listing.images).catch(err => {
-                                    console.error('[AppData] Failed to cleanup images:', err);
-                                });
-                            }
-
-                            setUserListings(prev => {
-                                const updated = prev.filter(l => l.id !== listingId);
-                                saveCachedUserListings(updated);
-                                return updated;
-                            });
-
-                            Alert.alert('Success', 'Listing permanently deleted');
-                        } catch (error) {
-                            console.error('Delete error:', error);
-                            Alert.alert('Error', 'Failed to delete listing');
-                        }
-                    }
-                }
-            ]
-        );
+            return true;
+        } catch (error) {
+            // Rollback on error
+            setUserListings(previousListings);
+            console.error('[AppData] Soft delete error:', error);
+            return false;
+        }
     }, [user, userListings, saveCachedUserListings]);
 
-    const handleUpdateStatus = useCallback(async (listing: Listing, newStatus: 'active' | 'sold') => {
-        try {
-            const { error } = await supabase
-                .from('listings')
-                .update({ status: newStatus })
-                .eq('id', listing.id)
-                .eq('user_id', user?.id);
+    /**
+     * Permanently delete a listing and its associated images.
+     * Returns true on success, false on failure.
+     * UI layer should handle confirmation dialogs.
+     */
+    const permanentDeleteListing = useCallback(async (listingId: number): Promise<boolean> => {
+        if (!user) return false;
 
-            if (error) throw error;
+        // Store previous state for potential rollback
+        const previousListings = [...userListings];
+        const listingToDelete = userListings.find(l => l.id === listingId);
 
-            setUserListings(prev => {
-                const updated = prev.map(l =>
-                    l.id === listing.id ? { ...l, status: newStatus } : l
-                );
-                saveCachedUserListings(updated);
-                return updated;
-            });
-
-            Alert.alert('Success', `Listing marked as ${newStatus}`);
-        } catch (error) {
-            console.error('Status update error:', error);
-            Alert.alert('Error', 'Failed to update listing status');
+        if (!listingToDelete) {
+            console.warn('[AppData] Listing not found for permanent delete:', listingId);
+            return false;
         }
-    }, [user, saveCachedUserListings]);
+
+        // Optimistic update - remove from list immediately
+        setUserListings(prev => prev.filter(l => l.id !== listingId));
+
+        try {
+            const { error } = await listingsApi.delete(listingId, user.id);
+
+            if (error) {
+                // Rollback on error
+                setUserListings(previousListings);
+                console.error('[AppData] Permanent delete error:', error);
+                return false;
+            }
+
+            // Delete images from storage (fire and forget - don't fail on image cleanup error)
+            if (listingToDelete.images && listingToDelete.images.length > 0) {
+                deleteListingImages(listingToDelete.images).catch(err => {
+                    console.error('[AppData] Image cleanup failed:', err);
+                });
+            }
+
+            // Update cache
+            await saveCachedUserListings(userListings.filter(l => l.id !== listingId));
+
+            return true;
+        } catch (error) {
+            // Rollback on error
+            setUserListings(previousListings);
+            console.error('[AppData] Permanent delete error:', error);
+            return false;
+        }
+    }, [user, userListings, saveCachedUserListings]);
+
+    /**
+     * Update listing status (active/sold).
+     * Returns true on success, false on failure.
+     */
+    const updateListingStatus = useCallback(async (
+        listingId: number,
+        newStatus: 'active' | 'sold'
+    ): Promise<boolean> => {
+        if (!user) return false;
+
+        // Store previous state for potential rollback
+        const previousListings = [...userListings];
+
+        // Optimistic update
+        setUserListings(prev =>
+            prev.map(l =>
+                l.id === listingId
+                    ? { ...l, status: newStatus, updated_at: new Date().toISOString() }
+                    : l
+            )
+        );
+
+        try {
+            const { error } = await listingsApi.updateStatus(listingId, user.id, newStatus);
+
+            if (error) {
+                // Rollback on error
+                setUserListings(previousListings);
+                console.error('[AppData] Status update error:', error);
+                return false;
+            }
+
+            // Update cache with new state
+            const updatedListings = userListings.map(l =>
+                l.id === listingId
+                    ? { ...l, status: newStatus, updated_at: new Date().toISOString() }
+                    : l
+            );
+            await saveCachedUserListings(updatedListings);
+
+            return true;
+        } catch (error) {
+            // Rollback on error
+            setUserListings(previousListings);
+            console.error('[AppData] Status update error:', error);
+            return false;
+        }
+    }, [user, userListings, saveCachedUserListings]);
+
+    /**
+     * Restore an inactive listing back to active.
+     * Returns true on success, false on failure.
+     */
+    const restoreListing = useCallback(async (listingId: number): Promise<boolean> => {
+        if (!user) return false;
+
+        // Store previous state for potential rollback
+        const previousListings = [...userListings];
+
+        // Optimistic update
+        setUserListings(prev =>
+            prev.map(l =>
+                l.id === listingId
+                    ? { ...l, status: 'active' as const, updated_at: new Date().toISOString() }
+                    : l
+            )
+        );
+
+        try {
+            const { error } = await listingsApi.updateStatus(listingId, user.id, 'active');
+
+            if (error) {
+                // Rollback on error
+                setUserListings(previousListings);
+                console.error('[AppData] Restore error:', error);
+                return false;
+            }
+
+            // Update cache with new state
+            const updatedListings = userListings.map(l =>
+                l.id === listingId
+                    ? { ...l, status: 'active' as const, updated_at: new Date().toISOString() }
+                    : l
+            );
+            await saveCachedUserListings(updatedListings);
+
+            return true;
+        } catch (error) {
+            // Rollback on error
+            setUserListings(previousListings);
+            console.error('[AppData] Restore error:', error);
+            return false;
+        }
+    }, [user, userListings, saveCachedUserListings]);
 
     // ========== FETCH RECENTLY VIEWED ==========
     const loadRecentlyViewed = useCallback(async (showLoading = false) => {
@@ -939,9 +1023,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         userListingsLoading,
         userListingsRefreshing,
         fetchUserListings,
-        handleSoftDelete,
-        handlePermanentDelete,
-        handleUpdateStatus,
+        softDeleteListing,
+        permanentDeleteListing,
+        updateListingStatus,
+        restoreListing,
 
         recentlyViewed,
         recentlyViewedLoading,

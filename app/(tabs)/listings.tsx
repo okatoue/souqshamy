@@ -30,9 +30,10 @@ export default function ListingsScreen() {
     userListings: listings,
     userListingsRefreshing: isRefreshing,
     fetchUserListings,
-    handleSoftDelete,
-    handlePermanentDelete,
-    handleUpdateStatus
+    softDeleteListing,
+    permanentDeleteListing,
+    updateListingStatus,
+    restoreListing,
   } = useAppData();
 
   const backgroundColor = useThemeColor({}, 'background');
@@ -121,9 +122,10 @@ export default function ListingsScreen() {
           <ListingItem
             item={item}
             onPress={handleListingPress}
-            onUpdateStatus={handleUpdateStatus}
-            onSoftDelete={handleSoftDelete}
-            onPermanentDelete={handlePermanentDelete}
+            onUpdateStatus={updateListingStatus}
+            onSoftDelete={softDeleteListing}
+            onPermanentDelete={permanentDeleteListing}
+            onRestore={restoreListing}
           />
         )}
         keyExtractor={(item) => item.id.toString()}
