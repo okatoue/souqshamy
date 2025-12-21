@@ -1070,25 +1070,90 @@ async function cleanTables(supabase: SupabaseClient): Promise<void> {
     }
   }
 
-  // Note: We don't delete auth.users as that requires admin API
-  console.log('  ⚠️  Note: auth.users cannot be cleaned via SQL. Use Supabase dashboard if needed.');
+  // Clean auth users via Admin API
+  console.log('  🔄 Cleaning auth.users...');
+  try {
+    const { data: authUsers, error: listError } = await supabase.auth.admin.listUsers();
+    if (listError) {
+      console.log(`  ⚠️  Could not list auth users: ${listError.message}`);
+    } else if (authUsers?.users) {
+      let deletedCount = 0;
+      for (const user of authUsers.users) {
+        const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+        if (!deleteError) {
+          deletedCount++;
+        }
+      }
+      console.log(`  ✓ Deleted ${deletedCount} auth users`);
+    }
+  } catch (err) {
+    console.log('  ⚠️  Could not clean auth users:', err);
+  }
 }
 
 async function seedProfiles(
   supabase: SupabaseClient,
   users: GeneratedUser[]
 ): Promise<GeneratedUser[]> {
-  console.log(`\n👤 Seeding ${users.length} profiles...`);
+  console.log(`\n👤 Seeding ${users.length} users via Auth Admin API...`);
 
-  const { data, error } = await supabase.from('profiles').insert(users).select();
+  const createdUsers: GeneratedUser[] = [];
 
-  if (error) {
-    console.error('  ❌ Error seeding profiles:', error.message);
-    throw error;
+  for (let i = 0; i < users.length; i++) {
+    const user = users[i];
+
+    try {
+      // Create auth user first - this will trigger profile creation
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: user.email || `seed_user_${i}@example.com`,
+        password: 'SeedPassword123!', // Default password for seeded users
+        email_confirm: true,
+        user_metadata: {
+          display_name: user.display_name,
+          phone_number: user.phone_number,
+        },
+      });
+
+      if (authError) {
+        console.error(`  ⚠️  Error creating auth user ${i + 1}: ${authError.message}`);
+        continue;
+      }
+
+      if (authData.user) {
+        // Update the user object with the real auth user ID
+        const createdUser = { ...user, id: authData.user.id };
+        createdUsers.push(createdUser);
+
+        // Update the profile with additional data
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authData.user.id,
+            email: user.email,
+            phone_number: user.phone_number,
+            display_name: user.display_name,
+            avatar_url: user.avatar_url,
+            email_verified: user.email_verified,
+            created_at: user.created_at,
+            updated_at: user.updated_at,
+          });
+
+        if (profileError) {
+          console.error(`  ⚠️  Error updating profile ${i + 1}: ${profileError.message}`);
+        }
+      }
+
+      // Progress indicator every 10 users
+      if ((i + 1) % 10 === 0) {
+        console.log(`  ✓ Created ${i + 1}/${users.length} users`);
+      }
+    } catch (err) {
+      console.error(`  ⚠️  Exception creating user ${i + 1}:`, err);
+    }
   }
 
-  console.log(`  ✓ Created ${data?.length || 0} profiles`);
-  return users;
+  console.log(`  ✓ Created ${createdUsers.length} users and profiles`);
+  return createdUsers;
 }
 
 async function seedListings(
