@@ -1,4 +1,4 @@
-import { favoritesApi, listingsApi } from '@/lib/api';
+import { favoritesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth_context';
 import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
@@ -107,31 +107,26 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        const { data: listingIds, error: favoriteError } = await favoritesApi.getIds(user.id);
+        // Use new API that returns listings ordered by favorite creation date (newest first)
+        const { data: favoritesData, error: favoritesError } = await favoritesApi.getWithListings(user.id);
 
-        if (favoriteError) throw favoriteError;
+        if (favoritesError) throw favoritesError;
 
-        if (!listingIds || listingIds.length === 0) {
+        if (!favoritesData || favoritesData.length === 0) {
           setFavorites([]);
           setFavoriteIds(new Set());
           await saveCachedFavorites([], []);
           return;
         }
 
-        setFavoriteIds(new Set(listingIds));
+        // Extract listings and IDs (already ordered newest first)
+        const listings = favoritesData.map(item => item.listing);
+        const ids = listings.map(listing => String(listing.id));
 
-        // Include inactive listings so users can see sold/unavailable items in their favorites
-        const { data: listings, error: listingsError } = await listingsApi.getByIds(
-          listingIds,
-          { includeInactive: true }
-        );
+        setFavorites(listings);
+        setFavoriteIds(new Set(ids));
 
-        if (listingsError) throw listingsError;
-
-        const listingData = listings || [];
-        setFavorites(listingData);
-
-        await saveCachedFavorites(listingData, listingIds);
+        await saveCachedFavorites(listings, ids);
       } catch (error) {
         console.error('[Favorites] Error in fetchFavorites:', error);
 
@@ -243,6 +238,11 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
       const id = String(listingId);
 
+      // Check if already a favorite to prevent duplicate operations
+      if (favoriteIds.has(id)) {
+        return true;
+      }
+
       // Optimistic update IMMEDIATELY before API call
       setFavoriteIds((prev) => new Set([...prev, id]));
 
@@ -251,8 +251,9 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
 
-        // Refresh in background to get full listing details for Favorites tab
-        fetchFavorites(false, false);
+        // DON'T call fetchFavorites here - it causes race condition
+        // The optimistic update is sufficient for UI
+        // Full data will be fetched when user visits Favorites tab
 
         return true;
       } catch (error) {
@@ -270,7 +271,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [user, fetchFavorites]
+    [user, favoriteIds]
   );
 
   const removeFavorite = useCallback(
@@ -320,13 +321,16 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const toggleFavorite = useCallback(
     async (listingId: string | number): Promise<boolean> => {
       const id = String(listingId);
-      if (isFavorite(id)) {
+      // Read directly from current state to avoid stale closure
+      const isCurrentlyFavorite = favoriteIds.has(id);
+
+      if (isCurrentlyFavorite) {
         return removeFavorite(id);
       } else {
         return addFavorite(id);
       }
     },
-    [isFavorite, addFavorite, removeFavorite]
+    [favoriteIds, addFavorite, removeFavorite]
   );
 
   // Memoize context value to prevent unnecessary re-renders
