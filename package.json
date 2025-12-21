@@ -8,7 +8,11 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "db:seed": "npx ts-node --project scripts/tsconfig.json scripts/seed-database.ts",
+    "db:seed:clean": "npx ts-node --project scripts/tsconfig.json scripts/seed-database.ts --clean",
+    "db:seed:small": "npx ts-node --project scripts/tsconfig.json scripts/seed-database.ts --users 20 --listings 50",
+    "db:seed:large": "npx ts-node --project scripts/tsconfig.json scripts/seed-database.ts --clean --users 50 --listings 200"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -60,9 +64,11 @@
     "react-native-worklets": "0.5.1"
   },
   "devDependencies": {
+    "@types/node": "^20.10.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "ts-node": "^10.9.2",
     "typescript": "~5.9.2"
   },
   "private": true
