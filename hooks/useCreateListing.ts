@@ -1,5 +1,5 @@
 import * as FileSystem from 'expo-file-system/legacy';
-import * as ImageManipulator from 'expo-image-manipulator';
+// Note: expo-image-manipulator is imported dynamically to avoid native module errors at startup
 import { decode } from 'base64-arraybuffer';
 import { Image } from 'react-native';
 import { supabase } from '@/lib/supabase';
@@ -86,6 +86,9 @@ function getImageSize(uri: string): Promise<{ width: number; height: number }> {
  */
 async function optimizeImage(uri: string): Promise<string> {
     try {
+        // Dynamic import to avoid native module errors at app startup
+        const ImageManipulator = await import('expo-image-manipulator');
+
         // Get image dimensions
         const { width, height } = await getImageSize(uri);
 
@@ -112,7 +115,12 @@ async function optimizeImage(uri: string): Promise<string> {
         );
 
         return result.uri;
-    } catch (error) {
+    } catch (error: any) {
+        // Handle case where expo-image-manipulator native module is not available
+        if (error?.message?.includes('Cannot find native module')) {
+            console.warn('[ImageOptimize] Native module not available, using original image');
+            return uri;
+        }
         console.warn('[ImageOptimize] Optimization failed, using original:', error);
         return uri; // Fall back to original
     }
