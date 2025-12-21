@@ -3,6 +3,7 @@
 // It extracts tokens from the URL fragment and sets the Supabase session
 
 import { BRAND_COLOR } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import {
   extractAuthTokensFromUrl,
   isAuthCallbackUrl,
@@ -21,6 +22,11 @@ export default function AuthCallback() {
   const globalParams = useGlobalSearchParams();
   const [error, setError] = useState<string | null>(null);
   const hasProcessedUrl = useRef(false);
+
+  // Theme colors
+  const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
+  const mutedColor = useThemeColor({}, 'textMuted');
 
   // Check for captured URL on mount
   useEffect(() => {
@@ -168,19 +174,19 @@ export default function AuthCallback() {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor }]}>
         <Text style={styles.errorIcon}>⚠️</Text>
-        <Text style={styles.errorTitle}>Authentication Error</Text>
-        <Text style={styles.errorMessage}>{error}</Text>
-        <Text style={styles.redirectText}>Redirecting to sign in...</Text>
+        <Text style={[styles.errorTitle, { color: textColor }]}>Authentication Error</Text>
+        <Text style={[styles.errorMessage, { color: mutedColor }]}>{error}</Text>
+        <Text style={[styles.redirectText, { color: mutedColor }]}>Redirecting to sign in...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor }]}>
       <ActivityIndicator size="large" color={BRAND_COLOR} />
-      <Text style={styles.loadingText}>Completing sign in...</Text>
+      <Text style={[styles.loadingText, { color: mutedColor }]}>Completing sign in...</Text>
     </View>
   );
 }
@@ -195,7 +201,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
   },
   errorIcon: {
     fontSize: 48,
@@ -205,16 +210,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
   },
   errorMessage: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 16,
   },
   redirectText: {
     fontSize: 12,
-    color: '#999',
   },
 });

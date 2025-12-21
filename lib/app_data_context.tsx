@@ -3,6 +3,7 @@
 
 import { useAuth } from '@/lib/auth_context';
 import { listingsApi } from '@/lib/api';
+import { CACHE_KEYS, getUserCacheKey } from '@/lib/cache';
 import { getDisplayName } from '@/lib/formatters';
 import { deleteListingImages } from '@/lib/imageUpload';
 import { supabase } from '@/lib/supabase';
@@ -12,11 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 
-// Cache keys
-const CONVERSATIONS_CACHE_KEY = '@conversations_cache';
-const USER_LISTINGS_CACHE_KEY = '@user_listings_cache';
-const RECENTLY_VIEWED_KEY = '@recently_viewed_listings';
-const RECENTLY_VIEWED_CACHE_KEY = '@recently_viewed_cache';
+// Max recently viewed items to store
 const MAX_RECENTLY_VIEWED = 20;
 
 // Cache version - increment this to invalidate old caches
@@ -42,8 +39,8 @@ interface CachedRecentlyViewed {
 
 // Helper to get user-specific storage keys for recently viewed
 const getRecentlyViewedKeys = (userId: string | undefined) => ({
-    idsKey: userId ? `${RECENTLY_VIEWED_KEY}_${userId}` : RECENTLY_VIEWED_KEY,
-    cacheKey: userId ? `${RECENTLY_VIEWED_CACHE_KEY}_${userId}` : RECENTLY_VIEWED_CACHE_KEY,
+    idsKey: userId ? getUserCacheKey(CACHE_KEYS.RECENTLY_VIEWED_IDS, userId) : CACHE_KEYS.RECENTLY_VIEWED_IDS,
+    cacheKey: userId ? getUserCacheKey(CACHE_KEYS.RECENTLY_VIEWED, userId) : CACHE_KEYS.RECENTLY_VIEWED,
 });
 
 interface AppDataContextType {
@@ -109,7 +106,8 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const loadCachedConversations = useCallback(async (): Promise<ConversationWithDetails[] | null> => {
         if (!user) return null;
         try {
-            const cached = await AsyncStorage.getItem(`${CONVERSATIONS_CACHE_KEY}_${user.id}`);
+            const cacheKey = getUserCacheKey(CACHE_KEYS.CONVERSATIONS, user.id);
+            const cached = await AsyncStorage.getItem(cacheKey);
             if (cached) {
                 const parsed: CachedConversations = JSON.parse(cached);
                 if (parsed.userId === user.id) {
@@ -125,12 +123,13 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     const saveCachedConversations = useCallback(async (convs: ConversationWithDetails[]) => {
         if (!user) return;
         try {
+            const cacheKey = getUserCacheKey(CACHE_KEYS.CONVERSATIONS, user.id);
             const cacheData: CachedConversations = {
                 conversations: convs,
                 userId: user.id,
                 timestamp: Date.now()
             };
-            await AsyncStorage.setItem(`${CONVERSATIONS_CACHE_KEY}_${user.id}`, JSON.stringify(cacheData));
+            await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (error) {
             console.error('Error saving cached conversations:', error);
         }
@@ -138,8 +137,10 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
     // ========== USER LISTINGS CACHE HELPERS ==========
     const loadCachedUserListings = useCallback(async (): Promise<CachedUserListings | null> => {
+        if (!user) return null;
         try {
-            const cachedData = await AsyncStorage.getItem(USER_LISTINGS_CACHE_KEY);
+            const cacheKey = getUserCacheKey(CACHE_KEYS.USER_LISTINGS, user.id);
+            const cachedData = await AsyncStorage.getItem(cacheKey);
             if (cachedData) {
                 return JSON.parse(cachedData);
             }
@@ -147,28 +148,31 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
             console.error('Error loading cached user listings:', err);
         }
         return null;
-    }, []);
+    }, [user]);
 
     const saveCachedUserListings = useCallback(async (listingsToCache: Listing[]) => {
         if (!user) return;
         try {
+            const cacheKey = getUserCacheKey(CACHE_KEYS.USER_LISTINGS, user.id);
             const cacheData: CachedUserListings = {
                 listings: listingsToCache,
                 userId: user.id
             };
-            await AsyncStorage.setItem(USER_LISTINGS_CACHE_KEY, JSON.stringify(cacheData));
+            await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
         } catch (err) {
             console.error('Error saving cached user listings:', err);
         }
     }, [user]);
 
     const clearUserListingsCache = useCallback(async () => {
+        if (!user) return;
         try {
-            await AsyncStorage.removeItem(USER_LISTINGS_CACHE_KEY);
+            const cacheKey = getUserCacheKey(CACHE_KEYS.USER_LISTINGS, user.id);
+            await AsyncStorage.removeItem(cacheKey);
         } catch (err) {
             console.error('Error clearing user listings cache:', err);
         }
-    }, []);
+    }, [user]);
 
     // ========== RECENTLY VIEWED CACHE HELPERS ==========
     const storageKeys = getRecentlyViewedKeys(user?.id);

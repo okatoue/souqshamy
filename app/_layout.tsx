@@ -1,5 +1,6 @@
 // app/_layout.tsx
 import { AuthLogo } from '@/components/auth/AuthLogo';
+import { GlobalErrorBoundary } from '@/components/GlobalErrorBoundary';
 import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
@@ -123,18 +124,20 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider>
-        <BottomSheetModalProvider>
-          <AuthProvider>
-            <FavoritesProvider>
-              <AppDataProvider>
-                <RootLayoutNav />
-              </AppDataProvider>
-            </FavoritesProvider>
-          </AuthProvider>
-        </BottomSheetModalProvider>
-      </ThemeProvider>
-    </GestureHandlerRootView>
+    <GlobalErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemeProvider>
+          <BottomSheetModalProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                <AppDataProvider>
+                  <RootLayoutNav />
+                </AppDataProvider>
+              </FavoritesProvider>
+            </AuthProvider>
+          </BottomSheetModalProvider>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </GlobalErrorBoundary>
   );
 }
