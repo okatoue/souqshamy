@@ -1,6 +1,7 @@
 import { SettingsMenuItem, SettingsSection, ThemePicker, ThemePickerRefProps } from '@/components/settings';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
@@ -116,7 +117,9 @@ export default function UserScreen() {
             >
                 {/* Header */}
                 <ThemedView style={styles.header}>
-                    <ThemedText type="title">Account</ThemedText>
+                    <BackButton />
+                    <ThemedText type="title" style={styles.headerTitle}>Account</ThemedText>
+                    <View style={styles.headerSpacer} />
                 </ThemedView>
 
                 {/* User Info Card */}
@@ -238,9 +241,18 @@ const styles = StyleSheet.create({
         paddingBottom: 30,
     },
     header: {
-        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
         paddingTop: 10,
         paddingBottom: 20,
+    },
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+    },
+    headerSpacer: {
+        width: 28 + SPACING.xs * 2,
     },
     userCard: {
         flexDirection: 'row',
