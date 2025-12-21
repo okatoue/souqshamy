@@ -6,6 +6,7 @@ import { Animated, Pressable, StyleSheet, ViewStyle } from 'react-native';
 
 interface FavoriteButtonProps {
   listingId: string | number;
+  sellerId?: string;
   size?: number;
   style?: ViewStyle;
   /** Color when not favorited (default: #888) */
@@ -19,16 +20,23 @@ interface FavoriteButtonProps {
 /**
  * Animated favorite/heart button with haptic feedback.
  * Bounces when toggled for satisfying UX.
+ * Hidden for user's own listings.
  */
 export function FavoriteButton({
   listingId,
+  sellerId,
   size = 24,
   style,
   inactiveColor = '#888',
   showBackground = false,
   backgroundColor = 'rgba(0, 0, 0, 0.4)',
 }: FavoriteButtonProps) {
-  const { isFavorite, handleToggle } = useFavoriteToggle({ listingId });
+  const { isFavorite, isOwnListing, handleToggle } = useFavoriteToggle({ listingId, sellerId });
+
+  // Don't render for user's own listings
+  if (isOwnListing) {
+    return null;
+  }
 
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;

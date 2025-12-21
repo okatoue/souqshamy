@@ -57,6 +57,7 @@ export function ListingGridCard({ listing, onPress, cardWidth }: ListingGridCard
                 <View style={styles.favoriteButton}>
                     <FavoriteButton
                         listingId={listing.id}
+                        sellerId={listing.user_id}
                         size={18}
                         showBackground
                         inactiveColor="white"

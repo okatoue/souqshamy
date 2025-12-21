@@ -318,6 +318,7 @@ export default function ListingDetailScreen() {
                         )}
                         <FavoriteButton
                             listingId={params.id || ''}
+                            sellerId={listing?.user_id}
                             size={24}
                             inactiveColor={textColor}
                             style={styles.headerButton}
