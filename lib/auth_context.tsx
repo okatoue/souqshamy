@@ -47,6 +47,7 @@ type AuthContextType = {
     loading: boolean;
     isPasswordResetInProgress: boolean;
     setPasswordResetInProgress: (value: boolean) => Promise<void>;
+    profileVersion: number;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [isPasswordResetInProgress, setIsPasswordResetInProgressState] = useState(false);
+    const [profileVersion, setProfileVersion] = useState(0);
     const hasProcessedDeepLink = useRef(false);
 
     // Process auth callback URL and extract tokens using shared utility
@@ -211,14 +213,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         || session.user.user_metadata?.picture
                         || null;
 
-                    // Create/update profile
+                    // Create/update profile and signal when complete
                     createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
                         session.user.user_metadata?.phone_number,
                         displayName,
                         avatarUrl
-                    );
+                    ).then((success) => {
+                        if (success) {
+                            setProfileVersion(v => v + 1);
+                        }
+                    });
                 }
             } catch (error) {
                 console.error('[Auth] Error initializing auth:', error);
@@ -262,13 +268,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         || session.user.user_metadata?.picture
                         || null;
 
-                    await createOrUpdateProfile(
+                    const success = await createOrUpdateProfile(
                         session.user.id,
                         session.user.email,
                         session.user.user_metadata?.phone_number,
                         displayName,
                         avatarUrl
                     );
+
+                    // Signal that profile was updated so useProfile can refetch
+                    if (success) {
+                        setProfileVersion(v => v + 1);
+                    }
                 }
 
                 // Update the in-memory state
@@ -285,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phoneNumber?: string,
         displayName?: string,
         avatarUrl?: string
-    ) => {
+    ): Promise<boolean> => {
         try {
             // First check if profile exists
             const { data: existingProfile } = await supabase
@@ -306,7 +317,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         avatar_url: avatarUrl,
                     });
 
-                if (error) console.error('Profile creation error:', error);
+                if (error) {
+                    console.error('Profile creation error:', error);
+                    return false;
+                }
+                return true;
             } else {
                 // Update existing profile - only update display_name/avatar_url if provided and not already set
                 const updates: any = {};
@@ -325,11 +340,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         .update(updates)
                         .eq('id', userId);
 
-                    if (error) console.error('Profile update error:', error);
+                    if (error) {
+                        console.error('Profile update error:', error);
+                        return false;
+                    }
                 }
+                return true;
             }
         } catch (error) {
             console.error('Profile error:', error);
+            return false;
         }
     };
 
@@ -602,7 +622,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             signOut,
             loading,
             isPasswordResetInProgress,
-            setPasswordResetInProgress
+            setPasswordResetInProgress,
+            profileVersion
         }}>
             {children}
         </AuthContext.Provider>
