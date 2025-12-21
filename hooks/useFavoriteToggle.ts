@@ -23,11 +23,16 @@ export function useFavoriteToggle({ listingId }: UseFavoriteToggleOptions): UseF
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
 
   const id = String(listingId);
+
+  // This will re-evaluate on every render when favoriteIds changes
   const currentlyFavorite = checkIsFavorite(id);
 
   const handleToggle = useCallback(async () => {
+    // Read the CURRENT state at execution time, not at definition time
+    const isNowFavorite = checkIsFavorite(id);
+
     // Haptic feedback - different for add vs remove
-    if (currentlyFavorite) {
+    if (isNowFavorite) {
       // Removing - light tap
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } else {
@@ -37,7 +42,7 @@ export function useFavoriteToggle({ listingId }: UseFavoriteToggleOptions): UseF
 
     // Fire and forget - context handles optimistic update and rollback
     await toggleFavorite(id);
-  }, [id, toggleFavorite, currentlyFavorite]);
+  }, [id, toggleFavorite, checkIsFavorite]);
 
   return {
     isFavorite: currentlyFavorite,
