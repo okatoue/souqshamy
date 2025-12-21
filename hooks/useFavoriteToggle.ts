@@ -36,11 +36,6 @@ export function useFavoriteToggle({ listingId, sellerId }: UseFavoriteToggleOpti
   const currentlyFavorite = checkIsFavorite(id);
 
   const handleToggle = useCallback(async () => {
-    // Prevent favoriting own listings
-    if (isOwnListing) {
-      return;
-    }
-
     // Read the CURRENT state at execution time, not at definition time
     const isNowFavorite = checkIsFavorite(id);
 
@@ -54,8 +49,8 @@ export function useFavoriteToggle({ listingId, sellerId }: UseFavoriteToggleOpti
     }
 
     // Fire and forget - context handles optimistic update and rollback
-    await toggleFavorite(id, sellerId);
-  }, [id, sellerId, isOwnListing, toggleFavorite, checkIsFavorite]);
+    await toggleFavorite(id);
+  }, [id, toggleFavorite, checkIsFavorite]);
 
   return {
     isFavorite: currentlyFavorite,

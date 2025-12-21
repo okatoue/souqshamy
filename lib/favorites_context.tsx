@@ -1,4 +1,4 @@
-import { favoritesApi, listingsApi } from '@/lib/api';
+import { favoritesApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth_context';
 import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
@@ -25,9 +25,9 @@ interface FavoritesContextType {
   isRefreshing: boolean;
   fetchFavorites: (refresh?: boolean, showLoading?: boolean) => Promise<void>;
   isFavorite: (listingId: string | number) => boolean;
-  addFavorite: (listingId: string | number, sellerId?: string) => Promise<boolean>;
+  addFavorite: (listingId: string | number) => Promise<boolean>;
   removeFavorite: (listingId: string | number) => Promise<boolean>;
-  toggleFavorite: (listingId: string | number, sellerId?: string) => Promise<boolean>;
+  toggleFavorite: (listingId: string | number) => Promise<boolean>;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
@@ -230,25 +230,13 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addFavorite = useCallback(
-    async (listingId: string | number, sellerId?: string): Promise<boolean> => {
+    async (listingId: string | number): Promise<boolean> => {
       if (!user) {
         showAuthRequiredAlert();
         return false;
       }
 
       const id = String(listingId);
-
-      // Prevent users from favoriting their own listings
-      let ownerIdToCheck = sellerId;
-      if (!ownerIdToCheck) {
-        // If sellerId not provided, fetch the listing to check ownership
-        const { data: listing } = await listingsApi.getById(id);
-        ownerIdToCheck = listing?.user_id;
-      }
-
-      if (ownerIdToCheck && user.id === ownerIdToCheck) {
-        return false;
-      }
 
       // Check if already a favorite to prevent duplicate operations
       if (favoriteIds.has(id)) {
@@ -331,7 +319,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleFavorite = useCallback(
-    async (listingId: string | number, sellerId?: string): Promise<boolean> => {
+    async (listingId: string | number): Promise<boolean> => {
       const id = String(listingId);
       // Read directly from current state to avoid stale closure
       const isCurrentlyFavorite = favoriteIds.has(id);
@@ -339,7 +327,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       if (isCurrentlyFavorite) {
         return removeFavorite(id);
       } else {
-        return addFavorite(id, sellerId);
+        return addFavorite(id);
       }
     },
     [favoriteIds, addFavorite, removeFavorite]
