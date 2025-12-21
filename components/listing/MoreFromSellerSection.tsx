@@ -91,6 +91,7 @@ export function MoreFromSellerSection({
                             <View style={styles.favoriteButton}>
                                 <FavoriteButton
                                     listingId={listing.id}
+                                    sellerId={listing.user_id}
                                     size={18}
                                     variant="overlay"
                                 />
