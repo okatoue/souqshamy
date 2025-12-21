@@ -16,11 +16,12 @@ export interface Profile {
 }
 
 export function useProfile() {
-    const { user } = useAuth();
+    const { user, profileVersion } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const isInitialLoad = useRef(true);
+    const lastProfileVersion = useRef(profileVersion);
 
     // Get the cache key for the current user
     const getCacheKey = useCallback(() => {
@@ -153,6 +154,15 @@ export function useProfile() {
 
         initialize();
     }, [user, loadCachedProfile, fetchProfile]);
+
+    // Refetch when profileVersion changes (indicates profile was created/updated in auth context)
+    useEffect(() => {
+        if (profileVersion !== lastProfileVersion.current && user) {
+            lastProfileVersion.current = profileVersion;
+            // Profile was just created/updated, refetch to get the latest data
+            fetchProfile(false, false);
+        }
+    }, [profileVersion, user, fetchProfile]);
 
     // Update profile
     const updateProfile = useCallback(async (updates: Partial<Profile>) => {
