@@ -1351,17 +1351,21 @@ async function main(): Promise<void> {
       await cleanTables(supabase);
     }
 
-    // Generate data
-    console.log('\n🎲 Generating fake data...');
+    // Generate user data
+    console.log('\n🎲 Generating user data...');
 
     const users = generateUsers(config.userCount);
-    console.log(`  ✓ Generated ${users.length} users`);
+    console.log(`  ✓ Generated ${users.length} user templates`);
 
-    const listings = generateListings(users, config.listingCount);
+    // Seed users first to get real auth user IDs
+    const seededUsers = await seedProfiles(supabase, users);
+
+    // Now generate listings with the REAL user IDs from seededUsers
+    console.log('\n🎲 Generating listings with real user IDs...');
+    const listings = generateListings(seededUsers, config.listingCount);
     console.log(`  ✓ Generated ${listings.length} listings`);
 
-    // Seed data in order (respecting foreign keys)
-    const seededUsers = await seedProfiles(supabase, users);
+    // Seed listings
     const seededListings = await seedListings(supabase, listings);
 
     // Generate and seed favorites
