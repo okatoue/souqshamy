@@ -6,6 +6,7 @@ import {
     SellerHeader,
 } from '@/components/listing';
 import LocationPreviewCard from '@/components/product-details/LocationPreviewCard';
+import { BackButton } from '@/components/ui/BackButton';
 import { FavoriteButton } from '@/components/ui/FavoriteButton';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -304,9 +305,7 @@ export default function ListingDetailScreen() {
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={[styles.header, { backgroundColor }]}>
-                    <Pressable onPress={() => router.back()} style={styles.headerButton}>
-                        <Ionicons name="chevron-back" size={28} color={textColor} />
-                    </Pressable>
+                    <BackButton style={styles.headerButton} />
                     <View style={styles.headerRight}>
                         {/* Edit button - only for owner */}
                         {isOwnListing && (

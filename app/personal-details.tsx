@@ -1,5 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { BackButton } from '@/components/ui/BackButton';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
@@ -228,9 +229,7 @@ export default function PersonalDetailsScreen() {
             >
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <Pressable onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color={iconColor} />
-                    </Pressable>
+                    <BackButton onPress={handleBack} />
                     <ThemedText type="title" style={styles.headerTitle}>
                         Personal Details
                     </ThemedText>
@@ -444,10 +443,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
         borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    backButton: {
-        padding: SPACING.xs,
-        marginLeft: -SPACING.xs,
     },
     headerTitle: {
         flex: 1,

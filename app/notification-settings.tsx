@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/ui/BackButton';
 import { BORDER_RADIUS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
@@ -80,9 +81,7 @@ export default function NotificationSettingsScreen() {
 
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={iconColor} />
-                </Pressable>
+                <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
                     Notifications
                 </Text>
@@ -158,10 +157,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
         borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    backButton: {
-        padding: SPACING.xs,
-        marginLeft: -SPACING.xs,
     },
     headerTitle: {
         flex: 1,

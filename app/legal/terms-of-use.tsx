@@ -1,9 +1,9 @@
+import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface SectionProps {
@@ -26,7 +26,6 @@ export default function TermsOfUseScreen() {
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
-    const iconColor = useThemeColor({}, 'icon');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'border');
 
     return (
@@ -35,9 +34,7 @@ export default function TermsOfUseScreen() {
 
             {/* Header */}
             <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                <Pressable onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={28} color={iconColor} />
-                </Pressable>
+                <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
                     Terms of Use
                 </Text>
@@ -162,10 +159,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
         borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    backButton: {
-        padding: SPACING.xs,
-        marginLeft: -SPACING.xs,
     },
     headerTitle: {
         flex: 1,

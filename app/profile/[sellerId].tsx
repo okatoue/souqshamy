@@ -14,6 +14,7 @@ import { SellerProfileHeader } from '@/components/profile/SellerProfileHeader';
 import { SellerProfileSkeleton } from '@/components/profile/SellerProfileSkeleton';
 import { SellerProfileTabs, SellerTabType } from '@/components/profile/SellerProfileTabs';
 // import { SellerStatsCard } from '@/components/profile/SellerStatsCard';  // TODO: Uncomment when implementing
+import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSellerProfile } from '@/hooks/useSellerProfile';
@@ -41,9 +42,7 @@ const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 2 - CARD_GAP) / 2;
 function Header({ textColor, onShare }: { textColor: string; onShare?: () => void }) {
     return (
         <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.headerButton}>
-                <Ionicons name="chevron-back" size={28} color={textColor} />
-            </Pressable>
+            <BackButton style={styles.headerButton} />
             <Text style={[styles.headerTitle, { color: textColor }]}>Profile</Text>
             {onShare ? (
                 <Pressable onPress={onShare} style={styles.headerButton}>
