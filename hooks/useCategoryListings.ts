@@ -32,11 +32,16 @@ interface CachedCategoryListings {
     timestamp: number;
 }
 
+const PAGE_SIZE = 20;
+
 export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryListingsParams) {
     const [listings, setListings] = useState<Listing[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<Error | null>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const isInitialLoad = useRef(true);
+    const currentPage = useRef(0);
 
     // Get location filter for bounding box queries
     const { locationFilter, getBoundingBox, isLoading: isLocationLoading } = useLocationFilter();
@@ -93,8 +98,8 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
         }
     }, [categoryId, subcategoryId, getLocationCacheKey]);
 
-    // Fetch listings from Supabase
-    const fetchListings = useCallback(async (showLoading = false) => {
+    // Fetch listings from Supabase with pagination support
+    const fetchListings = useCallback(async (showLoading = false, reset = false) => {
         // Validate categoryId before making the query
         if (!categoryId) {
             setIsLoading(false);
@@ -115,12 +120,18 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
             }
             setError(null);
 
+            // Calculate pagination range
+            const page = reset ? 0 : currentPage.current;
+            const from = page * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+
             let query = supabase
                 .from('listings')
                 .select('*')
                 .eq('category_id', parsedCategoryId)
                 .eq('status', 'active')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .range(from, to);
 
             // Add subcategory filter if provided
             if (subcategoryId) {
@@ -152,21 +163,44 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
             }
 
             const fetchedListings = data || [];
-            setListings(fetchedListings);
 
-            // Update cache
-            await saveCachedListings(fetchedListings);
+            // Append or replace based on reset flag
+            if (reset) {
+                setListings(fetchedListings);
+                currentPage.current = 0;
+            } else {
+                setListings(prev => [...prev, ...fetchedListings]);
+            }
+
+            // Check if there are more items to load
+            setHasMore(fetchedListings.length === PAGE_SIZE);
+
+            // Only cache the first page
+            if (reset || page === 0) {
+                await saveCachedListings(fetchedListings);
+            }
         } catch (err) {
             const error = err instanceof Error ? err : new Error('Failed to fetch listings');
             console.error('Error fetching category listings:', error);
             setError(error);
         } finally {
             setIsLoading(false);
+            setIsLoadingMore(false);
         }
     }, [categoryId, subcategoryId, saveCachedListings, getBoundingBox]);
 
+    // Load more function for infinite scroll
+    const loadMore = useCallback(async () => {
+        if (isLoadingMore || !hasMore || isLoading) return;
+
+        setIsLoadingMore(true);
+        currentPage.current += 1;
+        await fetchListings(false, false);
+    }, [isLoadingMore, hasMore, isLoading, fetchListings]);
+
     // Initialize: load cache first, then refresh in background
     // Also refetch when location filter changes
+    // Reset pagination when filters change
     useEffect(() => {
         const initialize = async () => {
             // Wait for location filter to load before fetching
@@ -179,6 +213,10 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
                 return;
             }
 
+            // Reset pagination state when filters change
+            currentPage.current = 0;
+            setHasMore(true);
+
             // Try to load from cache first
             const cachedListings = await loadCachedListings();
 
@@ -186,12 +224,14 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
                 // Show cached data immediately - no loading spinner
                 setListings(cachedListings);
                 setIsLoading(false);
+                // Set hasMore based on cached data
+                setHasMore(cachedListings.length === PAGE_SIZE);
 
-                // Then refresh in background
-                fetchListings(false);
+                // Then refresh in background (reset to first page)
+                fetchListings(false, true);
             } else {
-                // No valid cache - show loading and fetch
-                await fetchListings(true);
+                // No valid cache - show loading and fetch first page
+                await fetchListings(true, true);
             }
 
             isInitialLoad.current = false;
@@ -221,7 +261,10 @@ export function useCategoryListings({ categoryId, subcategoryId }: UseCategoryLi
         listings,
         isLoading,
         error,
-        refetch: () => fetchListings(false),
-        searchListings
+        refetch: () => fetchListings(false, true),
+        searchListings,
+        loadMore,
+        hasMore,
+        isLoadingMore
     };
 }
