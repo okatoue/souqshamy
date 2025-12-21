@@ -25,9 +25,9 @@ interface FavoritesContextType {
   isRefreshing: boolean;
   fetchFavorites: (refresh?: boolean, showLoading?: boolean) => Promise<void>;
   isFavorite: (listingId: string | number) => boolean;
-  addFavorite: (listingId: string | number) => Promise<boolean>;
+  addFavorite: (listingId: string | number, sellerId?: string) => Promise<boolean>;
   removeFavorite: (listingId: string | number) => Promise<boolean>;
-  toggleFavorite: (listingId: string | number) => Promise<boolean>;
+  toggleFavorite: (listingId: string | number, sellerId?: string) => Promise<boolean>;
 }
 
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
@@ -230,9 +230,14 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addFavorite = useCallback(
-    async (listingId: string | number): Promise<boolean> => {
+    async (listingId: string | number, sellerId?: string): Promise<boolean> => {
       if (!user) {
         showAuthRequiredAlert();
+        return false;
+      }
+
+      // Prevent users from favoriting their own listings
+      if (sellerId && user.id === sellerId) {
         return false;
       }
 
@@ -319,7 +324,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleFavorite = useCallback(
-    async (listingId: string | number): Promise<boolean> => {
+    async (listingId: string | number, sellerId?: string): Promise<boolean> => {
       const id = String(listingId);
       // Read directly from current state to avoid stale closure
       const isCurrentlyFavorite = favoriteIds.has(id);
@@ -327,7 +332,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
       if (isCurrentlyFavorite) {
         return removeFavorite(id);
       } else {
-        return addFavorite(id);
+        return addFavorite(id, sellerId);
       }
     },
     [favoriteIds, addFavorite, removeFavorite]
