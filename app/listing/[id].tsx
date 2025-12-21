@@ -12,7 +12,6 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { formatPrice, UserProfile } from '@/lib/formatters';
-import { addToRecentlyViewed } from '@/lib/recentlyViewed';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -70,8 +69,8 @@ export default function ListingDetailScreen() {
     const [sellerListings, setSellerListings] = useState<Listing[]>([]);
     const [sellerListingsLoading, setSellerListingsLoading] = useState(false);
 
-    // Chat - uses centralized AppDataContext (avoids duplicate real-time subscriptions)
-    const { getOrCreateConversation } = useAppData();
+    // Chat and Recently Viewed - uses centralized AppDataContext
+    const { getOrCreateConversation, addToRecentlyViewed } = useAppData();
     const [isStartingChat, setIsStartingChat] = useState(false);
 
     // Theme colors
@@ -86,9 +85,9 @@ export default function ListingDetailScreen() {
     useEffect(() => {
         // Skip fetch if we already have listing data from params
         if (initialListing) {
-            // Track recently viewed
+            // Track recently viewed (optimistic - no network call needed)
             if (initialListing.user_id !== user?.id) {
-                addToRecentlyViewed(initialListing.id, user?.id);
+                addToRecentlyViewed(initialListing);
             }
             return;
         }
@@ -107,8 +106,9 @@ export default function ListingDetailScreen() {
 
                 setListing(data);
 
+                // Track recently viewed (optimistic - no network call needed)
                 if (data.user_id !== user?.id) {
-                    addToRecentlyViewed(data.id, user?.id);
+                    addToRecentlyViewed(data);
                 }
             } catch (error) {
                 console.error('Error fetching listing:', error);
@@ -119,7 +119,7 @@ export default function ListingDetailScreen() {
         };
 
         fetchListing();
-    }, [params.id, user?.id, initialListing]);
+    }, [params.id, user?.id, initialListing, addToRecentlyViewed]);
 
     // Fetch seller profile and their other listings
     useEffect(() => {
