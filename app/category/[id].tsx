@@ -44,8 +44,8 @@ export default function CategoryListingScreen() {
   // Get categoryId safely - params.id could be string or string[]
   const categoryId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  // Use the category listings hook
-  const { listings, isLoading, error, refetch } = useCategoryListings({
+  // Use the category listings hook with pagination
+  const { listings, isLoading, error, refetch, loadMore, hasMore, isLoadingMore } = useCategoryListings({
     categoryId: categoryId,
     subcategoryId: selectedSubcategory,
   });
@@ -196,6 +196,21 @@ export default function CategoryListingScreen() {
     </View>
   );
 
+  const renderFooter = () => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={styles.footerLoader}>
+        <ActivityIndicator size="small" color={BRAND_COLOR} />
+      </View>
+    );
+  };
+
+  const handleLoadMore = () => {
+    // Don't trigger load more if searching (client-side filtering)
+    if (searchQuery.trim()) return;
+    loadMore();
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       {/* Header */}
@@ -250,7 +265,10 @@ export default function CategoryListingScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyList}
+          ListFooterComponent={renderFooter}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl refreshing={false} onRefresh={refetch} tintColor={BRAND_COLOR} />
           }
@@ -363,5 +381,9 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+  },
+  footerLoader: {
+    paddingVertical: 20,
+    alignItems: 'center',
   },
 });
