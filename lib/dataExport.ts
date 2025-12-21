@@ -5,7 +5,7 @@
 
 import { supabase } from '@/lib/supabase';
 import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
+// Note: expo-sharing is imported dynamically to avoid native module errors at startup
 
 export interface UserDataExport {
     exportedAt: string;
@@ -67,17 +67,28 @@ export async function exportUserData(userId: string): Promise<string> {
  * @param filePath - The path to the exported file
  */
 export async function shareExportedData(filePath: string): Promise<void> {
-    const isAvailable = await Sharing.isAvailableAsync();
+    try {
+        // Dynamic import to avoid native module errors at app startup
+        const Sharing = await import('expo-sharing');
 
-    if (!isAvailable) {
-        throw new Error('Sharing is not available on this device');
+        const isAvailable = await Sharing.isAvailableAsync();
+
+        if (!isAvailable) {
+            throw new Error('Sharing is not available on this device');
+        }
+
+        await Sharing.shareAsync(filePath, {
+            mimeType: 'application/json',
+            dialogTitle: 'Export Your SouqJari Data',
+            UTI: 'public.json',
+        });
+    } catch (error: any) {
+        // Handle case where expo-sharing native module is not available
+        if (error?.message?.includes('Cannot find native module')) {
+            throw new Error('Data export is not available in this environment. Please use the native app.');
+        }
+        throw error;
     }
-
-    await Sharing.shareAsync(filePath, {
-        mimeType: 'application/json',
-        dialogTitle: 'Export Your SouqJari Data',
-        UTI: 'public.json',
-    });
 }
 
 /**
