@@ -71,7 +71,7 @@ interface AppDataContextType {
     recentlyViewed: Listing[];
     recentlyViewedLoading: boolean;
     recentlyViewedError: Error | null;
-    addToRecentlyViewed: (listingId: number) => Promise<void>;
+    addToRecentlyViewed: (listing: Listing) => Promise<void>;
     clearRecentlyViewed: () => Promise<void>;
     refreshRecentlyViewed: () => Promise<void>;
 }
@@ -669,21 +669,30 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
         }
     }, [storageKeys.idsKey, saveCachedRecentlyViewed]);
 
-    const addToRecentlyViewed = useCallback(async (listingId: number) => {
+    const addToRecentlyViewed = useCallback(async (listing: Listing) => {
         try {
+            // 1. Update AsyncStorage with new ID
             const storedIds = await AsyncStorage.getItem(storageKeys.idsKey);
             let ids: number[] = storedIds ? JSON.parse(storedIds) : [];
 
-            ids = ids.filter(id => id !== listingId);
-            ids.unshift(listingId);
+            ids = ids.filter(id => id !== listing.id);
+            ids.unshift(listing.id);
             ids = ids.slice(0, MAX_RECENTLY_VIEWED);
 
             await AsyncStorage.setItem(storageKeys.idsKey, JSON.stringify(ids));
-            await loadRecentlyViewed(false);
+
+            // 2. Optimistically update state (NO network call)
+            setRecentlyViewed(prev => {
+                const filtered = prev.filter(l => l.id !== listing.id);
+                const updated = [listing, ...filtered].slice(0, MAX_RECENTLY_VIEWED);
+                // Save cache in background (fire and forget)
+                saveCachedRecentlyViewed(updated);
+                return updated;
+            });
         } catch (err) {
             console.error('Error adding to recently viewed:', err);
         }
-    }, [storageKeys.idsKey, loadRecentlyViewed]);
+    }, [storageKeys.idsKey, saveCachedRecentlyViewed]);
 
     const clearRecentlyViewed = useCallback(async () => {
         try {
