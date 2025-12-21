@@ -302,31 +302,32 @@ export default function ListingDetailScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Header */}
-                <View style={[styles.header, { backgroundColor }]}>
-                    <BackButton style={styles.headerButton} />
-                    <View style={styles.headerRight}>
-                        {/* Edit button - only for owner */}
-                        {isOwnListing && (
-                            <Pressable
-                                onPress={() => router.push(`/listing/edit/${listing.id}`)}
-                                style={styles.headerButton}
-                            >
-                                <Ionicons name="pencil" size={22} color={BRAND_COLOR} />
-                            </Pressable>
-                        )}
-                        <FavoriteButton
-                            listingId={params.id || ''}
-                            size={24}
-                            inactiveColor={textColor}
+            {/* Header - Sticky */}
+            <View style={[styles.header, { backgroundColor }]}>
+                <BackButton style={styles.headerButton} />
+                <View style={styles.headerRight}>
+                    {/* Edit button - only for owner */}
+                    {isOwnListing && (
+                        <Pressable
+                            onPress={() => router.push(`/listing/edit/${listing.id}`)}
                             style={styles.headerButton}
-                        />
-                        <Pressable onPress={handleShare} style={styles.headerButton}>
-                            <Ionicons name="share-outline" size={24} color={textColor} />
+                        >
+                            <Ionicons name="pencil" size={22} color={BRAND_COLOR} />
                         </Pressable>
-                    </View>
+                    )}
+                    <FavoriteButton
+                        listingId={params.id || ''}
+                        size={24}
+                        inactiveColor={textColor}
+                        style={styles.headerButton}
+                    />
+                    <Pressable onPress={handleShare} style={styles.headerButton}>
+                        <Ionicons name="share-outline" size={24} color={textColor} />
+                    </Pressable>
                 </View>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
 
                 {/* Divider line */}
                 <View style={[styles.headerDivider, { backgroundColor: borderColor }]} />
