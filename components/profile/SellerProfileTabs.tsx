@@ -13,11 +13,31 @@ interface SellerProfileTabsProps {
     activeTab: SellerTabType;
     onTabChange: (tab: SellerTabType) => void;
     listingsCount?: number;
+    /** Enable the ratings tab - set to false until rating system is implemented */
+    ratingsEnabled?: boolean;
 }
 
-export function SellerProfileTabs({ activeTab, onTabChange, listingsCount }: SellerProfileTabsProps) {
+export function SellerProfileTabs({
+    activeTab,
+    onTabChange,
+    listingsCount,
+    ratingsEnabled = false,
+}: SellerProfileTabsProps) {
     const borderColor = useThemeColor({}, 'border');
     const mutedColor = useThemeColor({}, 'textMuted');
+    const textColor = useThemeColor({}, 'text');
+
+    // If ratings not enabled, show simplified listings-only header
+    if (!ratingsEnabled) {
+        return (
+            <View style={[styles.singleTabContainer, { borderBottomColor: borderColor }]}>
+                <Text style={[styles.singleTabText, { color: textColor }]}>
+                    {listingsCount !== undefined ? listingsCount : 0}{' '}
+                    {listingsCount === 1 ? 'Listing' : 'Listings'}
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={[styles.container, { borderBottomColor: borderColor }]}>
@@ -59,6 +79,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         borderBottomWidth: 1,
         marginHorizontal: SPACING.lg,
+    },
+    singleTabContainer: {
+        borderBottomWidth: 1,
+        marginHorizontal: SPACING.lg,
+        paddingVertical: SPACING.md,
+    },
+    singleTabText: {
+        fontSize: 16,
+        fontWeight: '600',
     },
     tab: {
         flex: 1,

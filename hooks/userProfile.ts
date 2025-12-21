@@ -1,9 +1,7 @@
 import { useAuth } from '@/lib/auth_context';
+import { CACHE_KEYS, clearCache as clearCacheUtil, readCache, writeCache } from '@/lib/cache';
 import { supabase } from '@/lib/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useRef, useState } from 'react';
-
-const PROFILE_CACHE_KEY = '@user_profile_cache';
 
 export interface Profile {
     id: string;
@@ -11,14 +9,10 @@ export interface Profile {
     phone_number: string | null;
     display_name: string | null;
     avatar_url: string | null;
+    bio: string | null;
     email_verified: boolean;
     created_at: string;
     updated_at: string;
-}
-
-interface CachedProfile {
-    profile: Profile;
-    userId: string;
 }
 
 export function useProfile() {
@@ -28,45 +22,31 @@ export function useProfile() {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const isInitialLoad = useRef(true);
 
-    // Load cached profile from AsyncStorage
-    const loadCachedProfile = useCallback(async (): Promise<Profile | null> => {
-        try {
-            const cachedData = await AsyncStorage.getItem(PROFILE_CACHE_KEY);
-            if (cachedData) {
-                const parsed: CachedProfile = JSON.parse(cachedData);
-                // Only use cache if it belongs to current user
-                if (user && parsed.userId === user.id) {
-                    return parsed.profile;
-                }
-            }
-        } catch (err) {
-            console.error('Error loading cached profile:', err);
-        }
-        return null;
+    // Get the cache key for the current user
+    const getCacheKey = useCallback(() => {
+        return user ? CACHE_KEYS.PROFILE(user.id) : null;
     }, [user]);
 
-    // Save profile to cache
+    // Load cached profile using shared cache utility
+    const loadCachedProfile = useCallback(async (): Promise<Profile | null> => {
+        const cacheKey = getCacheKey();
+        if (!cacheKey) return null;
+        return await readCache<Profile>(cacheKey);
+    }, [getCacheKey]);
+
+    // Save profile to cache using shared cache utility
     const saveCachedProfile = useCallback(async (profileToCache: Profile) => {
-        if (!user) return;
-        try {
-            const cacheData: CachedProfile = {
-                profile: profileToCache,
-                userId: user.id
-            };
-            await AsyncStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(cacheData));
-        } catch (err) {
-            console.error('Error saving cached profile:', err);
-        }
-    }, [user]);
+        const cacheKey = getCacheKey();
+        if (!cacheKey) return;
+        await writeCache(cacheKey, profileToCache, user?.id);
+    }, [getCacheKey, user?.id]);
 
     // Clear cache (for logout)
     const clearCache = useCallback(async () => {
-        try {
-            await AsyncStorage.removeItem(PROFILE_CACHE_KEY);
-        } catch (err) {
-            console.error('Error clearing profile cache:', err);
-        }
-    }, []);
+        const cacheKey = getCacheKey();
+        if (!cacheKey) return;
+        await clearCacheUtil(cacheKey);
+    }, [getCacheKey]);
 
     // Fetch profile from Supabase
     const fetchProfile = useCallback(async (refresh = false, showLoading = false) => {
