@@ -111,17 +111,17 @@ export default function UserScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
+            {/* Header - Sticky */}
+            <ThemedView style={styles.header}>
+                <BackButton />
+                <ThemedText type="title" style={styles.headerTitle}>Account</ThemedText>
+                <View style={styles.headerSpacer} />
+            </ThemedView>
+
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {/* Header */}
-                <ThemedView style={styles.header}>
-                    <BackButton />
-                    <ThemedText type="title" style={styles.headerTitle}>Account</ThemedText>
-                    <View style={styles.headerSpacer} />
-                </ThemedView>
-
                 {/* User Info Card */}
                 <Pressable
                     style={({ pressed }) => [
