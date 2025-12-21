@@ -40,6 +40,7 @@ export function ListingCard({ item, onPress }: ListingCardProps) {
           <ListingImage images={item.images} size={IMAGE_SIZE} />
           <FavoriteButton
             listingId={item.id}
+            sellerId={item.user_id}
             size={22}
             variant="overlay"
             style={styles.favoriteButton}

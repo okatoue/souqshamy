@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, ViewStyle } from 'react-native';
 
 interface FavoriteButtonProps {
   listingId: string;
+  sellerId?: string;
   size?: number;
   style?: ViewStyle;
   variant?: 'elevated' | 'overlay';
@@ -15,14 +16,21 @@ interface FavoriteButtonProps {
  * Reusable favorite/heart button component with instant toggle.
  * Supports two variants: 'elevated' (default with shadow) and 'overlay' (for use on images).
  * No loading state - the heart toggles instantly on press.
+ * Hidden for user's own listings.
  */
 export function FavoriteButton({
   listingId,
+  sellerId,
   size = 24,
   style,
   variant = 'elevated',
 }: FavoriteButtonProps) {
-  const { isFavorite, handleToggle } = useFavoriteToggle({ listingId });
+  const { isFavorite, isOwnListing, handleToggle } = useFavoriteToggle({ listingId, sellerId });
+
+  // Don't render for user's own listings
+  if (isOwnListing) {
+    return null;
+  }
 
   const buttonStyle = variant === 'overlay' ? styles.overlayButton : styles.elevatedButton;
   const inactiveColor = variant === 'overlay' ? '#fff' : COLORS.muted;

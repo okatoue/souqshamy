@@ -292,6 +292,38 @@ export const favoritesApi = {
             return { data: false, error: error as Error };
         }
     },
+
+    /**
+     * Fetches a user's favorite listings with full listing data.
+     * Orders by when the favorite was added (newest first).
+     */
+    async getWithListings(userId: string): Promise<ApiResponse<{ listing: Listing; favorited_at: string }[]>> {
+        try {
+            const { data, error } = await supabase
+                .from('favorites')
+                .select(`
+                    created_at,
+                    listing:listings(*)
+                `)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+
+            // Transform and filter out any null listings (deleted listings)
+            const results = (data || [])
+                .filter(item => item.listing !== null)
+                .map(item => ({
+                    listing: item.listing as Listing,
+                    favorited_at: item.created_at
+                }));
+
+            return { data: results, error: null };
+        } catch (error) {
+            console.error('[FavoritesApi] getWithListings error:', error);
+            return { data: null, error: error as Error };
+        }
+    },
 };
 
 // ============================================================================
