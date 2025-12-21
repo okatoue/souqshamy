@@ -692,7 +692,6 @@ interface GeneratedUser {
   phone_number: string | null;
   display_name: string | null;
   avatar_url: string | null;
-  bio: string | null;
   email_verified: boolean;
   created_at: string;
   updated_at: string;
@@ -831,22 +830,6 @@ function generatePlaceholderImages(count: number): string[] {
   return images;
 }
 
-function generateBio(): string | null {
-  // 30% chance of having a bio
-  if (Math.random() > 0.3) return null;
-  const bios = [
-    'بائع موثوق، تعامل سريع وأمين.',
-    'للتواصل واتساب فقط.',
-    'جميع المنتجات أصلية ومضمونة.',
-    'متجر إلكتروني معتمد.',
-    'خبرة طويلة في السوق.',
-    'أسعار منافسة وجودة عالية.',
-    'التوصيل متاح لجميع المناطق.',
-    'مستخدم نشط، رد سريع.',
-  ];
-  return randomElement(bios);
-}
-
 // ============================================================================
 // DATA GENERATORS
 // ============================================================================
@@ -876,7 +859,6 @@ function generateUsers(count: number): GeneratedUser[] {
       phone_number: phoneNumber,
       display_name: displayName,
       avatar_url: generateAvatarUrl(displayName),
-      bio: generateBio(),
       email_verified: hasEmail ? Math.random() > 0.3 : false, // 70% verified if has email
       created_at: createdAt,
       updated_at: createdAt,
