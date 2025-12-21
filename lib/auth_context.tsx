@@ -5,6 +5,7 @@ import {
     isAuthCallbackUrl,
     safeReloadApp,
 } from '@/lib/auth-utils';
+import { clearUserCaches } from '@/lib/cache';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
@@ -573,6 +574,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         try {
+            // Clear user-specific caches before signing out
+            if (user?.id) {
+                await clearUserCaches(user.id);
+            }
+
             // Clear password reset flag on sign out
             await AsyncStorage.removeItem(PASSWORD_RESET_FLAG);
             setIsPasswordResetInProgressState(false);
