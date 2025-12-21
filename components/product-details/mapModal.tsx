@@ -1,5 +1,5 @@
-import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useCurrentLocation } from '@/hooks/useCurrentLocation';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
