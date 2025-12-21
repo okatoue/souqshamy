@@ -70,12 +70,6 @@ const ARABIC_LAST_NAMES = [
 // Syrian cities with coordinates
 const SYRIAN_CITIES = [
   { name: 'دمشق', nameEn: 'Damascus', lat: 33.5138, lon: 36.2765 },
-  { name: 'حلب', nameEn: 'Aleppo', lat: 36.2021, lon: 37.1343 },
-  { name: 'حمص', nameEn: 'Homs', lat: 34.7324, lon: 36.7137 },
-  { name: 'اللاذقية', nameEn: 'Latakia', lat: 35.5317, lon: 35.7900 },
-  { name: 'حماة', nameEn: 'Hama', lat: 35.1318, lon: 36.7514 },
-  { name: 'طرطوس', nameEn: 'Tartus', lat: 34.8959, lon: 35.8867 },
-  { name: 'دير الزور', nameEn: 'Deir ez-Zor', lat: 35.3359, lon: 40.1408 },
 ];
 
 // Category and subcategory mapping with listing templates
