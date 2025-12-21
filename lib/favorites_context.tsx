@@ -1,4 +1,4 @@
-import { favoritesApi } from '@/lib/api';
+import { favoritesApi, listingsApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth_context';
 import { CACHE_KEYS, clearCache, readCache, writeCache } from '@/lib/cache';
 import { handleError, showAuthRequiredAlert } from '@/lib/errorHandler';
@@ -236,12 +236,19 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
 
+      const id = String(listingId);
+
       // Prevent users from favoriting their own listings
-      if (sellerId && user.id === sellerId) {
-        return false;
+      let ownerIdToCheck = sellerId;
+      if (!ownerIdToCheck) {
+        // If sellerId not provided, fetch the listing to check ownership
+        const { data: listing } = await listingsApi.getById(id);
+        ownerIdToCheck = listing?.user_id;
       }
 
-      const id = String(listingId);
+      if (ownerIdToCheck && user.id === ownerIdToCheck) {
+        return false;
+      }
 
       // Check if already a favorite to prevent duplicate operations
       if (favoriteIds.has(id)) {
