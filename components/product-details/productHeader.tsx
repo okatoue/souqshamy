@@ -1,9 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
+import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 interface ProductHeaderProps {
   onBack: () => void;
@@ -11,13 +10,9 @@ interface ProductHeaderProps {
 }
 
 export default function ProductHeader({ onBack, title = 'Product Details' }: ProductHeaderProps) {
-  const iconColor = useThemeColor({}, 'text');
-
   return (
     <View style={styles.header}>
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color={iconColor} />
-      </TouchableOpacity>
+      <BackButton variant="arrow" size={24} onPress={onBack} style={styles.backButton} />
       <ThemedText type="title" style={styles.headerTitle}>
         {title}
       </ThemedText>

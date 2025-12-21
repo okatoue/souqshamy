@@ -1,6 +1,7 @@
 import { VoiceMessage } from '@/components/chat/voiceMessage';
 import { VoiceRecorder } from '@/components/chat/voiceRecorder';
 import { ThemedText } from '@/components/themed-text';
+import { BackButton } from '@/components/ui/BackButton';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/lib/auth_context';
@@ -313,9 +314,7 @@ export default function ChatScreen() {
             >
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <Pressable onPress={() => router.back()} style={styles.backIconButton}>
-                        <Ionicons name="chevron-back" size={28} color="#007AFF" />
-                    </Pressable>
+                    <BackButton color="#007AFF" style={styles.backIconButton} />
 
                     <View style={styles.headerContent}>
                         {conversation.other_user.avatar_url ? (

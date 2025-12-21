@@ -1,5 +1,6 @@
 // app/search.tsx
 import { ListingCard } from '@/components/listings/listingCard';
+import { BackButton } from '@/components/ui/BackButton';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSearchListings } from '@/hooks/useSearchListings';
 import { navigateToListing } from '@/app/listing/[id]';
@@ -49,10 +50,6 @@ export default function SearchScreen() {
         setSearchQuery('');
         clearSearch();
         searchInputRef.current?.focus();
-    };
-
-    const handleBack = () => {
-        router.back();
     };
 
     const handleItemPress = (item: Listing) => {
@@ -112,9 +109,7 @@ export default function SearchScreen() {
             <Stack.Screen options={{ headerShown: false }} />
             {/* Header with Search Bar */}
             <View style={styles.header}>
-                <Pressable onPress={handleBack} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="white" />
-                </Pressable>
+                <BackButton variant="arrow" size={24} light />
 
                 <View style={[styles.searchInputContainer, { backgroundColor: inputBg }]}>
                     <Ionicons name="search" size={20} color="#888" />
@@ -179,9 +174,6 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         backgroundColor: '#007AFF',
         gap: 12,
-    },
-    backButton: {
-        padding: 8,
     },
     searchInputContainer: {
         flex: 1,

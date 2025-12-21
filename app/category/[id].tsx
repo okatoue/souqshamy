@@ -2,13 +2,14 @@
 import { Category, Subcategory } from '@/assets/categories';
 import categoriesData from '@/assets/categories.json';
 import { ListingCard } from '@/components/listings/listingCard';
+import { BackButton } from '@/components/ui/BackButton';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { useThemeColor, useTheme } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
 import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -77,10 +78,6 @@ export default function CategoryListingScreen() {
       setDisplayedListings(filtered);
     }
   }, [listings, searchQuery]);
-
-  const handleBack = () => {
-    router.back();
-  };
 
   const handleItemPress = (item: Listing) => {
     navigateToListing(item);
@@ -215,9 +212,7 @@ export default function CategoryListingScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       {/* Header */}
       <View style={[styles.header, { backgroundColor: BRAND_COLOR }]}>
-        <Pressable onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="white" />
-        </Pressable>
+        <BackButton variant="arrow" size={24} light />
         <Text style={styles.headerTitle}>{params.name || selectedCategory?.name}</Text>
         <View style={styles.headerRight} />
       </View>
@@ -288,9 +283,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  backButton: {
-    padding: 8,
   },
   headerTitle: {
     fontSize: 18,

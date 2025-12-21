@@ -1,5 +1,6 @@
 import { SettingsMenuItem, SettingsSection } from '@/components/settings';
 import { ThemedText } from '@/components/themed-text';
+import { BackButton } from '@/components/ui/BackButton';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getProviderDisplayName, isOAuthOnlyUser, OAuthProvider } from '@/lib/auth-utils';
@@ -69,10 +70,6 @@ export default function ManageAccountScreen() {
         };
         checkOAuthStatus();
     }, [user?.email]);
-
-    const handleBack = () => {
-        router.back();
-    };
 
     const resetPasswordForm = () => {
         setCurrentPassword('');
@@ -261,9 +258,7 @@ export default function ManageAccountScreen() {
             >
                 {/* Header */}
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
-                    <Pressable onPress={handleBack} style={styles.backButton}>
-                        <Ionicons name="chevron-back" size={28} color={iconColor} />
-                    </Pressable>
+                    <BackButton />
                     <ThemedText type="title" style={styles.headerTitle}>
                         Manage Account
                     </ThemedText>
@@ -645,10 +640,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
         borderBottomWidth: StyleSheet.hairlineWidth,
-    },
-    backButton: {
-        padding: SPACING.xs,
-        marginLeft: -SPACING.xs,
     },
     headerTitle: {
         flex: 1,
