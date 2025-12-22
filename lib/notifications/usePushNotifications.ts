@@ -4,9 +4,6 @@ import { useAuth } from '../auth_context';
 import NotificationService from './NotificationService';
 import { AppNotification } from '../../types/notifications';
 
-// Type for expo-notifications module
-type NotificationsModule = typeof import('expo-notifications');
-
 interface UsePushNotificationsReturn {
     expoPushToken: string | null;
     notification: any | null;
@@ -23,15 +20,22 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
     const [isAvailable, setIsAvailable] = useState(false);
 
-    const notificationListener = useRef<any>();
-    const responseListener = useRef<any>();
+    // Store subscriptions and module reference for cleanup
+    const notificationListener = useRef<any>(null);
+    const responseListener = useRef<any>(null);
+    const notificationsModuleRef = useRef<typeof import('expo-notifications') | null>(null);
 
     const router = useRouter();
     const { user } = useAuth();
 
     // Handle notification tap - navigate to appropriate screen
     const handleNotificationResponse = useCallback((response: any) => {
-        const data = response.notification.request.content.data as AppNotification['data'] & { type?: string };
+        const data = response?.notification?.request?.content?.data as (AppNotification['data'] & { type?: string }) | undefined;
+
+        if (!data) {
+            console.log('[Notifications] No data in notification response');
+            return;
+        }
 
         console.log('[Notifications] User tapped notification:', data);
 
@@ -128,11 +132,14 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             const Notifications = NotificationService.getNotificationsModule();
             if (!Notifications) return;
 
+            // Store module reference for cleanup
+            notificationsModuleRef.current = Notifications;
+
             // Listener for notifications received while app is foregrounded
-            notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-                console.log('[Notifications] Received in foreground:', notification);
+            notificationListener.current = Notifications.addNotificationReceivedListener(notif => {
+                console.log('[Notifications] Received in foreground:', notif);
                 if (mounted) {
-                    setNotification(notification);
+                    setNotification(notif);
                 }
             });
 
@@ -145,14 +152,31 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         // Cleanup
         return () => {
             mounted = false;
-            const Notifications = NotificationService.getNotificationsModule();
-            if (Notifications) {
+
+            // Use the stored module reference for cleanup
+            const Notifications = notificationsModuleRef.current;
+
+            try {
                 if (notificationListener.current) {
-                    Notifications.removeNotificationSubscription(notificationListener.current);
+                    if (Notifications?.removeNotificationSubscription) {
+                        Notifications.removeNotificationSubscription(notificationListener.current);
+                    } else if (notificationListener.current?.remove) {
+                        // Fallback: some versions use .remove() on the subscription itself
+                        notificationListener.current.remove();
+                    }
+                    notificationListener.current = null;
                 }
+
                 if (responseListener.current) {
-                    Notifications.removeNotificationSubscription(responseListener.current);
+                    if (Notifications?.removeNotificationSubscription) {
+                        Notifications.removeNotificationSubscription(responseListener.current);
+                    } else if (responseListener.current?.remove) {
+                        responseListener.current.remove();
+                    }
+                    responseListener.current = null;
                 }
+            } catch (error) {
+                console.log('[Notifications] Cleanup error (non-critical):', error);
             }
         };
     }, [user, registerAndSaveToken, handleNotificationResponse]);
@@ -160,13 +184,19 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     // Handle app opened from killed state via notification
     useEffect(() => {
         const checkLastNotification = async () => {
+            await NotificationService.initialize();
+
             const Notifications = NotificationService.getNotificationsModule();
             if (!Notifications) return;
 
-            const response = await Notifications.getLastNotificationResponseAsync();
-            if (response) {
-                console.log('[Notifications] App opened from notification');
-                handleNotificationResponse(response);
+            try {
+                const response = await Notifications.getLastNotificationResponseAsync();
+                if (response) {
+                    console.log('[Notifications] App opened from notification');
+                    handleNotificationResponse(response);
+                }
+            } catch (error) {
+                console.log('[Notifications] Error checking last notification:', error);
             }
         };
 
