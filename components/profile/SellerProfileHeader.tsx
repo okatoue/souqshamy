@@ -43,7 +43,7 @@ export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
                     {getDisplayName(profile)}
                 </Text>
 
-                {/* Rating - shows placeholder until rating system is implemented */}
+                {/* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
                 {RATINGS_ENABLED ? (
                     <View style={styles.ratingRow}>
                         <Text style={styles.stars}>★★★★★</Text>
@@ -55,6 +55,7 @@ export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
                         No ratings yet
                     </Text>
                 )}
+                */}
 
                 {/* Time on platform */}
                 <Text style={[styles.platformTime, { color: mutedColor }]}>

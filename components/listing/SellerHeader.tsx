@@ -51,16 +51,18 @@ export function SellerHeader({ seller, createdAt, onPress, isLoading }: SellerHe
                 </View>
             )}
 
-            {/* Name and Rating */}
+            {/* Name */}
             <View style={styles.info}>
                 <Text style={[styles.name, { color: textColor }]} numberOfLines={1}>
                     {getDisplayName(seller)}
                 </Text>
+                {/* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
                 <View style={styles.rating}>
                     <Text style={[styles.ratingText, { color: mutedColor }]}>
                         {PLACEHOLDER_RATING.toFixed(1)} ★
                     </Text>
                 </View>
+                */}
             </View>
 
             {/* Posted time */}

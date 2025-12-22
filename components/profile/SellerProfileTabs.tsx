@@ -7,26 +7,42 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-export type SellerTabType = 'listings' | 'ratings';
+// RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
+// export type SellerTabType = 'listings' | 'ratings';
+export type SellerTabType = 'listings';
 
 interface SellerProfileTabsProps {
     activeTab: SellerTabType;
     onTabChange: (tab: SellerTabType) => void;
     listingsCount?: number;
-    /** Enable the ratings tab - set to false until rating system is implemented */
-    ratingsEnabled?: boolean;
+    // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
+    // /** Enable the ratings tab - set to false until rating system is implemented */
+    // ratingsEnabled?: boolean;
 }
 
 export function SellerProfileTabs({
     activeTab,
     onTabChange,
     listingsCount,
-    ratingsEnabled = false,
+    // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
+    // ratingsEnabled = false,
 }: SellerProfileTabsProps) {
     const borderColor = useThemeColor({}, 'border');
-    const mutedColor = useThemeColor({}, 'textMuted');
+    // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
+    // const mutedColor = useThemeColor({}, 'textMuted');
     const textColor = useThemeColor({}, 'text');
 
+    // Show simplified listings-only header (ratings disabled)
+    return (
+        <View style={[styles.singleTabContainer, { borderBottomColor: borderColor }]}>
+            <Text style={[styles.singleTabText, { color: textColor }]}>
+                {listingsCount !== undefined ? listingsCount : 0}{' '}
+                {listingsCount === 1 ? 'Listing' : 'Listings'}
+            </Text>
+        </View>
+    );
+
+    /* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
     // If ratings not enabled, show simplified listings-only header
     if (!ratingsEnabled) {
         return (
@@ -72,6 +88,7 @@ export function SellerProfileTabs({
             </Pressable>
         </View>
     );
+    */
 }
 
 const styles = StyleSheet.create({
