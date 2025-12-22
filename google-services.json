@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "976701381198",
+    "project_id": "souqjari-syria",
+    "storage_bucket": "souqjari-syria.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:976701381198:android:34f4e0a52566e8576dc11f",
+        "android_client_info": {
+          "package_name": "com.souqshamy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAeCKENuJEpMM1XFwaUjqLMG4xtPPthxY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
