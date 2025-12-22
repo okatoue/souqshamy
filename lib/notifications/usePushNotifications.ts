@@ -1,32 +1,36 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../auth_context';
 import NotificationService from './NotificationService';
 import { AppNotification } from '../../types/notifications';
 
+// Type for expo-notifications module
+type NotificationsModule = typeof import('expo-notifications');
+
 interface UsePushNotificationsReturn {
     expoPushToken: string | null;
-    notification: Notifications.Notification | null;
+    notification: any | null;
     isRegistering: boolean;
-    permissionStatus: Notifications.PermissionStatus | null;
+    permissionStatus: string | null;
     requestPermission: () => Promise<boolean>;
+    isAvailable: boolean;
 }
 
 export function usePushNotifications(): UsePushNotificationsReturn {
     const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-    const [notification, setNotification] = useState<Notifications.Notification | null>(null);
+    const [notification, setNotification] = useState<any | null>(null);
     const [isRegistering, setIsRegistering] = useState(false);
-    const [permissionStatus, setPermissionStatus] = useState<Notifications.PermissionStatus | null>(null);
+    const [permissionStatus, setPermissionStatus] = useState<string | null>(null);
+    const [isAvailable, setIsAvailable] = useState(false);
 
-    const notificationListener = useRef<Notifications.Subscription>();
-    const responseListener = useRef<Notifications.Subscription>();
+    const notificationListener = useRef<any>();
+    const responseListener = useRef<any>();
 
     const router = useRouter();
     const { user } = useAuth();
 
     // Handle notification tap - navigate to appropriate screen
-    const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
+    const handleNotificationResponse = useCallback((response: any) => {
         const data = response.notification.request.content.data as AppNotification['data'] & { type?: string };
 
         console.log('[Notifications] User tapped notification:', data);
@@ -74,8 +78,13 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             }
 
             // Get current permission status
-            const { status } = await Notifications.getPermissionsAsync();
-            setPermissionStatus(status);
+            const Notifications = NotificationService.getNotificationsModule();
+            if (Notifications) {
+                const { status } = await Notifications.getPermissionsAsync();
+                setPermissionStatus(status);
+            }
+
+            setIsAvailable(NotificationService.isAvailable());
         } finally {
             setIsRegistering(false);
         }
@@ -83,6 +92,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
     // Manual permission request
     const requestPermission = useCallback(async (): Promise<boolean> => {
+        const Notifications = NotificationService.getNotificationsModule();
+        if (!Notifications) {
+            console.log('[Notifications] Module not available');
+            return false;
+        }
+
         const { status } = await Notifications.requestPermissionsAsync();
         setPermissionStatus(status);
 
@@ -95,39 +110,67 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
     // Setup on mount
     useEffect(() => {
-        // Register for notifications if user is logged in
-        if (user) {
-            registerAndSaveToken();
-        }
+        let mounted = true;
 
-        // Listener for notifications received while app is foregrounded
-        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-            console.log('[Notifications] Received in foreground:', notification);
-            setNotification(notification);
-        });
+        const setup = async () => {
+            // Initialize the notification service first
+            await NotificationService.initialize();
 
-        // Listener for when user taps notification
-        responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+            if (!mounted) return;
+
+            setIsAvailable(NotificationService.isAvailable());
+
+            // Register for notifications if user is logged in
+            if (user) {
+                await registerAndSaveToken();
+            }
+
+            const Notifications = NotificationService.getNotificationsModule();
+            if (!Notifications) return;
+
+            // Listener for notifications received while app is foregrounded
+            notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+                console.log('[Notifications] Received in foreground:', notification);
+                if (mounted) {
+                    setNotification(notification);
+                }
+            });
+
+            // Listener for when user taps notification
+            responseListener.current = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
+        };
+
+        setup();
 
         // Cleanup
         return () => {
-            if (notificationListener.current) {
-                Notifications.removeNotificationSubscription(notificationListener.current);
-            }
-            if (responseListener.current) {
-                Notifications.removeNotificationSubscription(responseListener.current);
+            mounted = false;
+            const Notifications = NotificationService.getNotificationsModule();
+            if (Notifications) {
+                if (notificationListener.current) {
+                    Notifications.removeNotificationSubscription(notificationListener.current);
+                }
+                if (responseListener.current) {
+                    Notifications.removeNotificationSubscription(responseListener.current);
+                }
             }
         };
     }, [user, registerAndSaveToken, handleNotificationResponse]);
 
     // Handle app opened from killed state via notification
     useEffect(() => {
-        Notifications.getLastNotificationResponseAsync().then(response => {
+        const checkLastNotification = async () => {
+            const Notifications = NotificationService.getNotificationsModule();
+            if (!Notifications) return;
+
+            const response = await Notifications.getLastNotificationResponseAsync();
             if (response) {
                 console.log('[Notifications] App opened from notification');
                 handleNotificationResponse(response);
             }
-        });
+        };
+
+        checkLastNotification();
     }, [handleNotificationResponse]);
 
     return {
@@ -136,5 +179,6 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         isRegistering,
         permissionStatus,
         requestPermission,
+        isAvailable,
     };
 }
