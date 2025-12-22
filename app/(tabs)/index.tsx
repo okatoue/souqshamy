@@ -11,15 +11,26 @@ import { SPACING } from '@/constants/theme';
 import { useAutoLocationDetection } from '@/hooks/useAutoLocationDetection';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
+import { useRTL } from '@/lib/rtl_context';
+import { useTranslation } from '@/localization';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Keyboard, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  // i18n verification - temporary test code
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
+
+  useEffect(() => {
+    // Verification log for i18n infrastructure
+    console.log('Language test:', t('common.loading'), 'RTL:', isRTL);
+  }, [t, isRTL]);
 
   // Auto-detect location on first launch (when no saved preference exists)
   useAutoLocationDetection();

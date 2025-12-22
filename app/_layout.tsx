@@ -6,13 +6,16 @@ import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
 import { usePushNotifications } from '@/lib/notifications';
+import { RTLProvider } from '@/lib/rtl_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
+import i18n from '@/localization';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { I18nextProvider } from 'react-i18next';
 
 function RootLayoutNav() {
   const { user, loading: authLoading, isPasswordResetInProgress } = useAuth();
@@ -134,20 +137,24 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <GlobalErrorBoundary>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ThemeProvider>
-          <BottomSheetModalProvider>
-            <AuthProvider>
-              <FavoritesProvider>
-                <AppDataProvider>
-                  <RootLayoutNav />
-                </AppDataProvider>
-              </FavoritesProvider>
-            </AuthProvider>
-          </BottomSheetModalProvider>
-        </ThemeProvider>
-      </GestureHandlerRootView>
-    </GlobalErrorBoundary>
+    <I18nextProvider i18n={i18n}>
+      <RTLProvider>
+        <GlobalErrorBoundary>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <ThemeProvider>
+              <BottomSheetModalProvider>
+                <AuthProvider>
+                  <FavoritesProvider>
+                    <AppDataProvider>
+                      <RootLayoutNav />
+                    </AppDataProvider>
+                  </FavoritesProvider>
+                </AuthProvider>
+              </BottomSheetModalProvider>
+            </ThemeProvider>
+          </GestureHandlerRootView>
+        </GlobalErrorBoundary>
+      </RTLProvider>
+    </I18nextProvider>
   );
 }
