@@ -37,6 +37,13 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             return;
         }
 
+        // Only handle notifications with our expected type field
+        // This prevents handling browser deep links or other non-notification intents
+        if (!data.type) {
+            console.log('[Notifications] Ignoring notification without type:', Object.keys(data));
+            return;
+        }
+
         console.log('[Notifications] User tapped notification:', data);
 
         // Navigate based on notification type
@@ -62,9 +69,12 @@ export function usePushNotifications(): UsePushNotificationsReturn {
                 }
                 break;
 
+            case 'system':
             default:
-                // Default: go to notifications center
-                router.push('/notifications');
+                // For system notifications or unknown types, just log
+                // Don't navigate to avoid route errors
+                console.log('[Notifications] No navigation for type:', data.type);
+                break;
         }
     }, [router]);
 
