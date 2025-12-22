@@ -38,7 +38,6 @@ export default function CategoryListingScreen() {
   const backgroundColor = useThemeColor({}, 'background');
   const textColor = useThemeColor({}, 'text');
   const textMutedColor = useThemeColor({}, 'textMuted');
-  const borderColor = useThemeColor({}, 'border');
   const chipBg = useThemeColor({}, 'backgroundSecondary');
   const iconMutedColor = useThemeColor({}, 'iconMuted');
 
@@ -230,24 +229,6 @@ export default function CategoryListingScreen() {
       {/* Subcategory Filter Chips */}
       {renderSubcategoryChips()}
 
-      {/* Result Count Bar */}
-      <View style={[styles.resultBar, { borderColor }]}>
-        <Text style={[styles.resultCount, { color: textColor }]}>
-          {displayedListings.length} {displayedListings.length === 1 ? 'listing' : 'listings'}
-          {selectedSubcategory && selectedCategory && (
-            <Text style={[styles.filterLabel, { color: BRAND_COLOR }]}>
-              {' '}
-              in{' '}
-              {
-                selectedCategory.subcategories.find(
-                  (s) => s.id.toString() === selectedSubcategory
-                )?.name
-              }
-            </Text>
-          )}
-        </Text>
-      </View>
-
       {/* Content */}
       {isLoading ? (
         renderLoading()
@@ -315,18 +296,6 @@ const styles = StyleSheet.create({
   subcategoryChipText: {
     fontSize: 14,
     fontWeight: '500',
-  },
-  resultBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  resultCount: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  filterLabel: {
-    fontWeight: '400',
   },
   listContent: {
     padding: 16,
