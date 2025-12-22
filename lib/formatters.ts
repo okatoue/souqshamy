@@ -4,10 +4,20 @@
  */
 
 import categoriesData from '@/assets/categories.json';
+import { getCategoryName as getLocalizedCategoryName, getSubcategoryName as getLocalizedSubcategoryName } from '@/lib/categoryHelper';
+import { getCurrentLanguage, isCurrentLanguageRTL } from '@/localization';
 
 // ============================================================================
 // Date Formatting
 // ============================================================================
+
+/**
+ * Gets the locale string for formatting based on current language.
+ */
+function getLocale(): string {
+    const lang = getCurrentLanguage();
+    return lang === 'ar' ? 'ar-SY' : 'en-US';
+}
 
 /**
  * Formats a date string into a human-readable relative time format.
@@ -20,12 +30,21 @@ export function formatDate(dateString: string): string {
     const diffInMs = now.getTime() - date.getTime();
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const lang = getCurrentLanguage();
+
+    if (lang === 'ar') {
+        if (diffInMinutes < 1) return 'الآن';
+        if (diffInMinutes < 60) return `منذ ${diffInMinutes} د`;
+        if (diffInHours < 24) return `منذ ${diffInHours} س`;
+        if (diffInHours < 168) return `منذ ${Math.floor(diffInHours / 24)} ي`;
+        return date.toLocaleDateString('ar-SY');
+    }
 
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('en-US');
 }
 
 /**
@@ -38,15 +57,17 @@ export function formatMessageTime(dateString: string): string {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const locale = getLocale();
+    const lang = getCurrentLanguage();
 
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeStr = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
     if (diffInHours < 24) {
         return timeStr;
     } else if (diffInHours < 48) {
-        return `Yesterday ${timeStr}`;
+        return lang === 'ar' ? `أمس ${timeStr}` : `Yesterday ${timeStr}`;
     }
-    return `${date.toLocaleDateString()} ${timeStr}`;
+    return `${date.toLocaleDateString(locale)} ${timeStr}`;
 }
 
 // ============================================================================
@@ -107,6 +128,7 @@ export interface CategoryInfo {
 
 /**
  * Gets category and subcategory information by their IDs.
+ * Uses localized names based on current language.
  * @param categoryId - The main category ID
  * @param subcategoryId - The subcategory ID
  * @returns Object containing category name, icon, and subcategory name
@@ -114,11 +136,12 @@ export interface CategoryInfo {
 export function getCategoryInfo(categoryId: number, subcategoryId: number): CategoryInfo {
     const category = categoriesData.categories.find(c => c.id === categoryId);
     const subcategory = category?.subcategories.find(s => s.id === subcategoryId);
+    const lang = getCurrentLanguage();
 
     return {
-        categoryName: category?.name || 'Unknown',
+        categoryName: category ? getLocalizedCategoryName(category.name) : (lang === 'ar' ? 'غير معروف' : 'Unknown'),
         categoryIcon: category?.icon || '📦',
-        subcategoryName: subcategory?.name || ''
+        subcategoryName: subcategory ? getLocalizedSubcategoryName(subcategory.name) : ''
     };
 }
 
@@ -161,7 +184,10 @@ export interface UserProfile {
  * @returns The best available display name
  */
 export function getDisplayName(profile: UserProfile | null | undefined): string {
-    if (!profile) return 'User';
+    const lang = getCurrentLanguage();
+    const defaultUser = lang === 'ar' ? 'مستخدم' : 'User';
+
+    if (!profile) return defaultUser;
 
     if (profile.display_name) {
         return profile.display_name;
@@ -179,7 +205,7 @@ export function getDisplayName(profile: UserProfile | null | undefined): string 
         return profile.phone_number;
     }
 
-    return 'User';
+    return defaultUser;
 }
 
 // ============================================================================
@@ -213,6 +239,20 @@ export function formatRelativeTime(dateString: string): string {
     const diffInWeeks = Math.floor(diffInDays / 7);
     const diffInMonths = Math.floor(diffInDays / 30);
     const diffInYears = Math.floor(diffInDays / 365);
+    const lang = getCurrentLanguage();
+
+    if (lang === 'ar') {
+        if (diffInMinutes < 60) return 'اليوم';
+        if (diffInHours < 24) return 'اليوم';
+        if (diffInDays === 1) return 'أمس';
+        if (diffInDays < 7) return `منذ ${diffInDays} أيام`;
+        if (diffInWeeks === 1) return 'منذ أسبوع';
+        if (diffInWeeks < 4) return `منذ ${diffInWeeks} أسابيع`;
+        if (diffInMonths === 1) return 'منذ أكثر من شهر';
+        if (diffInMonths < 12) return `منذ ${diffInMonths} أشهر`;
+        if (diffInYears === 1) return 'منذ أكثر من سنة';
+        return `منذ ${diffInYears} سنوات`;
+    }
 
     if (diffInMinutes < 60) return 'today';
     if (diffInHours < 24) return 'today';
@@ -249,6 +289,20 @@ export function getTimeOnPlatform(dateString: string): string {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const lang = getCurrentLanguage();
+
+    if (lang === 'ar') {
+        if (diffInDays < 30) {
+            const days = Math.max(1, diffInDays);
+            return `${days} ${days === 1 ? 'يوم' : 'أيام'} على سوق جاري`;
+        } else if (diffInDays < 365) {
+            const months = Math.floor(diffInDays / 30);
+            return `${months} ${months === 1 ? 'شهر' : 'أشهر'} على سوق جاري`;
+        } else {
+            const years = Math.floor(diffInDays / 365);
+            return `${years} ${years === 1 ? 'سنة' : 'سنوات'} على سوق جاري`;
+        }
+    }
 
     if (diffInDays < 30) {
         return `${Math.max(1, diffInDays)} ${diffInDays === 1 ? 'day' : 'days'} on SouqJari`;

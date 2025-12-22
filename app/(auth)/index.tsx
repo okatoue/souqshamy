@@ -13,12 +13,14 @@ import {
 } from '@/components/auth';
 import { checkUserAuthStatus, getProviderDisplayName, handleAuthError } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
+import { useTranslation } from '@/localization';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
+  const { t } = useTranslation();
   const authStyles = useAuthStyles();
   const { signInWithGoogle, signInWithFacebook } = useAuth();
   const [inputValue, setInputValue] = useState('');
@@ -29,12 +31,12 @@ export default function AuthScreen() {
     const trimmedInput = inputValue.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t('common.error'), t('auth.enterEmail'));
       return;
     }
 
     if (!isValidEmail(trimmedInput)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('common.error'), t('auth.invalidEmail'));
       return;
     }
 
@@ -58,9 +60,9 @@ export default function AuthScreen() {
         // User signed up with OAuth only - show alert
         const providerName = getProviderDisplayName(provider);
         Alert.alert(
-          'Sign In Method',
-          `This account was created using ${providerName}. Please use the "${providerName}" button below to sign in.`,
-          [{ text: 'OK' }]
+          t('auth.signInMethod'),
+          t('auth.oauthOnlyMessage', { provider: providerName }),
+          [{ text: t('common.ok') }]
         );
       } else if (status === 'unverified') {
         // Existing but unverified - resend code and go to verification screen
@@ -120,7 +122,7 @@ export default function AuthScreen() {
         setLoadingProvider(null);
       }
     } else {
-      Alert.alert('Coming Soon', `${provider} login will be available soon!`);
+      Alert.alert(t('common.comingSoon'), `${provider} login will be available soon!`);
     }
   };
 
@@ -128,12 +130,12 @@ export default function AuthScreen() {
     <AuthLayout>
       <AuthLogo />
 
-      <AuthTitle title="Log in or Sign up" />
+      <AuthTitle title={t('auth.loginOrSignup')} />
 
       <View style={styles.inputSection}>
         <AuthInput
-          label="Email Address"
-          placeholder="Enter your email address"
+          label={t('auth.emailAddress')}
+          placeholder={t('auth.enterEmail')}
           value={inputValue}
           onChangeText={setInputValue}
           keyboardType="email-address"
@@ -144,7 +146,7 @@ export default function AuthScreen() {
         />
       </View>
 
-      <AuthButton title="Continue" onPress={handleContinue} loading={loading} disabled={!!loadingProvider} />
+      <AuthButton title={t('common.continue')} onPress={handleContinue} loading={loading} disabled={!!loadingProvider} />
 
       <AuthDivider />
 
@@ -155,10 +157,10 @@ export default function AuthScreen() {
       />
 
       <Text style={authStyles.footer}>
-        By continuing, you agree to our{' '}
-        <Text style={styles.footerLink}>Terms of Service</Text>
-        {' '}and{' '}
-        <Text style={styles.footerLink}>Privacy Policy</Text>
+        {t('auth.termsFooter')}{' '}
+        <Text style={styles.footerLink}>{t('auth.termsOfService')}</Text>
+        {' '}{t('auth.and')}{' '}
+        <Text style={styles.footerLink}>{t('auth.privacyPolicy')}</Text>
       </Text>
     </AuthLayout>
   );

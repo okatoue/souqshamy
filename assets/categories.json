@@ -2,168 +2,75 @@
   "categories": [
     {
       "id": 1,
-      "name": "Buy & Sell",
+      "name": { "en": "Buy & Sell", "ar": "بيع وشراء" },
       "icon": "🛍️",
       "subcategories": [
-        {
-          "id": 1,
-          "name": "Electronics"
-        },
-        {
-          "id": 2,
-          "name": "Furniture"
-        },
-        {
-          "id": 3,
-          "name": "Clothing"
-        },
-        {
-          "id": 4,
-          "name": "Books"
-        },
-        {
-          "id": 5,
-          "name": "Phones"
-        },
-        {
-          "id": 6,
-          "name": "Computers"
-        },
-        {
-          "id": 7,
-          "name": "Home Appliances"
-        },
-        {
-          "id": 8,
-          "name": "Toys & Games"
-        },
-        {
-          "id": 9,
-          "name": "Sports Equipment"
-        },
-        {
-          "id": 10,
-          "name": "Other"
-        }
+        { "id": 1, "name": { "en": "Electronics", "ar": "إلكترونيات" } },
+        { "id": 2, "name": { "en": "Furniture", "ar": "أثاث" } },
+        { "id": 3, "name": { "en": "Clothing", "ar": "ملابس" } },
+        { "id": 4, "name": { "en": "Books", "ar": "كتب" } },
+        { "id": 5, "name": { "en": "Phones", "ar": "هواتف" } },
+        { "id": 6, "name": { "en": "Computers", "ar": "كمبيوترات" } },
+        { "id": 7, "name": { "en": "Home Appliances", "ar": "أجهزة منزلية" } },
+        { "id": 8, "name": { "en": "Toys & Games", "ar": "ألعاب" } },
+        { "id": 9, "name": { "en": "Sports Equipment", "ar": "معدات رياضية" } },
+        { "id": 10, "name": { "en": "Other", "ar": "أخرى" } }
       ]
     },
     {
       "id": 2,
-      "name": "Cars",
+      "name": { "en": "Cars", "ar": "سيارات" },
       "icon": "🚗",
       "subcategories": [
-        {
-          "id": 11,
-          "name": "Cars & Trucks"
-        },
-        {
-          "id": 12,
-          "name": "Motorcycles"
-        },
-        {
-          "id": 13,
-          "name": "Vehicle Parts"
-        },
-        {
-          "id": 14,
-          "name": "Other"
-        }
+        { "id": 11, "name": { "en": "Cars & Trucks", "ar": "سيارات وشاحنات" } },
+        { "id": 12, "name": { "en": "Motorcycles", "ar": "دراجات نارية" } },
+        { "id": 13, "name": { "en": "Vehicle Parts", "ar": "قطع غيار" } },
+        { "id": 14, "name": { "en": "Other", "ar": "أخرى" } }
       ]
     },
     {
       "id": 3,
-      "name": "Real Estate",
+      "name": { "en": "Real Estate", "ar": "عقارات" },
       "icon": "🏠",
       "subcategories": [
-        {
-          "id": 15,
-          "name": "For Rent"
-        },
-        {
-          "id": 16,
-          "name": "For Sale"
-        }
+        { "id": 15, "name": { "en": "For Rent", "ar": "للإيجار" } },
+        { "id": 16, "name": { "en": "For Sale", "ar": "للبيع" } }
       ]
     },
     {
       "id": 4,
-      "name": "Jobs",
+      "name": { "en": "Jobs", "ar": "وظائف" },
       "icon": "💼",
       "subcategories": [
-        {
-          "id": 17,
-          "name": "Accounting"
-        },
-        {
-          "id": 18,
-          "name": "Customer Service"
-        },
-        {
-          "id": 19,
-          "name": "Healthcare"
-        },
-        {
-          "id": 20,
-          "name": "Sales"
-        },
-        {
-          "id": 21,
-          "name": "IT & Programming"
-        },
-        {
-          "id": 22,
-          "name": "Other"
-        }
+        { "id": 17, "name": { "en": "Accounting", "ar": "محاسبة" } },
+        { "id": 18, "name": { "en": "Customer Service", "ar": "خدمة عملاء" } },
+        { "id": 19, "name": { "en": "Healthcare", "ar": "رعاية صحية" } },
+        { "id": 20, "name": { "en": "Sales", "ar": "مبيعات" } },
+        { "id": 21, "name": { "en": "IT & Programming", "ar": "تكنولوجيا وبرمجة" } },
+        { "id": 22, "name": { "en": "Other", "ar": "أخرى" } }
       ]
     },
     {
       "id": 5,
-      "name": "Services",
+      "name": { "en": "Services", "ar": "خدمات" },
       "icon": "🛠️",
       "subcategories": [
-        {
-          "id": 23,
-          "name": "Home Maintenance"
-        },
-        {
-          "id": 24,
-          "name": "Tutoring"
-        },
-        {
-          "id": 25,
-          "name": "Cleaning"
-        },
-        {
-          "id": 26,
-          "name": "Moving"
-        },
-        {
-          "id": 27,
-          "name": "Other"
-        }
+        { "id": 23, "name": { "en": "Home Maintenance", "ar": "صيانة منزلية" } },
+        { "id": 24, "name": { "en": "Tutoring", "ar": "دروس خصوصية" } },
+        { "id": 25, "name": { "en": "Cleaning", "ar": "تنظيف" } },
+        { "id": 26, "name": { "en": "Moving", "ar": "نقل" } },
+        { "id": 27, "name": { "en": "Other", "ar": "أخرى" } }
       ]
     },
     {
       "id": 6,
-      "name": "Pets",
+      "name": { "en": "Pets", "ar": "حيوانات" },
       "icon": "🐾",
       "subcategories": [
-        {
-          "id": 28,
-          "name": "Cats"
-        },
-        {
-          "id": 29,
-          "name": "Dogs"
-        },
-        {
-          "id": 30,
-          "name": "Birds"
-        },
-        {
-          "id": 31,
-          "name": "Other"
-        }
+        { "id": 28, "name": { "en": "Cats", "ar": "قطط" } },
+        { "id": 29, "name": { "en": "Dogs", "ar": "كلاب" } },
+        { "id": 30, "name": { "en": "Birds", "ar": "طيور" } },
+        { "id": 31, "name": { "en": "Other", "ar": "أخرى" } }
       ]
     }
   ]

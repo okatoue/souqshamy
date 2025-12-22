@@ -11,6 +11,7 @@ import { SPACING } from '@/constants/theme';
 import { useAutoLocationDetection } from '@/hooks/useAutoLocationDetection';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
+import { useTranslation } from '@/localization';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -18,6 +19,7 @@ import { Keyboard, RefreshControl, ScrollView, StyleSheet, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -100,7 +102,7 @@ export default function HomeScreen() {
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
               onFocus={handleSearchBarFocus}
-              placeholder="Search all listings..."
+              placeholder={t('home.searchPlaceholder')}
               showIcon={true}
               showClearButton={true}
               style={styles.searchBarContent}
@@ -108,7 +110,7 @@ export default function HomeScreen() {
           </ThemedView>
 
           <ThemedView style={styles.titleContainer}>
-            <ThemedText type="title">All Categories</ThemedText>
+            <ThemedText type="title">{t('home.allCategories')}</ThemedText>
           </ThemedView>
 
           <CategoriesList />
