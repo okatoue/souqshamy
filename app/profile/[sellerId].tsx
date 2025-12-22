@@ -22,7 +22,9 @@ import { getDisplayName } from '@/lib/formatters';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
+// RATING SYSTEM - useState was used for activeTab, commented out for future reuse
+// import React, { useCallback, useState } from 'react';
 import {
     Dimensions,
     FlatList,
@@ -58,7 +60,9 @@ function Header({ textColor, onShare }: { textColor: string; onShare?: () => voi
 export default function SellerProfileScreen() {
     const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
     const { profile, listings, isLoading } = useSellerProfile(sellerId);
-    const [activeTab, setActiveTab] = useState<SellerTabType>('listings');
+    // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
+    // const [activeTab, setActiveTab] = useState<SellerTabType>('listings');
+    const activeTab: SellerTabType = 'listings'; // Always listings when ratings disabled
 
     // Theme
     const backgroundColor = useThemeColor({}, 'background');
@@ -103,6 +107,7 @@ export default function SellerProfileScreen() {
         </View>
     ), [mutedColor, textColor]);
 
+    /* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
     const renderRatingsTab = useCallback(() => (
         <View style={styles.emptyState}>
             <Ionicons name="star-outline" size={60} color={mutedColor} />
@@ -112,6 +117,7 @@ export default function SellerProfileScreen() {
             </Text>
         </View>
     ), [mutedColor, textColor]);
+    */
 
     const renderListHeader = useCallback(() => (
         <>
@@ -122,7 +128,7 @@ export default function SellerProfileScreen() {
 
             <SellerProfileTabs
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={() => {}} // RATING SYSTEM - no-op since tabs disabled
                 listingsCount={listings.length}
             />
         </>
@@ -152,6 +158,18 @@ export default function SellerProfileScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             <Header textColor={textColor} onShare={handleShare} />
 
+            <FlatList
+                data={listings}
+                renderItem={renderListingItem}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={2}
+                ListHeaderComponent={renderListHeader}
+                ListEmptyComponent={renderEmptyListings}
+                contentContainerStyle={styles.listContent}
+                columnWrapperStyle={listings.length > 0 ? styles.gridRow : undefined}
+                showsVerticalScrollIndicator={false}
+            />
+            {/* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
             {activeTab === 'listings' ? (
                 <FlatList
                     data={listings}
@@ -174,6 +192,7 @@ export default function SellerProfileScreen() {
                     showsVerticalScrollIndicator={false}
                 />
             )}
+            */}
         </SafeAreaView>
     );
 }

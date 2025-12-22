@@ -47,7 +47,7 @@ export function ListedBySection({ seller, activeListingsCount, onPress }: Listed
                         {getDisplayName(seller)}
                     </Text>
 
-                    {/* Star Rating */}
+                    {/* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
                     <View style={styles.rating}>
                         <Text style={styles.stars}>★★★★★</Text>
                         <Text style={[styles.ratingValue, { color: textColor }]}>
@@ -57,6 +57,7 @@ export function ListedBySection({ seller, activeListingsCount, onPress }: Listed
                             ({PLACEHOLDER_REVIEW_COUNT} reviews)
                         </Text>
                     </View>
+                    */}
 
                     {/* Years on platform and listings count */}
                     <View style={styles.stats}>
