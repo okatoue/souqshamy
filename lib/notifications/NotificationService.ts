@@ -1,23 +1,46 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { supabase } from '../supabase';
 
-// Configure how notifications appear when app is in foreground
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-    }),
-});
+// Lazy-loaded notifications module to avoid crashes in Expo Go
+let Notifications: typeof import('expo-notifications') | null = null;
+let isNotificationsAvailable = false;
+
+// Initialize notifications module safely
+async function initializeNotifications(): Promise<boolean> {
+    if (Notifications !== null) {
+        return isNotificationsAvailable;
+    }
+
+    try {
+        Notifications = await import('expo-notifications');
+        isNotificationsAvailable = true;
+
+        // Configure how notifications appear when app is in foreground
+        Notifications.setNotificationHandler({
+            handleNotification: async () => ({
+                shouldShowAlert: true,
+                shouldPlaySound: true,
+                shouldSetBadge: true,
+                shouldShowBanner: true,
+                shouldShowList: true,
+            }),
+        });
+
+        console.log('[Notifications] Module initialized successfully');
+        return true;
+    } catch (error) {
+        console.log('[Notifications] Native module not available (running in Expo Go or simulator)');
+        isNotificationsAvailable = false;
+        return false;
+    }
+}
 
 class NotificationService {
     private static instance: NotificationService;
     private expoPushToken: string | null = null;
+    private initialized = false;
 
     private constructor() {}
 
@@ -29,9 +52,27 @@ class NotificationService {
     }
 
     /**
+     * Check if notifications are available
+     */
+    isAvailable(): boolean {
+        return isNotificationsAvailable;
+    }
+
+    /**
      * Request notification permissions and get push token
      */
     async registerForPushNotifications(): Promise<string | null> {
+        // Initialize notifications module if not already done
+        if (!this.initialized) {
+            await initializeNotifications();
+            this.initialized = true;
+        }
+
+        if (!isNotificationsAvailable || !Notifications) {
+            console.log('[Notifications] Push notifications not available in this environment');
+            return null;
+        }
+
         // Must be a physical device
         if (!Device.isDevice) {
             console.log('[Notifications] Push notifications require a physical device');
@@ -86,6 +127,8 @@ class NotificationService {
      * Setup Android notification channels
      */
     private async setupAndroidChannels(): Promise<void> {
+        if (!Notifications) return;
+
         // Messages channel (high priority)
         await Notifications.setNotificationChannelAsync('messages', {
             name: 'Messages',
@@ -181,6 +224,7 @@ class NotificationService {
      * Get badge count
      */
     async getBadgeCount(): Promise<number> {
+        if (!isNotificationsAvailable || !Notifications) return 0;
         return await Notifications.getBadgeCountAsync();
     }
 
@@ -188,6 +232,7 @@ class NotificationService {
      * Set badge count
      */
     async setBadgeCount(count: number): Promise<void> {
+        if (!isNotificationsAvailable || !Notifications) return;
         await Notifications.setBadgeCountAsync(count);
     }
 
@@ -195,8 +240,26 @@ class NotificationService {
      * Clear all notifications
      */
     async clearAllNotifications(): Promise<void> {
+        if (!isNotificationsAvailable || !Notifications) return;
         await Notifications.dismissAllNotificationsAsync();
         await this.setBadgeCount(0);
+    }
+
+    /**
+     * Get notifications module (for use in hooks)
+     */
+    getNotificationsModule(): typeof import('expo-notifications') | null {
+        return Notifications;
+    }
+
+    /**
+     * Initialize the service (call early in app lifecycle)
+     */
+    async initialize(): Promise<void> {
+        if (!this.initialized) {
+            await initializeNotifications();
+            this.initialized = true;
+        }
     }
 }
 
