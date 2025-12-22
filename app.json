@@ -45,6 +45,7 @@
     },
     "plugins": [
       "./plugins/withDeepLinkHandler",
+      "./plugins/withGoogleServices",
       "expo-router",
       [
         "expo-splash-screen",
