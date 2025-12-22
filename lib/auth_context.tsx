@@ -6,6 +6,7 @@ import {
     safeReloadApp,
 } from '@/lib/auth-utils';
 import { clearUserCaches } from '@/lib/cache';
+import NotificationService from '@/lib/notifications/NotificationService';
 import { supabase } from '@/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session, User } from '@supabase/supabase-js';
@@ -594,6 +595,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const signOut = async () => {
         try {
+            // Deactivate push token before signing out
+            await NotificationService.deactivatePushToken();
+
             // Clear user-specific caches before signing out
             if (user?.id) {
                 await clearUserCaches(user.id);
