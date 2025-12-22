@@ -5,6 +5,7 @@ import { BRAND_COLOR, Colors } from '@/constants/theme';
 import { AppDataProvider, useAppData } from '@/lib/app_data_context';
 import { AuthProvider, useAuth } from '@/lib/auth_context';
 import { FavoritesProvider, useFavoritesContext } from '@/lib/favorites_context';
+import { usePushNotifications } from '@/lib/notifications';
 import { RTLProvider } from '@/lib/rtl_context';
 import { ThemeProvider, useAppColorScheme } from '@/lib/theme_context';
 import i18n from '@/localization';
@@ -24,6 +25,15 @@ function RootLayoutNav() {
   const router = useRouter();
   const colorScheme = useAppColorScheme();
   const colors = Colors[colorScheme];
+
+  // Initialize push notifications
+  const { expoPushToken } = usePushNotifications();
+
+  useEffect(() => {
+    if (expoPushToken) {
+      console.log('[App] Push notifications ready');
+    }
+  }, [expoPushToken]);
 
   // Minimum loading delay to prevent flickering if auth resolves very quickly
   const [minLoadingComplete, setMinLoadingComplete] = useState(false);
