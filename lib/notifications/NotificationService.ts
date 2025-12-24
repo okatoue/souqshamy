@@ -273,6 +273,124 @@ class NotificationService {
             this.initialized = true;
         }
     }
+
+    /**
+     * Manually trigger sending a specific notification (for testing)
+     * In production, this is handled by database triggers or cron
+     */
+    async sendPushNotification(notificationId: string): Promise<boolean> {
+        try {
+            const { data, error } = await supabase.functions.invoke('send-push-notification', {
+                body: { notification_id: notificationId },
+            });
+
+            if (error) {
+                console.error('[Notifications] Error sending push:', error);
+                return false;
+            }
+
+            console.log('[Notifications] Push send result:', data);
+            return data?.sent > 0;
+        } catch (error) {
+            console.error('[Notifications] Exception sending push:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Process all pending notifications (admin/debug use)
+     * Returns count of sent and failed notifications
+     */
+    async processPendingNotifications(limit = 100): Promise<{ sent: number; failed: number; skipped: number }> {
+        try {
+            const { data, error } = await supabase.functions.invoke('send-push-notification', {
+                body: { batch_mode: true, limit },
+            });
+
+            if (error) {
+                console.error('[Notifications] Batch process error:', error);
+                return { sent: 0, failed: 0, skipped: 0 };
+            }
+
+            console.log('[Notifications] Batch process result:', data);
+            return {
+                sent: data?.sent || 0,
+                failed: data?.failed || 0,
+                skipped: data?.skipped || 0,
+            };
+        } catch (error) {
+            console.error('[Notifications] Exception in batch process:', error);
+            return { sent: 0, failed: 0, skipped: 0 };
+        }
+    }
+
+    /**
+     * Get unread notification count for current user
+     */
+    async getUnreadCount(userId: string): Promise<number> {
+        try {
+            const { count, error } = await supabase
+                .from('notifications')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId)
+                .eq('is_read', false);
+
+            if (error) {
+                console.error('[Notifications] Error getting unread count:', error);
+                return 0;
+            }
+
+            return count || 0;
+        } catch (error) {
+            console.error('[Notifications] Exception getting unread count:', error);
+            return 0;
+        }
+    }
+
+    /**
+     * Mark notifications as read
+     */
+    async markAsRead(notificationIds: string[]): Promise<boolean> {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ is_read: true })
+                .in('id', notificationIds);
+
+            if (error) {
+                console.error('[Notifications] Error marking as read:', error);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[Notifications] Exception marking as read:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Mark all notifications as read for a user
+     */
+    async markAllAsRead(userId: string): Promise<boolean> {
+        try {
+            const { error } = await supabase
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('user_id', userId)
+                .eq('is_read', false);
+
+            if (error) {
+                console.error('[Notifications] Error marking all as read:', error);
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[Notifications] Exception marking all as read:', error);
+            return false;
+        }
+    }
 }
 
 export default NotificationService.getInstance();
