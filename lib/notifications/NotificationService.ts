@@ -177,91 +177,27 @@ class NotificationService {
                 console.error('[Notifications] Auth error:', authError);
             }
 
-            // First, try to check if token exists
-            const { data: existingToken, error: selectError } = await supabase
-                .from('push_tokens')
-                .select('id')
-                .eq('expo_push_token', this.expoPushToken)
-                .maybeSingle();
+            // Use the database function to handle upsert with ownership transfer
+            // This bypasses RLS issues when a token needs to be transferred between users
+            console.log('[Notifications] Calling upsert_push_token RPC function');
 
-            if (selectError) {
-                console.error('[Notifications] Error checking existing token:', selectError);
+            const { data: tokenId, error: rpcError } = await supabase.rpc('upsert_push_token', {
+                p_user_id: userId,
+                p_expo_push_token: this.expoPushToken,
+                p_device_type: deviceType,
+                p_device_name: deviceName,
+            });
+
+            if (rpcError) {
+                console.error('[Notifications] RPC error:', JSON.stringify(rpcError));
+                console.error('[Notifications] RPC error message:', rpcError?.message);
+                console.error('[Notifications] RPC error code:', rpcError?.code);
+                console.error('[Notifications] RPC error details:', rpcError?.details);
+                console.error('[Notifications] RPC error hint:', rpcError?.hint);
+                return false;
             }
 
-            console.log('[Notifications] Existing token check:', existingToken);
-
-            if (existingToken) {
-                // Update existing token
-                console.log('[Notifications] Updating existing token');
-                const { error: updateError, status, statusText } = await supabase
-                    .from('push_tokens')
-                    .update({
-                        user_id: userId,
-                        device_type: deviceType,
-                        device_name: deviceName,
-                        last_used_at: new Date().toISOString(),
-                        is_active: true,
-                    })
-                    .eq('expo_push_token', this.expoPushToken);
-
-                console.log('[Notifications] Update response - status:', status, 'statusText:', statusText);
-
-                if (updateError) {
-                    console.error('[Notifications] Update error:', JSON.stringify(updateError));
-                    console.error('[Notifications] Update error message:', updateError?.message);
-                    console.error('[Notifications] Update error code:', updateError?.code);
-                    console.error('[Notifications] Update error details:', updateError?.details);
-                    console.error('[Notifications] Update error hint:', updateError?.hint);
-                    return false;
-                }
-            } else {
-                // Insert new token
-                console.log('[Notifications] Inserting new token');
-                const insertPayload = {
-                    user_id: userId,
-                    expo_push_token: this.expoPushToken,
-                    device_type: deviceType,
-                    device_name: deviceName,
-                    last_used_at: new Date().toISOString(),
-                    is_active: true,
-                };
-                console.log('[Notifications] Insert payload:', JSON.stringify(insertPayload));
-
-                const { data, error: insertError, status, statusText } = await supabase
-                    .from('push_tokens')
-                    .insert(insertPayload)
-                    .select();
-
-                console.log('[Notifications] Insert response - status:', status, 'statusText:', statusText);
-                console.log('[Notifications] Insert data:', JSON.stringify(data));
-
-                if (insertError) {
-                    console.error('[Notifications] Insert error object:', insertError);
-                    console.error('[Notifications] Insert error JSON:', JSON.stringify(insertError));
-                    console.error('[Notifications] Insert error message:', insertError?.message);
-                    console.error('[Notifications] Insert error code:', insertError?.code);
-                    console.error('[Notifications] Insert error details:', insertError?.details);
-                    console.error('[Notifications] Insert error hint:', insertError?.hint);
-                    console.error('[Notifications] Insert error keys:', Object.keys(insertError || {}));
-                    return false;
-                }
-
-                if (!data || data.length === 0) {
-                    console.error('[Notifications] Insert returned no data but no error');
-                    // Check if the insert actually succeeded by querying
-                    const { data: checkData } = await supabase
-                        .from('push_tokens')
-                        .select('id')
-                        .eq('expo_push_token', this.expoPushToken)
-                        .maybeSingle();
-
-                    if (checkData) {
-                        console.log('[Notifications] Token was actually inserted, id:', checkData.id);
-                        return true;
-                    }
-                    return false;
-                }
-            }
+            console.log('[Notifications] Token saved with id:', tokenId);
 
             console.log('[Notifications] Token saved successfully');
             return true;
