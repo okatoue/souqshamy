@@ -169,36 +169,58 @@ class NotificationService {
             console.log('[Notifications] Token:', this.expoPushToken);
             console.log('[Notifications] Device:', deviceType, deviceName);
 
-            // Upsert token (update if exists, insert if not)
-            const { data, error } = await supabase
+            // First, try to check if token exists
+            const { data: existingToken, error: selectError } = await supabase
                 .from('push_tokens')
-                .upsert(
-                    {
+                .select('id')
+                .eq('expo_push_token', this.expoPushToken)
+                .maybeSingle();
+
+            if (selectError) {
+                console.error('[Notifications] Error checking existing token:', selectError);
+            }
+
+            console.log('[Notifications] Existing token check:', existingToken);
+
+            if (existingToken) {
+                // Update existing token
+                console.log('[Notifications] Updating existing token');
+                const { error: updateError } = await supabase
+                    .from('push_tokens')
+                    .update({
+                        user_id: userId,
+                        device_type: deviceType,
+                        device_name: deviceName,
+                        last_used_at: new Date().toISOString(),
+                        is_active: true,
+                    })
+                    .eq('expo_push_token', this.expoPushToken);
+
+                if (updateError) {
+                    console.error('[Notifications] Update error:', JSON.stringify(updateError));
+                    return false;
+                }
+            } else {
+                // Insert new token
+                console.log('[Notifications] Inserting new token');
+                const { error: insertError } = await supabase
+                    .from('push_tokens')
+                    .insert({
                         user_id: userId,
                         expo_push_token: this.expoPushToken,
                         device_type: deviceType,
                         device_name: deviceName,
                         last_used_at: new Date().toISOString(),
                         is_active: true,
-                    },
-                    {
-                        onConflict: 'expo_push_token',
-                    }
-                )
-                .select();
+                    });
 
-            if (error) {
-                console.error('[Notifications] Error saving token - raw error:', JSON.stringify(error));
-                console.error('[Notifications] Error saving token - error type:', typeof error);
-                console.error('[Notifications] Error saving token - error keys:', Object.keys(error));
-                console.error('[Notifications] Error saving token - message:', error.message);
-                console.error('[Notifications] Error saving token - code:', error.code);
-                console.error('[Notifications] Error saving token - details:', error.details);
-                console.error('[Notifications] Error saving token - hint:', error.hint);
-                return false;
+                if (insertError) {
+                    console.error('[Notifications] Insert error:', JSON.stringify(insertError));
+                    return false;
+                }
             }
 
-            console.log('[Notifications] Token saved successfully:', data);
+            console.log('[Notifications] Token saved successfully');
             return true;
         } catch (error: any) {
             console.error('[Notifications] Exception saving token:', JSON.stringify(error, null, 2));
