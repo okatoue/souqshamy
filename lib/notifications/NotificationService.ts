@@ -165,8 +165,12 @@ class NotificationService {
             const deviceType = Platform.OS as 'ios' | 'android';
             const deviceName = Device.deviceName || `${Device.brand} ${Device.modelName}`;
 
+            console.log('[Notifications] Saving token for user:', userId);
+            console.log('[Notifications] Token:', this.expoPushToken);
+            console.log('[Notifications] Device:', deviceType, deviceName);
+
             // Upsert token (update if exists, insert if not)
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('push_tokens')
                 .upsert(
                     {
@@ -180,17 +184,21 @@ class NotificationService {
                     {
                         onConflict: 'expo_push_token',
                     }
-                );
+                )
+                .select();
 
             if (error) {
-                console.error('[Notifications] Error saving token:', error.message, error.code, error.details);
+                console.error('[Notifications] Error saving token - message:', error.message);
+                console.error('[Notifications] Error saving token - code:', error.code);
+                console.error('[Notifications] Error saving token - details:', error.details);
+                console.error('[Notifications] Error saving token - hint:', error.hint);
                 return false;
             }
 
-            console.log('[Notifications] Token saved successfully');
+            console.log('[Notifications] Token saved successfully:', data);
             return true;
         } catch (error: any) {
-            console.error('[Notifications] Error saving token:', error?.message || error);
+            console.error('[Notifications] Exception saving token:', JSON.stringify(error, null, 2));
             return false;
         }
     }
