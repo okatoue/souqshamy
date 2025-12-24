@@ -26,7 +26,7 @@ BEGIN
     END IF;
 
     -- Get sender profile
-    SELECT name, avatar_url INTO sender_profile
+    SELECT display_name, avatar_url INTO sender_profile
     FROM public.profiles
     WHERE id = NEW.sender_id;
 
@@ -51,7 +51,7 @@ BEGIN
     PERFORM public.create_notification(
         recipient_id,
         'new_message',
-        COALESCE(sender_profile.name, 'Someone'),
+        COALESCE(sender_profile.display_name, 'Someone'),
         msg_preview,
         jsonb_build_object(
             'conversation_id', NEW.conversation_id,
@@ -100,7 +100,7 @@ BEGIN
     WHERE id = NEW.listing_id;
 
     -- Get buyer profile
-    SELECT name INTO buyer_profile
+    SELECT display_name INTO buyer_profile
     FROM public.profiles
     WHERE id = NEW.buyer_id;
 
@@ -109,7 +109,7 @@ BEGIN
         NEW.seller_id,
         'new_inquiry',
         'New inquiry on your listing',
-        COALESCE(buyer_profile.name, 'Someone') || ' is interested in ' || COALESCE(listing_record.title, 'your listing'),
+        COALESCE(buyer_profile.display_name, 'Someone') || ' is interested in ' || COALESCE(listing_record.title, 'your listing'),
         jsonb_build_object(
             'conversation_id', NEW.id,
             'listing_id', NEW.listing_id,
@@ -160,7 +160,7 @@ BEGIN
     END IF;
 
     -- Get the user who favorited
-    SELECT name INTO user_profile
+    SELECT display_name INTO user_profile
     FROM public.profiles
     WHERE id = NEW.user_id;
 
