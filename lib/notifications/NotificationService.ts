@@ -169,6 +169,14 @@ class NotificationService {
             console.log('[Notifications] Token:', this.expoPushToken);
             console.log('[Notifications] Device:', deviceType, deviceName);
 
+            // Check auth state
+            const { data: { session }, error: authError } = await supabase.auth.getSession();
+            console.log('[Notifications] Auth session check - user:', session?.user?.id);
+            console.log('[Notifications] Auth session check - matches userId:', session?.user?.id === userId);
+            if (authError) {
+                console.error('[Notifications] Auth error:', authError);
+            }
+
             // First, try to check if token exists
             const { data: existingToken, error: selectError } = await supabase
                 .from('push_tokens')
@@ -185,7 +193,7 @@ class NotificationService {
             if (existingToken) {
                 // Update existing token
                 console.log('[Notifications] Updating existing token');
-                const { error: updateError } = await supabase
+                const { error: updateError, status, statusText } = await supabase
                     .from('push_tokens')
                     .update({
                         user_id: userId,
@@ -196,26 +204,61 @@ class NotificationService {
                     })
                     .eq('expo_push_token', this.expoPushToken);
 
+                console.log('[Notifications] Update response - status:', status, 'statusText:', statusText);
+
                 if (updateError) {
                     console.error('[Notifications] Update error:', JSON.stringify(updateError));
+                    console.error('[Notifications] Update error message:', updateError?.message);
+                    console.error('[Notifications] Update error code:', updateError?.code);
+                    console.error('[Notifications] Update error details:', updateError?.details);
+                    console.error('[Notifications] Update error hint:', updateError?.hint);
                     return false;
                 }
             } else {
                 // Insert new token
                 console.log('[Notifications] Inserting new token');
-                const { error: insertError } = await supabase
+                const insertPayload = {
+                    user_id: userId,
+                    expo_push_token: this.expoPushToken,
+                    device_type: deviceType,
+                    device_name: deviceName,
+                    last_used_at: new Date().toISOString(),
+                    is_active: true,
+                };
+                console.log('[Notifications] Insert payload:', JSON.stringify(insertPayload));
+
+                const { data, error: insertError, status, statusText } = await supabase
                     .from('push_tokens')
-                    .insert({
-                        user_id: userId,
-                        expo_push_token: this.expoPushToken,
-                        device_type: deviceType,
-                        device_name: deviceName,
-                        last_used_at: new Date().toISOString(),
-                        is_active: true,
-                    });
+                    .insert(insertPayload)
+                    .select();
+
+                console.log('[Notifications] Insert response - status:', status, 'statusText:', statusText);
+                console.log('[Notifications] Insert data:', JSON.stringify(data));
 
                 if (insertError) {
-                    console.error('[Notifications] Insert error:', JSON.stringify(insertError));
+                    console.error('[Notifications] Insert error object:', insertError);
+                    console.error('[Notifications] Insert error JSON:', JSON.stringify(insertError));
+                    console.error('[Notifications] Insert error message:', insertError?.message);
+                    console.error('[Notifications] Insert error code:', insertError?.code);
+                    console.error('[Notifications] Insert error details:', insertError?.details);
+                    console.error('[Notifications] Insert error hint:', insertError?.hint);
+                    console.error('[Notifications] Insert error keys:', Object.keys(insertError || {}));
+                    return false;
+                }
+
+                if (!data || data.length === 0) {
+                    console.error('[Notifications] Insert returned no data but no error');
+                    // Check if the insert actually succeeded by querying
+                    const { data: checkData } = await supabase
+                        .from('push_tokens')
+                        .select('id')
+                        .eq('expo_push_token', this.expoPushToken)
+                        .maybeSingle();
+
+                    if (checkData) {
+                        console.log('[Notifications] Token was actually inserted, id:', checkData.id);
+                        return true;
+                    }
                     return false;
                 }
             }
