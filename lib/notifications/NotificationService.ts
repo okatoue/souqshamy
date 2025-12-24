@@ -188,6 +188,9 @@ class NotificationService {
                 .select();
 
             if (error) {
+                console.error('[Notifications] Error saving token - raw error:', JSON.stringify(error));
+                console.error('[Notifications] Error saving token - error type:', typeof error);
+                console.error('[Notifications] Error saving token - error keys:', Object.keys(error));
                 console.error('[Notifications] Error saving token - message:', error.message);
                 console.error('[Notifications] Error saving token - code:', error.code);
                 console.error('[Notifications] Error saving token - details:', error.details);
