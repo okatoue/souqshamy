@@ -290,10 +290,6 @@ export async function clearUserCaches(userId: string): Promise<void> {
 
     try {
         await AsyncStorage.multiRemove(userCacheKeys);
-
-        if (__DEV__) {
-            console.log('[Cache] Cleared user caches for:', userId);
-        }
     } catch (error) {
         console.error('[Cache] Error clearing user caches:', error);
     }
@@ -310,10 +306,6 @@ export async function clearAllAppCaches(): Promise<void> {
 
         if (appKeys.length > 0) {
             await AsyncStorage.multiRemove(appKeys);
-        }
-
-        if (__DEV__) {
-            console.log('[Cache] Cleared all app caches:', appKeys.length, 'keys');
         }
     } catch (error) {
         console.error('[Cache] Error clearing all app caches:', error);

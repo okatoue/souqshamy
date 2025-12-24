@@ -937,8 +937,6 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!user) return;
 
-        console.log('[AppData] Setting up real-time subscriptions for conversations');
-
         const subscription = supabase
             .channel('app-conversations-changes')
             .on(
@@ -949,8 +947,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
                 },
-                (payload) => {
-                    console.log('[AppData] Conversation INSERT (buyer):', payload);
+                () => {
                     fetchConversations(false);
                 }
             )
@@ -962,8 +959,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     table: 'conversations',
                     filter: `buyer_id=eq.${user.id}`
                 },
-                (payload) => {
-                    console.log('[AppData] Conversation UPDATE (buyer):', payload);
+                () => {
                     fetchConversations(false);
                 }
             )
@@ -975,8 +971,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
                 },
-                (payload) => {
-                    console.log('[AppData] Conversation INSERT (seller):', payload);
+                () => {
                     fetchConversations(false);
                 }
             )
@@ -988,8 +983,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     table: 'conversations',
                     filter: `seller_id=eq.${user.id}`
                 },
-                (payload) => {
-                    console.log('[AppData] Conversation UPDATE (seller):', payload);
+                () => {
                     fetchConversations(false);
                 }
             )
@@ -1000,23 +994,16 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
                     schema: 'public',
                     table: 'messages'
                 },
-                (payload) => {
-                    console.log('[AppData] New message detected:', payload);
+                () => {
                     // Refresh conversations when a new message is inserted
                     // This ensures the conversation list updates with the latest message
                     // and unread counts even if the conversation UPDATE event is missed
                     fetchConversations(false);
                 }
             )
-            .subscribe((status, err) => {
-                console.log('[AppData] Conversations subscription status:', status);
-                if (err) {
-                    console.error('[AppData] Subscription error:', JSON.stringify(err, null, 2));
-                }
-            });
+            .subscribe();
 
         return () => {
-            console.log('[AppData] Cleaning up conversations subscriptions');
             subscription.unsubscribe();
         };
     }, [user, fetchConversations]);

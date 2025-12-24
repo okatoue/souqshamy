@@ -233,7 +233,6 @@ export function useMessages(conversationId: string | null) {
     const retryMessage = useCallback(async (messageId: string): Promise<boolean> => {
         const failedMessage = messages.find(m => m.id === messageId && m._status === 'failed');
         if (!failedMessage) {
-            console.log('[useMessages] No failed message found with ID:', messageId);
             return false;
         }
 
@@ -242,10 +241,8 @@ export function useMessages(conversationId: string | null) {
 
         // Retry based on message type
         if (failedMessage.message_type === 'voice' && failedMessage._localUri) {
-            console.log('[useMessages] Retrying voice message:', failedMessage._localUri);
             return sendAudioMessage(failedMessage._localUri, failedMessage.audio_duration || 0);
         } else {
-            console.log('[useMessages] Retrying text message:', failedMessage.content);
             return sendMessage(failedMessage.content);
         }
     }, [messages, sendMessage, sendAudioMessage]);
@@ -259,8 +256,6 @@ export function useMessages(conversationId: string | null) {
     useEffect(() => {
         if (!conversationId || !user) return;
 
-        console.log('[useMessages] Setting up real-time subscription for:', conversationId);
-
         const channel = supabase
             .channel(`messages-${conversationId}`)
             .on(
@@ -272,7 +267,6 @@ export function useMessages(conversationId: string | null) {
                     filter: `conversation_id=eq.${conversationId}`
                 },
                 (payload) => {
-                    console.log('[useMessages] Received new message:', payload);
                     const newMessage = payload.new as Message;
 
                     // Only add if not already in state (avoid duplicates from optimistic update)
@@ -280,7 +274,6 @@ export function useMessages(conversationId: string | null) {
                         // Check if message already exists by ID
                         const existsById = prev.some(msg => msg.id === newMessage.id);
                         if (existsById) {
-                            console.log('[useMessages] Message already exists by ID, skipping');
                             return prev;
                         }
 
@@ -311,13 +304,11 @@ export function useMessages(conversationId: string | null) {
                         });
 
                         if (tempMessageIndex !== -1) {
-                            console.log('[useMessages] Replacing temp message with real message');
                             const updated = [...prev];
                             updated[tempMessageIndex] = { ...newMessage, _status: 'sent' as const };
                             return updated;
                         }
 
-                        console.log('[useMessages] Adding new message to state');
                         return [...prev, newMessage];
                     });
 
@@ -327,20 +318,9 @@ export function useMessages(conversationId: string | null) {
                     }
                 }
             )
-            .on('system', {}, (payload) => {
-                console.log('[useMessages] System event:', JSON.stringify(payload));
-            })
-            .subscribe((status, err) => {
-                console.log('[useMessages] Subscription status:', status);
-                if (err) {
-                    console.error('[useMessages] Subscription error:', JSON.stringify(err, null, 2));
-                }
-                // Log the channel state for debugging
-                console.log('[useMessages] Channel state:', channel.state);
-            });
+            .subscribe();
 
         return () => {
-            console.log('[useMessages] Cleaning up subscription for:', conversationId);
             channel.unsubscribe();
         };
     }, [conversationId, user, markMessagesAsRead]);

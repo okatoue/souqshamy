@@ -47,11 +47,5 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
     params: {
       eventsPerSecond: 10,
     },
-    logger: (type: string, msg: string, data?: unknown) => {
-      console.log(`[Supabase Realtime] ${type}: ${msg}`, data ? JSON.stringify(data) : '');
-    },
   },
 });
-
-// Debug: Log the Supabase URL being used
-console.log('[Supabase] Initialized with URL:', supabaseUrl);

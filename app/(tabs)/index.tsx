@@ -27,11 +27,6 @@ export default function HomeScreen() {
   const { t } = useTranslation();
   const { isRTL } = useRTL();
 
-  useEffect(() => {
-    // Verification log for i18n infrastructure
-    console.log('Language test:', t('common.loading'), 'RTL:', isRTL);
-  }, [t, isRTL]);
-
   // Auto-detect location on first launch (when no saved preference exists)
   useAutoLocationDetection();
 

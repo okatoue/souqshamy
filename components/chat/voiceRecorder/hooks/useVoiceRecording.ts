@@ -97,8 +97,6 @@ export function useVoiceRecording({
 
     // Handle the recorded file after stopping
     const processRecordedFile = useCallback(async (uri: string, action: 'send' | 'cancel') => {
-        console.log('[VoiceRecording] processRecordedFile called:', { uri, action });
-
         if (action === 'cancel') {
             // Clean up and reset
             try {
@@ -123,28 +121,21 @@ export function useVoiceRecording({
 
         try {
             // Verify file exists and has content
-            console.log('[VoiceRecording] Checking file exists...');
             const fileInfo = await FileSystem.getInfoAsync(uri);
-            console.log('[VoiceRecording] File info:', JSON.stringify(fileInfo));
             if (!fileInfo.exists) {
                 throw new Error('Recording file not found');
             }
 
             // Copy to stable location
-            console.log('[VoiceRecording] Copying to stable location...');
             const stableUri = await copyToStableLocation(uri);
-            console.log('[VoiceRecording] Stable URI:', stableUri);
 
             // Reset audio mode for playback
-            console.log('[VoiceRecording] Resetting audio mode...');
             await AudioModule.setAudioModeAsync({
                 allowsRecording: false,
                 playsInSilentMode: true,
             });
 
-            console.log('[VoiceRecording] Calling onSend with duration:', recordedDuration.current);
             const success = await onSend(stableUri, recordedDuration.current);
-            console.log('[VoiceRecording] onSend returned:', success);
 
             if (isMounted.current) {
                 if (success) {
@@ -177,19 +168,12 @@ export function useVoiceRecording({
 
     // Watch for recording state changes from expo-audio
     useEffect(() => {
-        console.log('[VoiceRecording] useEffect triggered:', {
-            isRecording: audioRecorder.isRecording,
-            hasUri: !!audioRecorder.uri,
-            pendingAction: pendingAction.current
-        });
-
         // When recording stops and we have a URI, process based on pending action
         if (!audioRecorder.isRecording && audioRecorder.uri && pendingAction.current) {
             const action = pendingAction.current;
             const uri = audioRecorder.uri;
             pendingAction.current = null;
 
-            console.log('[VoiceRecording] Processing recorded file:', { uri, action });
             processRecordedFile(uri, action);
         }
     }, [audioRecorder.isRecording, audioRecorder.uri, processRecordedFile]);
@@ -227,7 +211,6 @@ export function useVoiceRecording({
     useEffect(() => {
         if (shouldAutoStop.current && recordingState === 'recording') {
             shouldAutoStop.current = false;
-            console.log('[VoiceRecording] Auto-stopping at max duration');
 
             // Auto-send the recording
             (async () => {
@@ -255,44 +238,30 @@ export function useVoiceRecording({
 
         try {
             // Request permissions
-            console.log('[VoiceRecording] Requesting permissions...');
             const permissionStatus = await AudioModule.requestRecordingPermissionsAsync();
             if (!permissionStatus.granted) {
-                console.warn('[VoiceRecording] Permission denied:', permissionStatus);
                 if (isMounted.current) {
                     setRecordingState('idle');
                 }
                 return;
             }
-            console.log('[VoiceRecording] Permission granted');
 
             // Configure audio mode for recording
-            console.log('[VoiceRecording] Setting audio mode...');
             await AudioModule.setAudioModeAsync({
                 allowsRecording: true,
                 playsInSilentMode: true,
             });
 
             // Prepare and start recording
-            console.log('[VoiceRecording] Preparing recorder...');
             await audioRecorder.prepareToRecordAsync();
-            console.log('[VoiceRecording] Starting recording...');
             audioRecorder.record();
 
             if (isMounted.current) {
-                console.log('[VoiceRecording] Recording started successfully');
                 setRecordingState('recording');
                 startDurationTracking();
-            } else {
-                console.warn('[VoiceRecording] Component unmounted during recording start');
             }
         } catch (error) {
             console.error('[VoiceRecording] Error starting recording:', error);
-            console.error('[VoiceRecording] Error details:', {
-                name: (error as Error)?.name,
-                message: (error as Error)?.message,
-                stack: (error as Error)?.stack,
-            });
 
             // Reset state on error
             if (isMounted.current) {
@@ -361,15 +330,7 @@ export function useVoiceRecording({
     }, [audioRecorder, clearDurationInterval, onCancel, processRecordedFile]);
 
     const sendRecording = useCallback(async () => {
-        console.log('[VoiceRecording] sendRecording called:', {
-            duration,
-            recordedDuration: recordedDuration.current,
-            isRecording: audioRecorder.isRecording,
-            hasUri: !!audioRecorder.uri
-        });
-
         if (duration === 0 && recordedDuration.current === 0) {
-            console.log('[VoiceRecording] Nothing to send (duration is 0)');
             return;
         }
 
@@ -377,7 +338,6 @@ export function useVoiceRecording({
         setRecordingState('sending');
 
         if (audioRecorder.isRecording) {
-            console.log('[VoiceRecording] Stopping recorder and waiting...');
             // Don't rely on useEffect - stop and process directly
             // This works around expo-audio bug where isRecording doesn't update
             audioRecorder.stop();
@@ -385,7 +345,6 @@ export function useVoiceRecording({
             // Small delay to ensure file is written
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            console.log('[VoiceRecording] Recorder stopped, URI:', audioRecorder.uri);
             if (audioRecorder.uri) {
                 await processRecordedFile(audioRecorder.uri, 'send');
             } else {
@@ -395,10 +354,7 @@ export function useVoiceRecording({
                 }
             }
         } else if (audioRecorder.uri) {
-            console.log('[VoiceRecording] Already stopped, processing immediately');
             await processRecordedFile(audioRecorder.uri, 'send');
-        } else {
-            console.log('[VoiceRecording] No recording to send');
         }
     }, [duration, audioRecorder, clearDurationInterval, processRecordedFile]);
 

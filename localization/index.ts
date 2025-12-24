@@ -42,9 +42,6 @@ i18n
       useSuspense: false, // Disable suspense to prevent issues with React Native
     },
   })
-  .then(() => {
-    console.log('i18n initialized with language:', i18n.language);
-  })
   .catch((error) => {
     console.error('i18n initialization failed:', error);
   });

@@ -254,6 +254,5 @@ export async function deleteListingImages(
         }
     }
 
-    console.log(`[ImageUpload] Deleted ${deleted}/${imageUrls.length} images, ${failed} failed`);
     return { deleted, failed };
 }
