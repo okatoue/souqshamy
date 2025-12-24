@@ -183,14 +183,14 @@ class NotificationService {
                 );
 
             if (error) {
-                console.error('[Notifications] Error saving token:', error);
+                console.error('[Notifications] Error saving token:', error.message, error.code, error.details);
                 return false;
             }
 
             console.log('[Notifications] Token saved successfully');
             return true;
-        } catch (error) {
-            console.error('[Notifications] Error saving token:', error);
+        } catch (error: any) {
+            console.error('[Notifications] Error saving token:', error?.message || error);
             return false;
         }
     }
