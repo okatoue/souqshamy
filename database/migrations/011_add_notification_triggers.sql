@@ -62,8 +62,8 @@ BEGIN
         ),
         CASE
             WHEN conv_record.listing_images IS NOT NULL
-                 AND jsonb_array_length(conv_record.listing_images) > 0
-            THEN conv_record.listing_images->>0
+                 AND array_length(conv_record.listing_images, 1) > 0
+            THEN conv_record.listing_images[1]
             ELSE NULL
         END
     );
@@ -118,8 +118,8 @@ BEGIN
         ),
         CASE
             WHEN listing_record.images IS NOT NULL
-                 AND jsonb_array_length(listing_record.images) > 0
-            THEN listing_record.images->>0
+                 AND array_length(listing_record.images, 1) > 0
+            THEN listing_record.images[1]
             ELSE NULL
         END
     );
@@ -177,8 +177,8 @@ BEGIN
         ),
         CASE
             WHEN listing_record.images IS NOT NULL
-                 AND jsonb_array_length(listing_record.images) > 0
-            THEN listing_record.images->>0
+                 AND array_length(listing_record.images, 1) > 0
+            THEN listing_record.images[1]
             ELSE NULL
         END
     );
@@ -239,8 +239,8 @@ BEGIN
             ),
             CASE
                 WHEN NEW.images IS NOT NULL
-                     AND jsonb_array_length(NEW.images) > 0
-                THEN NEW.images->>0
+                     AND array_length(NEW.images, 1) > 0
+                THEN NEW.images[1]
                 ELSE NULL
             END
         );
@@ -293,8 +293,8 @@ BEGIN
             ),
             CASE
                 WHEN NEW.images IS NOT NULL
-                     AND jsonb_array_length(NEW.images) > 0
-                THEN NEW.images->>0
+                     AND array_length(NEW.images, 1) > 0
+                THEN NEW.images[1]
                 ELSE NULL
             END
         );
