@@ -390,6 +390,5 @@ export async function safeReloadApp(): Promise<void> {
   } catch (error) {
     // expo-updates not available (development mode)
     // The session is already set, so navigation will handle the redirect
-    console.log('[auth-utils] App reload skipped (dev mode)');
   }
 }

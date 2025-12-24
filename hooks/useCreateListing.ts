@@ -101,7 +101,6 @@ async function optimizeImage(uri: string): Promise<string> {
             } else {
                 actions.push({ resize: { height: MAX_IMAGE_DIMENSION } });
             }
-            console.log(`[ImageOptimize] Resizing image from ${width}x${height}`);
         }
 
         // Process image (compress even if not resizing)

@@ -76,8 +76,8 @@ export default function PasswordScreen() {
             type: 'signup',
             email: email,
           });
-        } catch (resendError) {
-          console.log('Could not resend verification code:', resendError);
+        } catch {
+          // Ignore resend errors
         }
 
         // Redirect to email verification screen

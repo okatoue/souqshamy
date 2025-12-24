@@ -286,7 +286,6 @@ export default function EditListingScreen() {
           }
         }).catch(() => {
           // deleteListingImages may not exist yet during Phase 1.1
-          console.log('[EditListing] Image cleanup not available yet');
         });
       }
 

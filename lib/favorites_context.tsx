@@ -49,7 +49,6 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
 
     // Check if cache has expired
     if (cached.timestamp && Date.now() - cached.timestamp > CACHE_TTL_MS) {
-      console.log('[Favorites] Cache expired, will refresh');
       return null;
     }
 
