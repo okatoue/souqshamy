@@ -1,6 +1,7 @@
 import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { Message } from '@/types/chat';
+import NotificationService from '@/lib/notifications/NotificationService';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { useCallback, useEffect, useState } from 'react';
@@ -101,6 +102,9 @@ export function useMessages(conversationId: string | null) {
                     )
                 );
             }
+
+            // Trigger instant push notification delivery (fire-and-forget)
+            NotificationService.processPendingNotifications(10).catch(() => {});
 
             return true;
         } catch (error) {
@@ -205,6 +209,9 @@ export function useMessages(conversationId: string | null) {
             } catch {
                 // Ignore cleanup errors
             }
+
+            // Trigger instant push notification delivery (fire-and-forget)
+            NotificationService.processPendingNotifications(10).catch(() => {});
 
             return true;
         } catch (error) {
