@@ -11,7 +11,7 @@ import { useCategoryListings } from '@/hooks/useCategoryListings';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -146,9 +146,16 @@ export default function CategoryListingScreen() {
     );
   };
 
-  const renderItem = ({ item }: { item: Listing }) => (
-    <ListingCard item={item} onPress={handleItemPress} />
+  // Memoized renderItem for FlatList performance
+  const renderItem = useCallback(
+    ({ item }: { item: Listing }) => (
+      <ListingCard item={item} onPress={handleItemPress} />
+    ),
+    [handleItemPress]
   );
+
+  // Memoized keyExtractor
+  const keyExtractor = useCallback((item: Listing) => item.id, []);
 
   const renderEmptyList = () => (
     <View style={styles.emptyContainer}>
@@ -238,7 +245,7 @@ export default function CategoryListingScreen() {
         <FlatList
           data={displayedListings}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={renderEmptyList}
           ListFooterComponent={renderFooter}
@@ -248,6 +255,11 @@ export default function CategoryListingScreen() {
           refreshControl={
             <RefreshControl refreshing={false} onRefresh={refetch} tintColor={BRAND_COLOR} />
           }
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={8}
+          windowSize={10}
+          initialNumToRender={6}
         />
       )}
     </SafeAreaView>
