@@ -2,11 +2,12 @@ import { SettingsMenuItem, SettingsSection, ThemePicker, ThemePickerRefProps } f
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/BackButton';
-import { SPACING } from '@/constants/theme';
+import { COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
 import { getAppInfo } from '@/lib/appInfo';
 import { useAuth } from '@/lib/auth_context';
+import { useNotifications } from '@/lib/notifications/useNotifications';
 import { useThemeContext } from '@/lib/theme_context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -32,6 +33,7 @@ const THEME_LABELS: Record<string, string> = {
 export default function UserScreen() {
     const { user, signOut } = useAuth();
     const { profile, getDisplayName, fetchProfile } = useProfile();
+    const { unreadCount } = useNotifications();
     const router = useRouter();
     const backgroundColor = useThemeColor({}, 'background');
     const iconColor = useThemeColor({}, 'icon');
@@ -115,7 +117,19 @@ export default function UserScreen() {
             <ThemedView style={styles.header}>
                 <BackButton />
                 <ThemedText type="title" style={styles.headerTitle}>Account</ThemedText>
-                <View style={styles.headerSpacer} />
+                <Pressable
+                    style={styles.notificationButton}
+                    onPress={() => router.push('/notifications')}
+                >
+                    <Ionicons name="notifications-outline" size={24} color={iconColor} />
+                    {unreadCount > 0 && (
+                        <View style={styles.notificationBadge}>
+                            <Text style={styles.notificationBadgeText}>
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </Text>
+                        </View>
+                    )}
+                </Pressable>
             </ThemedView>
 
             <ScrollView
@@ -175,16 +189,22 @@ export default function UserScreen() {
                 {/* App Settings Section */}
                 <SettingsSection title="APP SETTINGS">
                     <SettingsMenuItem
+                        icon="notifications-outline"
+                        title="Notifications"
+                        subtitle={unreadCount > 0 ? `${unreadCount} unread` : 'View all notifications'}
+                        onPress={() => router.push('/notifications')}
+                    />
+                    <SettingsMenuItem
+                        icon="options-outline"
+                        title="Notification Settings"
+                        subtitle="Push notifications, alerts"
+                        onPress={() => router.push('/notification-settings')}
+                    />
+                    <SettingsMenuItem
                         icon="color-palette-outline"
                         title="App Theme"
                         subtitle={THEME_LABELS[themePreference] || 'System Settings'}
                         onPress={handleOpenThemePicker}
-                    />
-                    <SettingsMenuItem
-                        icon="notifications-outline"
-                        title="Notification Preferences"
-                        subtitle="Push notifications, email alerts"
-                        onPress={() => router.push('/notification-settings')}
                     />
                 </SettingsSection>
 
@@ -253,6 +273,27 @@ const styles = StyleSheet.create({
     },
     headerSpacer: {
         width: 28 + SPACING.xs * 2,
+    },
+    notificationButton: {
+        padding: SPACING.xs,
+        position: 'relative',
+    },
+    notificationBadge: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: COLORS.favorite,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 4,
+    },
+    notificationBadgeText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: '600',
     },
     userCard: {
         flexDirection: 'row',
