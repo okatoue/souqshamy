@@ -17,42 +17,20 @@ module.exports = ({ config }) => {
     console.log('[app.config.js] Using local google-services.json');
   }
 
+  // Filter out withGoogleServices from plugins if present (we use googleServicesFile now)
+  const filteredPlugins = (config.plugins || []).filter(plugin => {
+    const pluginName = Array.isArray(plugin) ? plugin[0] : plugin;
+    return pluginName !== './plugins/withGoogleServices';
+  });
+
   return {
     ...config,
     android: {
       ...config.android,
-      // Point to the google-services.json file
+      // Point to the google-services.json file for FCM
       googleServicesFile: googleServicesFile,
     },
-    plugins: [
-      // Remove withGoogleServices - we're using built-in support now
-      "./plugins/withDeepLinkHandler",
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermission": "نحتاج إلى موقعك لعرض الإعلانات القريبة منك",
-          "locationWhenInUsePermission": "نحتاج إلى موقعك لعرض الإعلانات القريبة منك"
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "color": "#18AEF2"
-        }
-      ]
-    ],
+    // Keep all original plugins except withGoogleServices
+    plugins: filteredPlugins,
   };
 };
