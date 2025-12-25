@@ -1,12 +1,10 @@
 import { BackButton } from '@/components/ui/BackButton';
 import { BORDER_RADIUS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { useNotifications } from '@/lib/notifications/useNotifications';
-import { NotificationPreferences } from '@/types/notifications';
 import { Ionicons } from '@expo/vector-icons';
-import { Stack } from 'expo-router';
-import React from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { router, Stack } from 'expo-router';
+import React, { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface NotificationToggleProps {
@@ -15,7 +13,6 @@ interface NotificationToggleProps {
     value: boolean;
     onValueChange: (value: boolean) => void;
     disabled?: boolean;
-    loading?: boolean;
 }
 
 function NotificationToggle({
@@ -24,7 +21,6 @@ function NotificationToggle({
     value,
     onValueChange,
     disabled = false,
-    loading = false,
 }: NotificationToggleProps) {
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
@@ -35,17 +31,13 @@ function NotificationToggle({
                 <Text style={[styles.toggleTitle, { color: textColor }]}>{title}</Text>
                 <Text style={[styles.toggleSubtitle, { color: mutedColor }]}>{subtitle}</Text>
             </View>
-            {loading ? (
-                <ActivityIndicator size="small" color="#18AEF2" />
-            ) : (
-                <Switch
-                    value={value}
-                    onValueChange={onValueChange}
-                    disabled={disabled || loading}
-                    trackColor={{ false: '#767577', true: '#81b0ff' }}
-                    thumbColor={value ? '#18AEF2' : '#f4f3f4'}
-                />
-            )}
+            <Switch
+                value={value}
+                onValueChange={onValueChange}
+                disabled={disabled}
+                trackColor={{ false: '#767577', true: '#81b0ff' }}
+                thumbColor={value ? '#18AEF2' : '#f4f3f4'}
+            />
         </View>
     );
 }
@@ -73,25 +65,15 @@ export default function NotificationSettingsScreen() {
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
+    const iconColor = useThemeColor({}, 'icon');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'border');
 
-    const {
-        preferences,
-        preferencesLoading,
-        updatePreferences,
-    } = useNotifications();
-
-    // Use preferences from database with defaults
-    const pushEnabled = preferences?.push_enabled ?? true;
-    const messageNotifs = preferences?.message_notifs ?? true;
-    const listingNotifs = preferences?.listing_notifs ?? true;
-    const priceDropNotifs = preferences?.price_drop_notifs ?? true;
-    const promoNotifs = preferences?.promo_notifs ?? false;
-
-    // Handler to update a single preference
-    const handleToggle = async (key: keyof NotificationPreferences, value: boolean) => {
-        await updatePreferences({ [key]: value });
-    };
+    // TODO: Connect to actual notification preferences storage
+    const [pushEnabled, setPushEnabled] = useState(true);
+    const [messageNotifs, setMessageNotifs] = useState(true);
+    const [listingNotifs, setListingNotifs] = useState(true);
+    const [priceDropNotifs, setPriceDropNotifs] = useState(true);
+    const [promoNotifs, setPromoNotifs] = useState(false);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
@@ -101,7 +83,7 @@ export default function NotificationSettingsScreen() {
             <View style={[styles.header, { borderBottomColor: borderColor }]}>
                 <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
-                    Notification Settings
+                    Notifications
                 </Text>
                 <View style={styles.headerSpacer} />
             </View>
@@ -113,8 +95,7 @@ export default function NotificationSettingsScreen() {
                         title="Enable Push Notifications"
                         subtitle="Receive notifications on your device"
                         value={pushEnabled}
-                        onValueChange={(value) => handleToggle('push_enabled', value)}
-                        loading={preferencesLoading}
+                        onValueChange={setPushEnabled}
                     />
                 </Section>
 
@@ -124,36 +105,32 @@ export default function NotificationSettingsScreen() {
                         title="Messages"
                         subtitle="When someone sends you a message"
                         value={messageNotifs}
-                        onValueChange={(value) => handleToggle('message_notifs', value)}
+                        onValueChange={setMessageNotifs}
                         disabled={!pushEnabled}
-                        loading={preferencesLoading}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
                         title="Listing Activity"
                         subtitle="When your listing gets views or favorites"
                         value={listingNotifs}
-                        onValueChange={(value) => handleToggle('listing_notifs', value)}
+                        onValueChange={setListingNotifs}
                         disabled={!pushEnabled}
-                        loading={preferencesLoading}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
                         title="Price Drops"
                         subtitle="When favorited items drop in price"
                         value={priceDropNotifs}
-                        onValueChange={(value) => handleToggle('price_drop_notifs', value)}
+                        onValueChange={setPriceDropNotifs}
                         disabled={!pushEnabled}
-                        loading={preferencesLoading}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
                         title="Promotions & Updates"
                         subtitle="Special offers and app updates"
                         value={promoNotifs}
-                        onValueChange={(value) => handleToggle('promo_notifs', value)}
+                        onValueChange={setPromoNotifs}
                         disabled={!pushEnabled}
-                        loading={preferencesLoading}
                     />
                 </Section>
 
