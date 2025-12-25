@@ -7,7 +7,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
 import { Listing } from '@/types/listing';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 interface ListingCardProps {
@@ -20,8 +20,9 @@ const IMAGE_SIZE = 100;
 /**
  * Card component for displaying a listing in list views.
  * Uses shared UI components for consistent styling.
+ * Memoized for FlatList performance optimization.
  */
-export function ListingCard({ item, onPress }: ListingCardProps) {
+export const ListingCard = memo(function ListingCard({ item, onPress }: ListingCardProps) {
   const textColor = useThemeColor({}, 'text');
   const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
   const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
@@ -75,7 +76,16 @@ export function ListingCard({ item, onPress }: ListingCardProps) {
       </Pressable>
     </View>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for better memoization
+  return (
+    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.title === nextProps.item.title &&
+    prevProps.item.price === nextProps.item.price &&
+    prevProps.item.updated_at === nextProps.item.updated_at &&
+    prevProps.item.status === nextProps.item.status
+  );
+});
 
 const styles = StyleSheet.create({
   cardContainer: {

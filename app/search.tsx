@@ -7,7 +7,7 @@ import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator,
     FlatList,
@@ -56,9 +56,16 @@ export default function SearchScreen() {
         navigateToListing(item);
     };
 
-    const renderItem = ({ item }: { item: Listing }) => (
-        <ListingCard item={item} onPress={handleItemPress} />
+    // Memoized renderItem for FlatList performance
+    const renderItem = useCallback(
+        ({ item }: { item: Listing }) => (
+            <ListingCard item={item} onPress={handleItemPress} />
+        ),
+        [handleItemPress]
     );
+
+    // Memoized keyExtractor
+    const keyExtractor = useCallback((item: Listing) => item.id, []);
 
     const renderEmptyList = () => {
         if (isLoading) return null;
@@ -153,10 +160,15 @@ export default function SearchScreen() {
                 <FlatList
                     data={listings}
                     renderItem={renderItem}
-                    keyExtractor={(item) => item.id}
+                    keyExtractor={keyExtractor}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={renderEmptyList}
                     showsVerticalScrollIndicator={false}
+                    // Performance optimizations
+                    removeClippedSubviews={true}
+                    maxToRenderPerBatch={8}
+                    windowSize={10}
+                    initialNumToRender={6}
                 />
             )}
         </SafeAreaView>

@@ -201,6 +201,24 @@ export default function ListingsScreen() {
     router.push('/(tabs)/post');
   };
 
+  // Memoized renderItem for FlatList performance
+  const renderItem = useCallback(
+    ({ item }: { item: Listing }) => (
+      <ListingItem
+        item={item}
+        onPress={handleListingPress}
+        onUpdateStatus={updateListingStatus}
+        onSoftDelete={softDeleteListing}
+        onPermanentDelete={permanentDeleteListing}
+        onRestore={restoreListing}
+      />
+    ),
+    [handleListingPress, updateListingStatus, softDeleteListing, permanentDeleteListing, restoreListing]
+  );
+
+  // Memoized keyExtractor for FlatList performance
+  const keyExtractor = useCallback((item: Listing) => item.id.toString(), []);
+
   // Not authenticated state
   if (!user) {
     return (
@@ -271,17 +289,8 @@ export default function ListingsScreen() {
 
       <FlatList
         data={filteredListings}
-        renderItem={({ item }) => (
-          <ListingItem
-            item={item}
-            onPress={handleListingPress}
-            onUpdateStatus={updateListingStatus}
-            onSoftDelete={softDeleteListing}
-            onPermanentDelete={permanentDeleteListing}
-            onRestore={restoreListing}
-          />
-        )}
-        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
         contentContainerStyle={filteredListings.length === 0 ? styles.emptyListContent : styles.listContent}
         ListEmptyComponent={
           <EmptyState
@@ -294,6 +303,7 @@ export default function ListingsScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
+        extraData={statusFilter}
         // Performance optimizations
         removeClippedSubviews={true}
         maxToRenderPerBatch={8}
