@@ -8,7 +8,7 @@ import { getThumbnailUrl } from '@/lib/imageUtils';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import {
     Alert,
     FlatList,
@@ -20,6 +20,140 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// =============================================================================
+// Memoized Conversation Item Component
+// =============================================================================
+
+interface ConversationItemProps {
+    item: ConversationWithDetails;
+    isEditMode: boolean;
+    isSelected: boolean;
+    onPress: (conversation: ConversationWithDetails) => void;
+    onToggleSelection: (id: string) => void;
+    cardBg: string;
+    borderColor: string;
+    textColor: string;
+    secondaryTextColor: string;
+}
+
+const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+    if (diffInMinutes < 1) return 'Now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    if (diffInHours < 24) return `${diffInHours}h`;
+    if (diffInDays < 7) return `${diffInDays}d`;
+    return date.toLocaleDateString();
+};
+
+const ConversationItem = memo(function ConversationItem({
+    item,
+    isEditMode,
+    isSelected,
+    onPress,
+    onToggleSelection,
+    cardBg,
+    borderColor,
+    textColor,
+    secondaryTextColor,
+}: ConversationItemProps) {
+    return (
+        <Pressable
+            style={({ pressed }) => [
+                styles.conversationItem,
+                { backgroundColor: cardBg, borderBottomColor: borderColor },
+                pressed && styles.conversationItemPressed,
+                isEditMode && isSelected && styles.selectedItem
+            ]}
+            onPress={() => isEditMode ? onToggleSelection(item.id) : onPress(item)}
+            accessibilityRole="button"
+            accessibilityLabel={`Conversation with ${item.other_user.display_name || 'User'} about ${item.listing?.title || 'listing'}${item.unread_count > 0 ? `. ${item.unread_count} unread message${item.unread_count > 1 ? 's' : ''}` : ''}`}
+            accessibilityHint={isEditMode ? 'Double tap to select' : 'Double tap to open conversation'}
+        >
+            {/* Selection checkbox in edit mode */}
+            {isEditMode && (
+                <View style={styles.checkboxContainer}>
+                    <Ionicons
+                        name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                        size={24}
+                        color={isSelected ? COLORS.error : secondaryTextColor}
+                    />
+                </View>
+            )}
+
+            {/* Listing Image */}
+            <View style={styles.imageContainer}>
+                {item.listing?.images && item.listing.images.length > 0 ? (
+                    <Image
+                        source={{ uri: getThumbnailUrl(item.listing.images[0], 150, 150, 75) }}
+                        style={styles.listingImage}
+                    />
+                ) : (
+                    <View style={[styles.imagePlaceholder, { backgroundColor: borderColor }]}>
+                        <Ionicons name="image-outline" size={24} color={secondaryTextColor} />
+                    </View>
+                )}
+                {/* Unread badge */}
+                {item.unread_count > 0 && (
+                    <View style={[styles.unreadBadge, { backgroundColor: COLORS.favorite }]}>
+                        <Text style={styles.unreadText}>
+                            {item.unread_count > 9 ? '9+' : item.unread_count}
+                        </Text>
+                    </View>
+                )}
+            </View>
+
+            {/* Conversation Details */}
+            <View style={styles.conversationDetails}>
+                <View style={styles.topRow}>
+                    <Text
+                        style={[
+                            styles.userName,
+                            { color: secondaryTextColor },
+                            item.unread_count > 0 && styles.unreadUserName
+                        ]}
+                        numberOfLines={1}
+                    >
+                        {item.other_user.display_name || 'User'}
+                    </Text>
+                    <Text style={[styles.time, { color: secondaryTextColor }]}>
+                        {formatTime(item.last_message_at)}
+                    </Text>
+                </View>
+
+                <Text
+                    style={[
+                        styles.listingTitle,
+                        { color: textColor },
+                        item.unread_count > 0 && styles.unreadListingTitle
+                    ]}
+                    numberOfLines={1}
+                >
+                    {item.listing?.title || 'Listing'}
+                </Text>
+
+                <Text
+                    style={[
+                        styles.lastMessage,
+                        { color: secondaryTextColor },
+                        item.unread_count > 0 && [styles.unreadMessage, { color: textColor }]
+                    ]}
+                    numberOfLines={1}
+                >
+                    {item.last_message || 'Start a conversation...'}
+                </Text>
+            </View>
+
+            <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
+        </Pressable>
+    );
+});
 
 export default function ChatsScreen() {
     const { user } = useAuth();
@@ -128,122 +262,32 @@ export default function ChatsScreen() {
         </Pressable>
     );
 
-    const handleConversationPress = (conversation: ConversationWithDetails) => {
+    const handleConversationPress = useCallback((conversation: ConversationWithDetails) => {
         router.push({
             pathname: '/chat/[id]',
             params: { id: conversation.id }
         });
-    };
+    }, [router]);
 
-    const formatTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffInMs = now.getTime() - date.getTime();
-        const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-        const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-        const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-        if (diffInMinutes < 1) return 'Now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m`;
-        if (diffInHours < 24) return `${diffInHours}h`;
-        if (diffInDays < 7) return `${diffInDays}d`;
-        return date.toLocaleDateString();
-    };
-
-    const renderConversationItem = ({ item }: { item: ConversationWithDetails }) => {
-        const isSelected = selectedIds.has(item.id);
-
+    // Memoized renderItem for FlatList performance
+    const renderConversationItem = useCallback(({ item }: { item: ConversationWithDetails }) => {
         return (
-            <Pressable
-                style={({ pressed }) => [
-                    styles.conversationItem,
-                    { backgroundColor: cardBg, borderBottomColor: borderColor },
-                    pressed && styles.conversationItemPressed,
-                    isEditMode && isSelected && styles.selectedItem
-                ]}
-                onPress={() => isEditMode ? toggleSelection(item.id) : handleConversationPress(item)}
-                accessibilityRole="button"
-                accessibilityLabel={`Conversation with ${item.other_user.display_name || 'User'} about ${item.listing?.title || 'listing'}${item.unread_count > 0 ? `. ${item.unread_count} unread message${item.unread_count > 1 ? 's' : ''}` : ''}`}
-                accessibilityHint={isEditMode ? 'Double tap to select' : 'Double tap to open conversation'}
-            >
-                {/* Selection checkbox in edit mode */}
-                {isEditMode && (
-                    <View style={styles.checkboxContainer}>
-                        <Ionicons
-                            name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
-                            size={24}
-                            color={isSelected ? COLORS.error : secondaryTextColor}
-                        />
-                    </View>
-                )}
-
-                {/* Listing Image */}
-            <View style={styles.imageContainer}>
-                {item.listing?.images && item.listing.images.length > 0 ? (
-                    <Image
-                        source={{ uri: getThumbnailUrl(item.listing.images[0], 150, 150, 75) }}
-                        style={styles.listingImage}
-                    />
-                ) : (
-                    <View style={[styles.imagePlaceholder, { backgroundColor: borderColor }]}>
-                        <Ionicons name="image-outline" size={24} color={secondaryTextColor} />
-                    </View>
-                )}
-                {/* Unread badge */}
-                {item.unread_count > 0 && (
-                    <View style={[styles.unreadBadge, { backgroundColor: COLORS.favorite }]}>
-                        <Text style={styles.unreadText}>
-                            {item.unread_count > 9 ? '9+' : item.unread_count}
-                        </Text>
-                    </View>
-                )}
-            </View>
-
-            {/* Conversation Details */}
-            <View style={styles.conversationDetails}>
-                <View style={styles.topRow}>
-                    <Text
-                        style={[
-                            styles.userName,
-                            { color: secondaryTextColor },
-                            item.unread_count > 0 && styles.unreadUserName
-                        ]}
-                        numberOfLines={1}
-                    >
-                        {item.other_user.display_name || 'User'}
-                    </Text>
-                    <Text style={[styles.time, { color: secondaryTextColor }]}>
-                        {formatTime(item.last_message_at)}
-                    </Text>
-                </View>
-
-                <Text
-                    style={[
-                        styles.listingTitle,
-                        { color: textColor },
-                        item.unread_count > 0 && styles.unreadListingTitle
-                    ]}
-                    numberOfLines={1}
-                >
-                    {item.listing?.title || 'Listing'}
-                </Text>
-
-                <Text
-                    style={[
-                        styles.lastMessage,
-                        { color: secondaryTextColor },
-                        item.unread_count > 0 && [styles.unreadMessage, { color: textColor }]
-                    ]}
-                    numberOfLines={1}
-                >
-                    {item.last_message || 'Start a conversation...'}
-                </Text>
-            </View>
-
-                <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
-            </Pressable>
+            <ConversationItem
+                item={item}
+                isEditMode={isEditMode}
+                isSelected={selectedIds.has(item.id)}
+                onPress={handleConversationPress}
+                onToggleSelection={toggleSelection}
+                cardBg={cardBg}
+                borderColor={borderColor}
+                textColor={textColor}
+                secondaryTextColor={secondaryTextColor}
+            />
         );
-    };
+    }, [isEditMode, selectedIds, handleConversationPress, toggleSelection, cardBg, borderColor, textColor, secondaryTextColor]);
+
+    // Memoized keyExtractor
+    const keyExtractor = useCallback((item: ConversationWithDetails) => item.id, []);
 
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
@@ -291,7 +335,7 @@ export default function ChatsScreen() {
             <FlatList
                 data={conversations}
                 renderItem={renderConversationItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={keyExtractor}
                 extraData={{ isEditMode, selectedIds: Array.from(selectedIds) }}
                 contentContainerStyle={conversations.length === 0 ? styles.emptyList : undefined}
                 ListEmptyComponent={renderEmptyState}
@@ -302,6 +346,11 @@ export default function ChatsScreen() {
                         tintColor={BRAND_COLOR}
                     />
                 }
+                // Performance optimizations
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                windowSize={10}
+                initialNumToRender={8}
             />
         </SafeAreaView>
     );
