@@ -40,9 +40,12 @@ function generateStaticMapHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { margin: 0; padding: 0; overflow: hidden; }
+    body { margin: 0; padding: 0; overflow: hidden; font-family: 'Noto Sans Arabic', sans-serif; }
     #map { height: 100vh; width: 100vw; }
     .leaflet-control-attribution { display: none !important; }
     .leaflet-control-zoom { display: none !important; }
@@ -63,10 +66,19 @@ function generateStaticMapHtml(
       tap: false
     }).setView([${lat}, ${lng}], ${zoom});
 
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Initialize PMTiles protocol for Arabic map tiles from R2
+    var protocol = new pmtiles.Protocol();
+    pmtiles.leaflet(map);
+
+    // Add Arabic map layer from Cloudflare R2
+    var layer = protomapsL.leafletLayer({
+      url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
+      labelLang: 'ar',
+      theme: 'light',
       maxZoom: 18,
       minZoom: 5
-    }).addTo(map);
+    });
+    layer.addTo(map);
 
     // Add radius circle overlay (no center marker)
     L.circle([${lat}, ${lng}], {
