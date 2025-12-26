@@ -40,7 +40,7 @@ function generateStaticMapHtml(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@latest/dist/protomaps-leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -91,7 +91,7 @@ function generateStaticMapHtml(
       var layer = protomapsL.leafletLayer({
         url: pmtilesUrl,
         lang: 'ar',
-        theme: 'light',
+        flavor: 'light',
         maxZoom: 18,
         minZoom: 5
       });
