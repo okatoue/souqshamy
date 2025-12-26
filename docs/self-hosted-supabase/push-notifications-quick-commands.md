@@ -210,6 +210,30 @@ JOIN public.profiles p ON p.id = pt.user_id
 WHERE pt.is_active = true;
 ```
 
+### InvalidCredentials / FCM Error
+
+If you see `InvalidCredentials: Unable to retrieve the FCM server key`:
+
+```bash
+# Configure FCM V1 credentials with EAS
+eas credentials --platform android
+
+# Navigate to: Google Service Account → Manage FCM V1 → Upload Firebase service account JSON
+```
+
+### PUSH_TOO_MANY_EXPERIENCE_IDS Error
+
+If you see `All push notification messages in the same request must be for the same project`:
+
+```sql
+-- View all tokens to identify wrong project tokens
+SELECT expo_push_token, device_type, created_at FROM public.push_tokens;
+
+-- Test each token at https://expo.dev/notifications to find which are invalid
+-- Then delete invalid tokens:
+DELETE FROM public.push_tokens WHERE expo_push_token = 'ExponentPushToken[INVALID]';
+```
+
 ---
 
 ## Monitoring Queries
