@@ -14,7 +14,6 @@ export const MAP_HTML = `
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
   <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -51,11 +50,7 @@ export const MAP_HTML = `
         maxBoundsViscosity: 1.0
       }).setView([lat, lng], 12);
 
-      // Initialize PMTiles protocol for Arabic map tiles from R2
-      var protocol = new pmtiles.Protocol();
-      pmtiles.leaflet(map);
-
-      // Add Arabic map layer from Cloudflare R2
+      // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
       var layer = protomapsL.leafletLayer({
         url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
         labelLang: 'ar',
