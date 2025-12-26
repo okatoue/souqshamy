@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@latest/dist/protomaps-leaflet.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; display: flex; flex-direction: column; }
@@ -74,7 +74,7 @@
       const layer1 = protomapsL.leafletLayer({
         url: 'https://build.protomaps.com/20230901.pmtiles',
         lang: 'ar',
-        theme: 'light'
+        flavor: 'light'
       });
       layer1.addTo(map1);
 
@@ -97,7 +97,7 @@
       const layer2 = protomapsL.leafletLayer({
         url: customUrl,
         lang: 'ar',
-        theme: 'light'
+        flavor: 'light'
       });
       layer2.addTo(map2);
 
