@@ -90,7 +90,7 @@ function generateStaticMapHtml(
 
       var layer = protomapsL.leafletLayer({
         url: pmtilesUrl,
-        labelLang: 'ar',
+        lang: 'ar',
         theme: 'light',
         maxZoom: 18,
         minZoom: 5

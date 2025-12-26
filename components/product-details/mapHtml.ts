@@ -82,7 +82,7 @@ export const MAP_HTML = `
 
         var layer = protomapsL.leafletLayer({
           url: pmtilesUrl,
-          labelLang: 'ar',
+          lang: 'ar',
           theme: 'light',
           maxZoom: MAX_ZOOM,
           minZoom: MIN_ZOOM
