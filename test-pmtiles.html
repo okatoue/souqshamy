@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    #map { height: 100vh; width: 100vw; }
+    #console { position: absolute; top: 10px; left: 10px; background: white; padding: 10px;
+               max-width: 400px; max-height: 200px; overflow-y: auto; border: 1px solid #ccc;
+               font-size: 12px; z-index: 1000; }
+    .error { color: red; }
+    .success { color: green; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="console">
+    <strong>Diagnostic Console:</strong><br/>
+    <div id="logs"></div>
+  </div>
+  <script>
+    // Console logging
+    function log(message, type = 'info') {
+      const logs = document.getElementById('logs');
+      const div = document.createElement('div');
+      div.className = type;
+      div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+      logs.appendChild(div);
+      console.log(message);
+    }
+
+    // Capture errors
+    window.addEventListener('error', function(e) {
+      log('Error: ' + e.message, 'error');
+    });
+
+    log('Starting map initialization...', 'info');
+
+    try {
+      // Initialize map
+      var map = L.map('map', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([33.5, 36.3], 10);
+
+      log('Leaflet map created', 'success');
+
+      // Test CORS and PMTiles
+      const pmtilesUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+
+      log('Testing PMTiles URL: ' + pmtilesUrl, 'info');
+
+      // Add protomaps layer with error handling
+      try {
+        var layer = protomapsL.leafletLayer({
+          url: pmtilesUrl,
+          labelLang: 'ar',
+          theme: 'light',
+          maxZoom: 18,
+          minZoom: 5
+        });
+
+        layer.addTo(map);
+        log('Protomaps layer added successfully', 'success');
+
+        // Add event listener for tile loading
+        map.on('tileload', function(e) {
+          log('Tile loaded successfully', 'success');
+        });
+
+        map.on('tileerror', function(e) {
+          log('Tile load error: ' + JSON.stringify(e), 'error');
+        });
+
+        // Test manual fetch to check CORS
+        log('Testing CORS with fetch...', 'info');
+        fetch(pmtilesUrl, {
+          method: 'HEAD',
+          mode: 'cors'
+        })
+        .then(response => {
+          log('HEAD request status: ' + response.status, response.ok ? 'success' : 'error');
+          log('CORS headers: Access-Control-Allow-Origin=' + response.headers.get('Access-Control-Allow-Origin'), 'info');
+          log('Range support: Accept-Ranges=' + response.headers.get('Accept-Ranges'), 'info');
+          log('Content-Length: ' + response.headers.get('Content-Length'), 'info');
+
+          // Try a range request
+          return fetch(pmtilesUrl, {
+            method: 'GET',
+            headers: { 'Range': 'bytes=0-16383' },
+            mode: 'cors'
+          });
+        })
+        .then(response => {
+          log('Range request status: ' + response.status, response.status === 206 ? 'success' : 'error');
+          log('Content-Range: ' + response.headers.get('Content-Range'), 'info');
+        })
+        .catch(err => {
+          log('CORS test failed: ' + err.message, 'error');
+        });
+
+      } catch (err) {
+        log('Error adding protomaps layer: ' + err.message, 'error');
+      }
+
+    } catch (err) {
+      log('Fatal error: ' + err.message, 'error');
+    }
+
+    log('Map initialization complete', 'success');
+  </script>
+</body>
+</html>

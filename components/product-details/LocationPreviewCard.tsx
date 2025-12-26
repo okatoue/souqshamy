@@ -53,36 +53,78 @@ function generateStaticMapHtml(
 <body>
   <div id="map"></div>
   <script>
-    var map = L.map('map', {
-      zoomControl: false,
-      attributionControl: false,
-      dragging: false,
-      touchZoom: false,
-      doubleClickZoom: false,
-      scrollWheelZoom: false,
-      boxZoom: false,
-      keyboard: false,
-      tap: false
-    }).setView([${lat}, ${lng}], ${zoom});
+    // Debug logging function
+    function debugLog(message, data) {
+      console.log('[MapDebug]', message, data || '');
+    }
 
-    // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
-    var layer = protomapsL.leafletLayer({
-      url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
-      labelLang: 'ar',
-      theme: 'light',
-      maxZoom: 18,
-      minZoom: 5
+    // Capture and report errors
+    window.addEventListener('error', function(e) {
+      debugLog('JavaScript Error', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno
+      });
     });
-    layer.addTo(map);
 
-    // Add radius circle overlay (no center marker)
-    L.circle([${lat}, ${lng}], {
-      radius: ${radius},
-      color: '${brandColor}',
-      weight: 2,
-      fillColor: '${brandColor}',
-      fillOpacity: 0.2
-    }).addTo(map);
+    debugLog('Initializing static preview map', { lat: ${lat}, lng: ${lng}, zoom: ${zoom} });
+
+    try {
+      var map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        scrollWheelZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        tap: false
+      }).setView([${lat}, ${lng}], ${zoom});
+
+      debugLog('Leaflet map created successfully');
+
+      // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
+      var pmtilesUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+      debugLog('Adding protomaps layer', { url: pmtilesUrl });
+
+      var layer = protomapsL.leafletLayer({
+        url: pmtilesUrl,
+        labelLang: 'ar',
+        theme: 'light',
+        maxZoom: 18,
+        minZoom: 5
+      });
+      layer.addTo(map);
+
+      debugLog('Protomaps layer added to map');
+
+      // Add tile loading event listeners
+      map.on('tileload', function() {
+        debugLog('Tile loaded successfully');
+      });
+
+      map.on('tileerror', function(e) {
+        debugLog('Tile load error', { error: e });
+      });
+
+      // Add radius circle overlay (no center marker)
+      L.circle([${lat}, ${lng}], {
+        radius: ${radius},
+        color: '${brandColor}',
+        weight: 2,
+        fillColor: '${brandColor}',
+        fillOpacity: 0.2
+      }).addTo(map);
+
+      debugLog('Map initialization complete');
+
+    } catch (error) {
+      debugLog('Error initializing map', {
+        message: error.message,
+        stack: error.stack
+      });
+    }
   </script>
 </body>
 </html>
@@ -125,7 +167,16 @@ export default function LocationPreviewCard({
                     style={styles.map}
                     scrollEnabled={false}
                     javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    originWhitelist={['*']}
+                    allowFileAccess={true}
+                    allowUniversalAccessFromFileURLs={true}
+                    mixedContentMode="always"
                     pointerEvents="none"
+                    onError={(syntheticEvent) => {
+                        const { nativeEvent } = syntheticEvent;
+                        console.error('[WebView Error]', nativeEvent);
+                    }}
                 />
                 {/* Overlay to capture touches and show tap hint */}
                 <View style={styles.mapOverlay} pointerEvents="box-only">

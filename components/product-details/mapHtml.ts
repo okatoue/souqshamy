@@ -37,28 +37,75 @@ export const MAP_HTML = `
     var MAX_ZOOM = 16;
     var MIN_ZOOM = 5;
 
+    // Debug logging function
+    function debugLog(message, data) {
+      console.log('[MapDebug]', message, data || '');
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'debug',
+          message: message,
+          data: data || null
+        }));
+      } catch (e) {}
+    }
+
+    // Capture and report errors
+    window.addEventListener('error', function(e) {
+      debugLog('JavaScript Error', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno
+      });
+    });
+
     function initMap(lat, lng) {
       if (isInitialized) return;
       isInitialized = true;
 
-      map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false,
-        minZoom: MIN_ZOOM,
-        maxZoom: MAX_ZOOM,
-        bounceAtZoomLimits: false,
-        maxBoundsViscosity: 1.0
-      }).setView([lat, lng], 12);
+      debugLog('Initializing map', { lat: lat, lng: lng });
 
-      // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
-      var layer = protomapsL.leafletLayer({
-        url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
-        labelLang: 'ar',
-        theme: 'light',
-        maxZoom: MAX_ZOOM,
-        minZoom: MIN_ZOOM
-      });
-      layer.addTo(map);
+      try {
+        map = L.map('map', {
+          zoomControl: false,
+          attributionControl: false,
+          minZoom: MIN_ZOOM,
+          maxZoom: MAX_ZOOM,
+          bounceAtZoomLimits: false,
+          maxBoundsViscosity: 1.0
+        }).setView([lat, lng], 12);
+
+        debugLog('Leaflet map created successfully');
+
+        // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
+        var pmtilesUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+        debugLog('Adding protomaps layer', { url: pmtilesUrl });
+
+        var layer = protomapsL.leafletLayer({
+          url: pmtilesUrl,
+          labelLang: 'ar',
+          theme: 'light',
+          maxZoom: MAX_ZOOM,
+          minZoom: MIN_ZOOM
+        });
+        layer.addTo(map);
+
+        debugLog('Protomaps layer added to map');
+
+        // Add tile loading event listeners
+        map.on('tileload', function() {
+          debugLog('Tile loaded successfully');
+        });
+
+        map.on('tileerror', function(e) {
+          debugLog('Tile load error', { error: e });
+        });
+
+      } catch (error) {
+        debugLog('Error in initMap', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
 
       var markerIcon = L.divIcon({
         className: 'custom-marker',
