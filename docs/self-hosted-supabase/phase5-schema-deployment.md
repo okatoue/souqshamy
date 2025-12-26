@@ -22,7 +22,7 @@ Before starting Phase 5, ensure Phase 3 is complete:
 - [ ] Supabase services running on app server
 - [ ] Database accessible from app server (10.0.0.2:5432)
 - [ ] Auth and Storage schemas already initialized (from Phase 2)
-- [ ] API responding at https://api.souqshamy.com
+- [ ] API responding at https://api.souqjari.com
 
 ---
 
@@ -37,6 +37,9 @@ Before starting Phase 5, ensure Phase 3 is complete:
 | `favorites` | User favorites (many-to-many) |
 | `conversations` | Chat conversations between buyers/sellers |
 | `messages` | Individual chat messages |
+| `push_tokens` | Expo push notification tokens (see [Push Notifications Setup](./push-notifications-setup.md)) |
+| `notifications` | In-app notification queue (see [Push Notifications Setup](./push-notifications-setup.md)) |
+| `schema_migrations` | Tracks applied database migrations |
 
 ### Database Functions
 
@@ -45,6 +48,21 @@ Before starting Phase 5, ensure Phase 3 is complete:
 | `mark_messages_as_read` | Marks messages as read and updates unread counts |
 | `update_conversation_on_message` | Trigger function to update conversation metadata |
 | `handle_new_user` | Trigger function to create profile on user signup |
+| `update_updated_at` | Generic trigger function for updated_at columns |
+| `user_wants_notification` | Checks if user wants a specific notification type |
+| `upsert_push_token` | Upserts push token with ownership transfer |
+| `trigger_notify_new_message` | Creates notification on new message |
+| `trigger_notify_listing_favorited` | Creates notification when listing is favorited |
+| `trigger_notify_new_inquiry` | Creates notification for new inquiries |
+| `trigger_send_push_notification` | Trigger to send push via Edge Function |
+| `create_notification` | Helper to create notifications |
+| `get_pending_push_notifications` | Gets notifications pending push delivery |
+| `get_user_push_tokens` | Gets active push tokens for a user |
+| `mark_notification_sent` | Marks notification as sent |
+| `handle_user_restored` | Handles user account restoration |
+| `delete_expired_accounts` | Cleans up soft-deleted expired accounts |
+| `sync_email_verified` | Syncs email verification status |
+| `get_user_auth_providers` | RPC to get user's linked auth providers |
 
 ### Storage Buckets
 
@@ -91,12 +109,24 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     display_name TEXT,
     avatar_url TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    -- Email verification (added by migration 001)
+    email_verified BOOLEAN DEFAULT FALSE,
+    -- Soft delete support (added by migration 004)
+    deleted_at TIMESTAMPTZ,
+    -- Push notification preferences (added by push notifications setup)
+    push_enabled BOOLEAN DEFAULT TRUE,
+    message_notifs BOOLEAN DEFAULT TRUE,
+    listing_notifs BOOLEAN DEFAULT TRUE,
+    price_drop_notifs BOOLEAN DEFAULT TRUE,
+    promo_notifs BOOLEAN DEFAULT TRUE
 );
 
 -- Create indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
 CREATE INDEX IF NOT EXISTS idx_profiles_phone ON public.profiles(phone_number);
+CREATE INDEX IF NOT EXISTS idx_profiles_email_verified ON public.profiles(email, email_verified);
+CREATE INDEX IF NOT EXISTS idx_profiles_deleted_at ON public.profiles(deleted_at);
 
 -- Add comment
 COMMENT ON TABLE public.profiles IS 'User profiles extending auth.users with additional fields';
@@ -251,15 +281,18 @@ AND table_type = 'BASE TABLE'
 ORDER BY table_name;
 ```
 
-Expected output:
+Expected output (includes push notification tables if set up):
 ```
- table_name
----------------
+    table_name
+-------------------
  conversations
  favorites
  listings
  messages
+ notifications
  profiles
+ push_tokens
+ schema_migrations
 ```
 
 ---
@@ -1050,15 +1083,21 @@ AND schemaname = 'public'
 ORDER BY tablename;
 ```
 
-If tables are not in the publication, add them:
+**Current Production State:** Only `conversations` and `messages` are in the realtime publication (sufficient for chat functionality).
+
+If you need realtime updates for other tables, add them:
 
 ```sql
--- Add tables to realtime publication
-ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.listings;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.favorites;
+-- Add tables to realtime publication (only add what you need)
+-- Currently in production: conversations, messages
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+
+-- Optional - add if you need realtime updates for these:
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.listings;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.favorites;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ```
 
 ### 7.4 Test API Access from App Server
@@ -1237,6 +1276,10 @@ Proceed to **Phase 6: Monitoring & Scaling Preparation**
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Last Updated: December 2024*
 *Author: SouqShamy DevOps*
+
+### Changelog
+- v1.1: Updated schema overview with push notification tables, added missing profile columns, updated realtime publication docs, fixed domain typo (souqshamy → souqjari)
+- v1.0: Initial documentation

@@ -255,15 +255,16 @@ cp /etc/postgresql/15/main/postgresql.conf /etc/postgresql/15/main/postgresql.co
 
 ### 3.2 Create Optimized Configuration
 
-The CCX33 server has 32GB RAM and 8 dedicated vCPUs. This configuration is optimized for that:
+Tune PostgreSQL based on your server's RAM. Below are configurations for different server sizes:
+
+> **Current Production:** ~8GB RAM server uses the "8GB Configuration" values below.
 
 ```bash
 # Create custom configuration file
 cat > /etc/postgresql/15/main/conf.d/supabase-optimized.conf << 'EOF'
 # =============================================================================
 # SouqJari PostgreSQL Configuration
-# Server: CCX33 (8 dedicated vCPU, 32GB RAM, 240GB NVMe)
-# Optimized for Supabase workload
+# Adjust values based on your server RAM (see comments)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -276,29 +277,32 @@ port = 5432
 # Maximum connections
 # Supabase services need multiple connections
 # PgBouncer recommended for production, but direct is fine for this scale
-max_connections = 200
+max_connections = 100  # 8GB: 100, 32GB: 200
 
 # Connection reserved for superuser
 superuser_reserved_connections = 3
 
 # -----------------------------------------------------------------------------
-# MEMORY SETTINGS (32GB RAM)
+# MEMORY SETTINGS (adjust based on RAM)
 # -----------------------------------------------------------------------------
 # Shared buffers: 25% of RAM for dedicated database server
-shared_buffers = 8GB
+# 8GB RAM: 2GB | 16GB RAM: 4GB | 32GB RAM: 8GB
+shared_buffers = 2GB
 
 # Effective cache size: RAM available for caching (not just PostgreSQL)
 # Set to 75% of RAM
-effective_cache_size = 24GB
+# 8GB RAM: 6GB | 16GB RAM: 12GB | 32GB RAM: 24GB
+effective_cache_size = 6GB
 
 # Work memory: Per-operation memory for sorts, hashes, etc.
 # Be careful - this is per-operation, not per-connection
-# With 200 connections and complex queries, keep conservative
-work_mem = 64MB
+# 8GB RAM: 32MB | 16GB RAM: 48MB | 32GB RAM: 64MB
+work_mem = 32MB
 
 # Maintenance work memory: Memory for maintenance operations
 # (VACUUM, CREATE INDEX, ALTER TABLE ADD FOREIGN KEY)
-maintenance_work_mem = 2GB
+# 8GB RAM: 512MB | 16GB RAM: 1GB | 32GB RAM: 2GB
+maintenance_work_mem = 512MB
 
 # Huge pages: Use if available (requires OS configuration)
 huge_pages = try
@@ -1403,18 +1407,18 @@ EOF
 exit
 ```
 
-Expected output:
+Expected output (values depend on server RAM - below is for ~8GB server):
 ```
-        name         | setting |  unit
----------------------+---------+--------
- effective_cache_size| 25165824| 8kB (≈24GB)
- listen_addresses    | *       |
- maintenance_work_mem| 2097152 | kB (≈2GB)
- max_connections     | 200     |
- max_wal_size        | 4096    | MB
- shared_buffers      | 1048576 | 8kB (≈8GB)
- wal_level           | replica |
- work_mem            | 65536   | kB (≈64MB)
+        name         | setting  |  unit
+---------------------+----------+--------
+ effective_cache_size| 786432   | 8kB (≈6GB)
+ listen_addresses    | *        |
+ maintenance_work_mem| 524288   | kB (≈512MB)
+ max_connections     | 100      |
+ max_wal_size        | 4096     | MB
+ shared_buffers      | 262144   | 8kB (≈2GB)
+ wal_level           | replica  |
+ work_mem            | 32768    | kB (≈32MB)
 ```
 
 ---
@@ -1505,7 +1509,7 @@ Before proceeding to Phase 3, verify:
   - [ ] pg_graphql
   - [ ] pg_net
   - [ ] pgsodium
-- [ ] PostgreSQL tuned for 32GB RAM
+- [ ] PostgreSQL tuned for your server's RAM (current prod: ~8GB)
 - [ ] Remote access configured for private network (10.0.0.0/24)
 - [ ] All Supabase roles created with secure passwords
 - [ ] supabase database created
@@ -1546,6 +1550,10 @@ Proceed to **Phase 3: App Server Setup (Docker & Supabase Services)**
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Last Updated: December 2024*
 *Author: SouqJari DevOps*
+
+### Changelog
+- v1.1: Updated PostgreSQL tuning to be RAM-flexible (current prod: ~8GB), added scaling guidelines
+- v1.0: Initial documentation
