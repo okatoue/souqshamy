@@ -23,6 +23,18 @@ The push notification system consists of:
 - **Cron job**: Processes pending notifications every minute
 - **Client-side**: Token registration, notification center UI
 
+### Prerequisites
+
+**For Android notifications to work, you MUST configure FCM V1 credentials with Expo:**
+
+1. Go to [Firebase Console](https://console.firebase.google.com/) → Project Settings → Service Accounts
+2. Click "Generate new private key" and download the JSON file
+3. Run: `eas credentials --platform android`
+4. Select: Google Service Account → Manage your Google Service Account Key for Push Notifications (FCM V1)
+5. Upload the downloaded JSON file
+
+Without this, Android devices will receive `InvalidCredentials` errors from Expo.
+
 ---
 
 ## Architecture
@@ -253,7 +265,7 @@ BEGIN
         VALUES (
             recipient_id,
             'new_message',
-            COALESCE(sender_profile.display_name, 'Someone'),
+            COALESCE(conv_record.listing_title, 'Listing') || ' - ' || COALESCE(sender_profile.display_name, 'Someone'),
             CASE WHEN NEW.message_type = 'voice' THEN 'Sent a voice message'
                  ELSE LEFT(NEW.content, 100) END,
             jsonb_build_object(
@@ -582,13 +594,43 @@ The Edge Function wasn't loaded. Check:
 1. **Check token registered**: Query `push_tokens` table
 2. **Check notification created**: Query `notifications` table
 3. **App in foreground**: Notifications may not show as banners
-4. **Android requires FCM**: Add `google-services.json` for production
+4. **Android requires FCM V1 credentials**: See Prerequisites section above
+
+### InvalidCredentials Error from Expo
+
+```
+InvalidCredentials: Unable to retrieve the FCM server key for the recipient's app
+```
+
+**Solution:** Configure FCM V1 credentials with EAS (see Prerequisites section).
+
+### PUSH_TOO_MANY_EXPERIENCE_IDS Error
+
+```
+All push notification messages in the same request must be for the same project
+```
+
+This happens when the `push_tokens` table contains tokens from different Expo projects (e.g., test tokens from a different app).
+
+**Solution:** Clean up invalid tokens:
+
+```sql
+-- Find tokens from wrong project by testing at https://expo.dev/notifications
+-- Then delete them:
+DELETE FROM public.push_tokens
+WHERE expo_push_token IN ('ExponentPushToken[INVALID_TOKEN]');
+```
 
 ### Expo Go Limitations
 
 Push notifications in Expo Go have limitations:
-- Android SDK 53+: Not supported in Expo Go, use development build
+- Android SDK 53+: Not supported in Expo Go, **use a development build**
 - iOS: Works in Expo Go
+
+**Recommended:** Always use development builds for testing push notifications:
+```bash
+npx eas build --platform android --profile development
+```
 
 ---
 
@@ -599,6 +641,7 @@ Push notifications in Expo Go have limitations:
 - [ ] Notification triggers installed
 - [ ] Edge Function deployed and responding
 - [ ] Cron job running every minute
+- [ ] **FCM V1 credentials uploaded to EAS** (for Android)
 - [ ] Push tokens registering from app
 - [ ] Notifications created on message send
 - [ ] Push notifications received on device
@@ -607,6 +650,10 @@ Push notifications in Expo Go have limitations:
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Last Updated: December 2024*
 *Author: SouqShamy DevOps*
+
+### Changelog
+- v1.1: Added FCM V1 prerequisites, updated notification title format, added troubleshooting for InvalidCredentials and PUSH_TOO_MANY_EXPERIENCE_IDS errors
+- v1.0: Initial documentation
