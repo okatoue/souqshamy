@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/protomaps-leaflet@4.0.0/dist/protomaps-leaflet.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; display: flex; flex-direction: column; }
+    .header { background: #333; color: white; padding: 15px; text-align: center; }
+    .header h1 { margin: 0; font-size: 20px; }
+    .header p { margin: 5px 0 0 0; font-size: 12px; color: #ccc; }
+    .container { display: flex; flex: 1; height: calc(100vh - 80px); }
+    .map-container { flex: 1; position: relative; border-right: 2px solid #333; }
+    .map-container:last-child { border-right: none; }
+    .map { height: 100%; width: 100%; }
+    .map-label { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7);
+                 color: white; padding: 8px 12px; border-radius: 4px; font-size: 14px;
+                 font-weight: bold; z-index: 1000; }
+    .controls { position: absolute; bottom: 10px; left: 10px; right: 10px;
+                background: rgba(255,255,255,0.95); padding: 10px; border-radius: 4px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 1000; }
+    .controls button { padding: 8px 15px; margin: 5px; cursor: pointer;
+                       background: #007bff; color: white; border: none; border-radius: 4px; }
+    .controls button:hover { background: #0056b3; }
+    .info { font-size: 12px; margin-top: 5px; color: #666; }
+    .error { color: red; font-weight: bold; }
+    .success { color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>PMTiles Comparison Test</h1>
+    <p>Left: Official Protomaps Basemap | Right: Your Custom PMTiles</p>
+  </div>
+
+  <div class="container">
+    <!-- Official Protomaps Map -->
+    <div class="map-container">
+      <div class="map-label">Official Protomaps (Full Data)</div>
+      <div id="map1" class="map"></div>
+    </div>
+
+    <!-- Your Custom PMTiles Map -->
+    <div class="map-container">
+      <div class="map-label">Your Custom PMTiles</div>
+      <div id="map2" class="map"></div>
+      <div class="controls">
+        <div class="info">
+          <strong>Testing your PMTiles:</strong><br/>
+          URL: https://images.souqjari.com/maps/middle-east-arabic.pmtiles<br/>
+          <span id="status">Initializing...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initial coordinates (Damascus, Syria)
+    const initialLat = 33.5138;
+    const initialLng = 36.2765;
+    const initialZoom = 12;
+
+    let map1, map2;
+
+    // Create first map with official Protomaps
+    try {
+      map1 = L.map('map1', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([initialLat, initialLng], initialZoom);
+
+      const layer1 = protomapsL.leafletLayer({
+        url: 'https://build.protomaps.com/20230901.pmtiles',
+        lang: 'ar',
+        theme: 'light'
+      });
+      layer1.addTo(map1);
+
+      console.log('Official Protomaps layer loaded');
+    } catch (error) {
+      console.error('Error loading official map:', error);
+    }
+
+    // Create second map with your custom PMTiles
+    try {
+      map2 = L.map('map2', {
+        zoomControl: true,
+        attributionControl: false
+      }).setView([initialLat, initialLng], initialZoom);
+
+      const customUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+
+      document.getElementById('status').innerHTML = 'Loading PMTiles from: ' + customUrl + '...';
+
+      const layer2 = protomapsL.leafletLayer({
+        url: customUrl,
+        lang: 'ar',
+        theme: 'light'
+      });
+      layer2.addTo(map2);
+
+      // Add event listeners
+      map2.on('tileload', function() {
+        document.getElementById('status').innerHTML = '<span class="success">✓ Tiles loading successfully</span><br/>Size: 1047446323 bytes (~1 GB)<br/>If you see grey land only, the PMTiles file is missing detailed data.';
+      });
+
+      map2.on('tileerror', function(e) {
+        document.getElementById('status').innerHTML = '<span class="error">✗ Tile load error</span><br/>' + JSON.stringify(e);
+      });
+
+      console.log('Custom PMTiles layer loaded');
+    } catch (error) {
+      console.error('Error loading custom map:', error);
+      document.getElementById('status').innerHTML = '<span class="error">✗ Error: ' + error.message + '</span>';
+    }
+
+    // Sync map views
+    if (map1 && map2) {
+      map1.on('move', function() {
+        map2.setView(map1.getCenter(), map1.getZoom(), { animate: false });
+      });
+
+      map2.on('move', function() {
+        map1.setView(map2.getCenter(), map2.getZoom(), { animate: false });
+      });
+    }
+  </script>
+</body>
+</html>
