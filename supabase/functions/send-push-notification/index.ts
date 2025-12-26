@@ -138,6 +138,7 @@ serve(async (req: Request) => {
       failed: 0,
       skipped: 0,
       errors: [] as string[],
+      debug: [] as string[], // Debug info for troubleshooting
     };
 
     // Process each notification
@@ -177,6 +178,11 @@ serve(async (req: Request) => {
           ttl: 86400, // 24 hours
         }));
 
+        // Debug: Log the messages being sent
+        console.log("[Push] Sending to tokens:", tokens.map(t => t.expo_push_token));
+        console.log("[Push] Notification:", notification.id, notification.title);
+        console.log("[Push] Messages payload:", JSON.stringify(messages, null, 2));
+
         // Send to Expo
         const expoPushResponse = await fetch(EXPO_PUSH_URL, {
           method: "POST",
@@ -190,6 +196,15 @@ serve(async (req: Request) => {
 
         const expoPushResult = await expoPushResponse.json();
         const tickets: ExpoPushTicket[] = expoPushResult.data || [];
+
+        // Debug: Log the full Expo response
+        console.log("[Push] Expo API response status:", expoPushResponse.status);
+        console.log("[Push] Expo API response:", JSON.stringify(expoPushResult, null, 2));
+
+        // Add debug info to results
+        results.debug.push(`Notification ${notification.id}: sent to ${tokens.length} token(s)`);
+        results.debug.push(`Tokens: ${tokens.map(t => t.expo_push_token).join(", ")}`);
+        results.debug.push(`Expo response: ${JSON.stringify(expoPushResult)}`);
 
         // Check for errors
         const hasError = tickets.some((ticket) => ticket.status === "error");
