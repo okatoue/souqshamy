@@ -174,9 +174,11 @@ hcloud network add-subnet souqjari-internal --type cloud --network-zone eu-centr
 
 ---
 
-## Step 4: Create Database Server (CCX33)
+## Step 4: Create Database Server
 
-The database server uses **dedicated vCPUs** for consistent PostgreSQL performance.
+The database server runs PostgreSQL for consistent performance.
+
+> **Current Production:** The production database server has **~8GB RAM**. Adjust PostgreSQL tuning accordingly (see Phase 2).
 
 ### 4.1 Create Server
 
@@ -185,7 +187,7 @@ The database server uses **dedicated vCPUs** for consistent PostgreSQL performan
 2. Configure:
    - **Location:** Falkenstein (fsn1) - *best latency to Middle East*
    - **Image:** Ubuntu 24.04
-   - **Type:** CCX33 (AMD) - 8 dedicated vCPU, 32 GB RAM, 240 GB NVMe
+   - **Type:** Choose based on your needs (current production: ~8GB RAM server)
    - **Networking:**
      - [x] Public IPv4
      - [x] Public IPv6
@@ -201,10 +203,10 @@ The database server uses **dedicated vCPUs** for consistent PostgreSQL performan
 # Get network ID first
 NETWORK_ID=$(hcloud network list -o noheader -o columns=id | head -1)
 
-# Create database server
+# Create database server (adjust --type as needed)
 hcloud server create \
   --name souqjari-db \
-  --type ccx33 \
+  --type cpx31 \
   --image ubuntu-24.04 \
   --location fsn1 \
   --ssh-key souqjari-admin \
@@ -215,7 +217,7 @@ hcloud server create \
 
 ### 4.2 Record Server Details
 After creation, note down:
-- **Public IPv4:** _____________ (e.g., 168.119.xxx.xxx)
+- **Public IPv4:** `46.224.64.234` (production value)
 - **Public IPv6:** _____________
 - **Private IP:** 10.0.0.2 (we'll configure this)
 
@@ -259,7 +261,7 @@ hcloud server create \
 
 ### 5.2 Record Server Details
 After creation, note down:
-- **Public IPv4:** _____________ (e.g., 49.12.xxx.xxx)
+- **Public IPv4:** `49.12.8.10` (production value)
 - **Public IPv6:** _____________
 - **Private IP:** 10.0.0.3 (we'll configure this)
 
@@ -887,18 +889,19 @@ curl -I https://api.souqjari.com
 
 ## Server Information Summary
 
-Fill in after completing setup:
+**Current Production Values:**
 
 | Resource | Value |
 |----------|-------|
 | **App Server (souqjari-app)** | |
-| Public IPv4 | |
-| Public IPv6 | |
-| Private IP | 10.0.0.3 |
+| Public IPv4 | `49.12.8.10` |
+| Public IPv6 | `2a01:4f8:c014:fd29::1` |
+| Private IP | `10.0.0.3` |
 | **Database Server (souqjari-db)** | |
-| Public IPv4 | |
-| Public IPv6 | |
-| Private IP | 10.0.0.2 |
+| Public IPv4 | `46.224.64.234` |
+| Public IPv6 | `2a01:4f8:c012:ca42::1` |
+| Private IP | `10.0.0.2` |
+| RAM | ~8GB |
 | **Domains** | |
 | API | api.souqjari.com |
 | Studio | studio.souqjari.com |
@@ -948,12 +951,16 @@ ssh souqjari-app "ufw enable"
 
 ## Cost Summary
 
+> **Note:** Actual costs depend on selected server types. Below are example costs.
+
 | Resource | Specification | Monthly Cost |
 |----------|--------------|--------------|
 | App Server (CPX41) | 4 vCPU, 16GB RAM, 160GB SSD | ~€15 |
-| Database Server (CCX33) | 8 dedicated vCPU, 32GB RAM, 240GB SSD | ~€65 |
+| Database Server (~8GB) | ~4 vCPU, 8GB RAM | ~€12-20 |
 | Private Network | Included | €0 |
-| **Total Infrastructure** | | **~€80/month** |
+| **Total Infrastructure** | | **~€30-40/month** |
+
+Check current Hetzner pricing: https://www.hetzner.com/cloud
 
 ---
 
@@ -977,6 +984,10 @@ After completing Phase 1, proceed to:
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 1.1*
 *Last Updated: December 2024*
 *Author: SouqJari DevOps*
+
+### Changelog
+- v1.1: Added actual production IPs, updated server specs to reflect ~8GB DB server, updated cost summary
+- v1.0: Initial documentation
