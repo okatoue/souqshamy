@@ -27,10 +27,8 @@ async function initializeNotifications(): Promise<boolean> {
             }),
         });
 
-        console.log('[Notifications] Module initialized successfully');
         return true;
     } catch (error) {
-        console.log('[Notifications] Native module not available (running in Expo Go or simulator)');
         isNotificationsAvailable = false;
         return false;
     }
@@ -68,13 +66,11 @@ class NotificationService {
         }
 
         if (!isNotificationsAvailable || !Notifications) {
-            console.log('[Notifications] Push notifications not available in this environment');
             return null;
         }
 
         // Must be a physical device
         if (!Device.isDevice) {
-            console.log('[Notifications] Push notifications require a physical device');
             return null;
         }
 
@@ -90,7 +86,6 @@ class NotificationService {
             }
 
             if (finalStatus !== 'granted') {
-                console.log('[Notifications] Permission not granted');
                 return null;
             }
 
@@ -99,7 +94,6 @@ class NotificationService {
                 ?? Constants.easConfig?.projectId;
 
             if (!projectId) {
-                console.error('[Notifications] No project ID found');
                 return null;
             }
 
@@ -108,7 +102,6 @@ class NotificationService {
             });
 
             this.expoPushToken = tokenData.data;
-            console.log('[Notifications] Push token:', this.expoPushToken);
 
             // Configure Android channel
             if (Platform.OS === 'android') {
@@ -117,7 +110,6 @@ class NotificationService {
 
             return this.expoPushToken;
         } catch (error) {
-            console.error('[Notifications] Error registering:', error);
             return null;
         }
     }
@@ -156,7 +148,6 @@ class NotificationService {
      */
     async savePushToken(userId: string): Promise<boolean> {
         if (!this.expoPushToken) {
-            console.log('[Notifications] No token to save');
             return false;
         }
 
@@ -164,23 +155,7 @@ class NotificationService {
             const deviceType = Platform.OS as 'ios' | 'android';
             const deviceName = Device.deviceName || `${Device.brand} ${Device.modelName}`;
 
-            console.log('[Notifications] Saving token for user:', userId);
-            console.log('[Notifications] Token:', this.expoPushToken);
-            console.log('[Notifications] Device:', deviceType, deviceName);
-
-            // Check auth state
-            const { data: { session }, error: authError } = await supabase.auth.getSession();
-            console.log('[Notifications] Auth session check - user:', session?.user?.id);
-            console.log('[Notifications] Auth session check - matches userId:', session?.user?.id === userId);
-            if (authError) {
-                console.error('[Notifications] Auth error:', authError);
-            }
-
-            // Use the database function to handle upsert with ownership transfer
-            // This bypasses RLS issues when a token needs to be transferred between users
-            console.log('[Notifications] Calling upsert_push_token RPC function');
-
-            const { data: tokenId, error: rpcError } = await supabase.rpc('upsert_push_token', {
+            const { error: rpcError } = await supabase.rpc('upsert_push_token', {
                 p_user_id: userId,
                 p_expo_push_token: this.expoPushToken,
                 p_device_type: deviceType,
@@ -188,20 +163,11 @@ class NotificationService {
             });
 
             if (rpcError) {
-                console.error('[Notifications] RPC error:', JSON.stringify(rpcError));
-                console.error('[Notifications] RPC error message:', rpcError?.message);
-                console.error('[Notifications] RPC error code:', rpcError?.code);
-                console.error('[Notifications] RPC error details:', rpcError?.details);
-                console.error('[Notifications] RPC error hint:', rpcError?.hint);
                 return false;
             }
 
-            console.log('[Notifications] Token saved with id:', tokenId);
-
-            console.log('[Notifications] Token saved successfully');
             return true;
         } catch (error: any) {
-            console.error('[Notifications] Exception saving token:', JSON.stringify(error, null, 2));
             return false;
         }
     }
@@ -217,10 +183,8 @@ class NotificationService {
                 .from('push_tokens')
                 .update({ is_active: false })
                 .eq('expo_push_token', this.expoPushToken);
-
-            console.log('[Notifications] Token deactivated');
         } catch (error) {
-            console.error('[Notifications] Error deactivating token:', error);
+            // Silently fail
         }
     }
 
@@ -284,14 +248,11 @@ class NotificationService {
             });
 
             if (error) {
-                console.error('[Notifications] Error sending push:', error);
                 return false;
             }
 
-            console.log('[Notifications] Push send result:', data);
             return data?.sent > 0;
         } catch (error) {
-            console.error('[Notifications] Exception sending push:', error);
             return false;
         }
     }
@@ -307,23 +268,15 @@ class NotificationService {
             });
 
             if (error) {
-                console.error('[Notifications] Batch process error:', error);
                 return { sent: 0, failed: 0, skipped: 0 };
             }
 
-            console.log('[Notifications] Batch process result:', data);
-            // Log debug info if available
-            if (data?.debug && data.debug.length > 0) {
-                console.log('[Notifications] Debug info:');
-                data.debug.forEach((msg: string) => console.log('  ', msg));
-            }
             return {
                 sent: data?.sent || 0,
                 failed: data?.failed || 0,
                 skipped: data?.skipped || 0,
             };
         } catch (error) {
-            console.error('[Notifications] Exception in batch process:', error);
             return { sent: 0, failed: 0, skipped: 0 };
         }
     }
@@ -340,13 +293,11 @@ class NotificationService {
                 .eq('is_read', false);
 
             if (error) {
-                console.error('[Notifications] Error getting unread count:', error);
                 return 0;
             }
 
             return count || 0;
         } catch (error) {
-            console.error('[Notifications] Exception getting unread count:', error);
             return 0;
         }
     }
@@ -362,13 +313,11 @@ class NotificationService {
                 .in('id', notificationIds);
 
             if (error) {
-                console.error('[Notifications] Error marking as read:', error);
                 return false;
             }
 
             return true;
         } catch (error) {
-            console.error('[Notifications] Exception marking as read:', error);
             return false;
         }
     }
@@ -385,13 +334,11 @@ class NotificationService {
                 .eq('is_read', false);
 
             if (error) {
-                console.error('[Notifications] Error marking all as read:', error);
                 return false;
             }
 
             return true;
         } catch (error) {
-            console.error('[Notifications] Exception marking all as read:', error);
             return false;
         }
     }
