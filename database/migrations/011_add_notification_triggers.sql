@@ -51,7 +51,7 @@ BEGIN
     PERFORM public.create_notification(
         recipient_id,
         'new_message',
-        COALESCE(sender_profile.display_name, 'Someone'),
+        COALESCE(conv_record.listing_title, 'Listing') || ' - ' || COALESCE(sender_profile.display_name, 'Someone'),
         msg_preview,
         jsonb_build_object(
             'conversation_id', NEW.conversation_id,
