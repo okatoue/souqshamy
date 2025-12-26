@@ -579,10 +579,10 @@ app/_layout.tsx
 | `003_fix_oauth_profile_metadata.sql` | OAuth profile sync | ✅ |
 | `004_add_profiles_deleted_at.sql` | Soft delete support | ✅ |
 | `005_auto_delete_expired_accounts.sql` | Account cleanup | ✅ |
-| `006_add_whatsapp_number.sql` | WhatsApp contact | ❌ Not applied |
+| `006_add_whatsapp_number.sql` | WhatsApp contact | ✅ |
 | `007_get_user_auth_providers.sql` | RPC for auth providers | ✅ |
 
-> **Note:** Migration 006 (whatsapp_number) exists as a file but was not applied to production.
+> **Note:** All migrations have been applied to production.
 
 ---
 
