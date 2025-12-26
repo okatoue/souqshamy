@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://unpkg.com/pmtiles@3.0.7/dist/pmtiles.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Courier New', monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+    h1 { color: #4ec9b0; margin-bottom: 20px; }
+    h2 { color: #569cd6; margin-top: 20px; margin-bottom: 10px; }
+    .info { background: #252526; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #4ec9b0; }
+    .error { background: #5a1d1d; border-left: 3px solid #f48771; }
+    .warning { background: #4d4d1d; border-left: 3px solid #dcdcaa; }
+    .success { background: #1d4d1d; border-left: 3px solid #4ec9b0; }
+    pre { background: #1e1e1e; padding: 10px; overflow-x: auto; border: 1px solid #3e3e3e; border-radius: 3px; }
+    .label { color: #9cdcfe; }
+    .value { color: #ce9178; }
+    button { background: #0e639c; color: white; border: none; padding: 10px 20px;
+             border-radius: 3px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #1177bb; }
+    .loading { color: #dcdcaa; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { padding: 8px; text-align: left; border-bottom: 1px solid #3e3e3e; }
+    th { background: #252526; color: #569cd6; }
+    tr:hover { background: #2d2d30; }
+  </style>
+</head>
+<body>
+  <h1>PMTiles Inspector</h1>
+  <p>This tool inspects the metadata and structure of your PMTiles file.</p>
+
+  <div style="margin: 20px 0;">
+    <input type="text" id="urlInput" placeholder="PMTiles URL"
+           value="https://images.souqjari.com/maps/middle-east-arabic.pmtiles"
+           style="width: 70%; padding: 10px; background: #252526; color: #d4d4d4; border: 1px solid #3e3e3e; border-radius: 3px;">
+    <button onclick="inspectPMTiles()">Inspect</button>
+  </div>
+
+  <div id="output"></div>
+
+  <script>
+    async function inspectPMTiles() {
+      const url = document.getElementById('urlInput').value;
+      const output = document.getElementById('output');
+
+      output.innerHTML = '<div class="info loading">🔍 Inspecting PMTiles file...<br/>URL: ' + url + '</div>';
+
+      try {
+        // Create PMTiles instance
+        const p = new pmtiles.PMTiles(url);
+
+        // Get header
+        output.innerHTML += '<div class="info">📥 Fetching PMTiles header...</div>';
+        const header = await p.getHeader();
+
+        // Display header information
+        let html = '<h2>PMTiles Header Information</h2>';
+        html += '<div class="info success">';
+        html += '<table>';
+        html += '<tr><th>Property</th><th>Value</th><th>Description</th></tr>';
+        html += '<tr><td class="label">Tile Type</td><td class="value">' + (header.tileType === 1 ? 'MVT (Mapbox Vector Tiles)' : 'Unknown: ' + header.tileType) + '</td><td>Format of tiles</td></tr>';
+        html += '<tr><td class="label">Min Zoom</td><td class="value">' + header.minZoom + '</td><td>Minimum zoom level available</td></tr>';
+        html += '<tr><td class="label">Max Zoom</td><td class="value">' + header.maxZoom + '</td><td>Maximum zoom level available</td></tr>';
+        html += '<tr><td class="label">Center Lat</td><td class="value">' + header.centerLat.toFixed(4) + '</td><td>Map center latitude</td></tr>';
+        html += '<tr><td class="label">Center Lng</td><td class="value">' + header.centerLon.toFixed(4) + '</td><td>Map center longitude</td></tr>';
+        html += '<tr><td class="label">Center Zoom</td><td class="value">' + header.centerZoom + '</td><td>Default zoom level</td></tr>';
+        html += '<tr><td class="label">Bounds</td><td class="value">[' + header.minLon.toFixed(2) + ', ' + header.minLat.toFixed(2) + ', ' + header.maxLon.toFixed(2) + ', ' + header.maxLat.toFixed(2) + ']</td><td>Geographic bounds</td></tr>';
+        html += '</table>';
+        html += '</div>';
+
+        // Get metadata
+        output.innerHTML += html + '<div class="info">📄 Fetching metadata...</div>';
+        const metadata = await p.getMetadata();
+
+        html += '<h2>PMTiles Metadata</h2>';
+
+        if (metadata) {
+          html += '<div class="info success">';
+          html += '<pre>' + JSON.stringify(metadata, null, 2) + '</pre>';
+          html += '</div>';
+
+          // Check for vector layers
+          if (metadata.vector_layers) {
+            html += '<h2>Vector Layers (Data Layers)</h2>';
+            html += '<div class="info success">';
+            html += '<p><strong>Found ' + metadata.vector_layers.length + ' layers:</strong></p>';
+            html += '<table>';
+            html += '<tr><th>Layer ID</th><th>Fields</th><th>Description</th></tr>';
+
+            metadata.vector_layers.forEach(layer => {
+              const fields = layer.fields ? Object.keys(layer.fields).join(', ') : 'No fields info';
+              html += '<tr>';
+              html += '<td class="label">' + layer.id + '</td>';
+              html += '<td class="value" style="font-size: 11px;">' + fields + '</td>';
+              html += '<td>' + (layer.description || '-') + '</td>';
+              html += '</tr>';
+            });
+
+            html += '</table>';
+            html += '</div>';
+
+            // Analysis
+            html += '<h2>Analysis & Recommendations</h2>';
+
+            const layerIds = metadata.vector_layers.map(l => l.id);
+            const hasRoads = layerIds.some(id => id.includes('road') || id.includes('transportation') || id.includes('highway'));
+            const hasLabels = layerIds.some(id => id.includes('place') || id.includes('label') || id.includes('poi'));
+            const hasBoundaries = layerIds.some(id => id.includes('boundary') || id.includes('admin'));
+            const hasBuildings = layerIds.some(id => id.includes('building'));
+
+            if (layerIds.length === 0) {
+              html += '<div class="info error">';
+              html += '<h3>⚠️ NO DATA LAYERS FOUND</h3>';
+              html += '<p>Your PMTiles file has no vector layers. This means it contains no map data.</p>';
+              html += '<p><strong>Issue:</strong> The file might be corrupted or generated incorrectly.</p>';
+              html += '</div>';
+            } else if (!hasRoads && !hasLabels) {
+              html += '<div class="info warning">';
+              html += '<h3>⚠️ LIMITED DATA</h3>';
+              html += '<p>Your PMTiles file is missing critical layers:</p>';
+              html += '<ul>';
+              if (!hasRoads) html += '<li>❌ Roads/Transportation layer - No streets will be visible</li>';
+              if (!hasLabels) html += '<li>❌ Labels/Places layer - No city/place names will show</li>';
+              if (!hasBoundaries) html += '<li>❌ Boundaries layer - No borders will show</li>';
+              html += '</ul>';
+              html += '<p><strong>This explains why you only see grey land and water.</strong></p>';
+              html += '</div>';
+            } else {
+              html += '<div class="info success">';
+              html += '<h3>✓ Data Layers Present</h3>';
+              html += '<ul>';
+              if (hasRoads) html += '<li>✓ Roads layer found</li>';
+              if (hasLabels) html += '<li>✓ Labels layer found</li>';
+              if (hasBoundaries) html += '<li>✓ Boundaries layer found</li>';
+              if (hasBuildings) html += '<li>✓ Buildings layer found</li>';
+              html += '</ul>';
+              html += '<p>The PMTiles file appears to have necessary data. The rendering issue may be elsewhere.</p>';
+              html += '</div>';
+            }
+
+          } else {
+            html += '<div class="info error">';
+            html += '<h3>❌ No Vector Layers Information</h3>';
+            html += '<p>The metadata doesn\'t contain vector_layers information. This could mean:</p>';
+            html += '<ul>';
+            html += '<li>The PMTiles file was generated without proper metadata</li>';
+            html += '<li>The file is not in the expected MVT format</li>';
+            html += '<li>The file is corrupted</li>';
+            html += '</ul>';
+            html += '</div>';
+          }
+
+        } else {
+          html += '<div class="info warning">';
+          html += '<h3>⚠️ No Metadata Found</h3>';
+          html += '<p>The PMTiles file doesn\'t contain metadata. This is unusual and might indicate:</p>';
+          html += '<ul>';
+          html += '<li>The file was generated with minimal configuration</li>';
+          html += '<li>The generation process didn\'t include metadata</li>';
+          html += '</ul>';
+          html += '</div>';
+        }
+
+        // Recommendations
+        html += '<h2>Next Steps</h2>';
+        html += '<div class="info">';
+        html += '<p><strong>If data layers are missing:</strong></p>';
+        html += '<ol>';
+        html += '<li>Regenerate the PMTiles file using a tool like <code>planetiler</code> or <code>tilemaker</code></li>';
+        html += '<li>Ensure your OSM data source includes all necessary tags (roads, places, boundaries)</li>';
+        html += '<li>Use the Protomaps basemap recipe/schema which includes all standard layers</li>';
+        html += '<li>Or use the official Protomaps basemap: https://build.protomaps.com/</li>';
+        html += '</ol>';
+        html += '<p><strong>Test with official basemap:</strong> Use <code>test-comparison.html</code> to compare</p>';
+        html += '</div>';
+
+        output.innerHTML = html;
+
+      } catch (error) {
+        output.innerHTML += '<div class="info error">';
+        output.innerHTML += '<h3>❌ Error</h3>';
+        output.innerHTML += '<p><strong>Message:</strong> ' + error.message + '</p>';
+        output.innerHTML += '<p><strong>Stack:</strong></p><pre>' + error.stack + '</pre>';
+        output.innerHTML += '<p>This could be due to:</p>';
+        output.innerHTML += '<ul>';
+        output.innerHTML += '<li>CORS issues (check R2 CORS configuration)</li>';
+        output.innerHTML += '<li>Invalid PMTiles file</li>';
+        output.innerHTML += '<li>Network issues</li>';
+        output.innerHTML += '</ul>';
+        output.innerHTML += '</div>';
+      }
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', function() {
+      inspectPMTiles();
+    });
+  </script>
+</body>
+</html>
