@@ -68,6 +68,27 @@ export const MAP_HTML = `
     var moveDebounceTimer = null;
     var sliderActive = false;
 
+    // Debug logging function
+    function debugLog(message, data) {
+      console.log('[MapDebug]', message, data || '');
+      try {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'debug',
+          message: message,
+          data: data || null
+        }));
+      } catch (e) {}
+    }
+
+    // Capture and report errors
+    window.addEventListener('error', function(e) {
+      debugLog('JavaScript Error', {
+        message: e.message,
+        filename: e.filename,
+        lineno: e.lineno
+      });
+    });
+
     function getCircleRadiusPx() {
       var containerSize = Math.min(window.innerWidth, window.innerHeight);
       return containerSize * 0.35;
@@ -106,29 +127,55 @@ export const MAP_HTML = `
       if (isInitialized) return;
       isInitialized = true;
 
+      debugLog('Initializing map', { lat: lat, lng: lng, radiusKm: radiusKm });
+
       // Clamp to valid OSM tile range
       var initialMaxZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, calculateMaxZoomFor1km(lat)));
 
-      map = L.map('map', {
-        zoomControl: false,
-        attributionControl: false,
-        minZoom: MIN_ZOOM,
-        maxZoom: initialMaxZoom,
-        zoomSnap: 0,
-        zoomDelta: 0.5,
-        wheelPxPerZoomLevel: 120,
-        bounceAtZoomLimits: false
-      }).setView([lat, lng], 10);
+      try {
+        map = L.map('map', {
+          zoomControl: false,
+          attributionControl: false,
+          minZoom: MIN_ZOOM,
+          maxZoom: initialMaxZoom,
+          zoomSnap: 0,
+          zoomDelta: 0.5,
+          wheelPxPerZoomLevel: 120,
+          bounceAtZoomLimits: false
+        }).setView([lat, lng], 10);
 
-      // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
-      var layer = protomapsL.leafletLayer({
-        url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
-        labelLang: 'ar',
-        theme: 'light',
-        maxZoom: 18,
-        minZoom: MIN_ZOOM
-      });
-      layer.addTo(map);
+        debugLog('Leaflet map created successfully');
+
+        // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
+        var pmtilesUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+        debugLog('Adding protomaps layer', { url: pmtilesUrl });
+
+        var layer = protomapsL.leafletLayer({
+          url: pmtilesUrl,
+          labelLang: 'ar',
+          theme: 'light',
+          maxZoom: 18,
+          minZoom: MIN_ZOOM
+        });
+        layer.addTo(map);
+
+        debugLog('Protomaps layer added to map');
+
+        // Add tile loading event listeners
+        map.on('tileload', function() {
+          debugLog('Tile loaded successfully');
+        });
+
+        map.on('tileerror', function(e) {
+          debugLog('Tile load error', { error: e });
+        });
+
+      } catch (error) {
+        debugLog('Error in initMap', {
+          message: error.message,
+          stack: error.stack
+        });
+      }
 
       var initialZoom = getZoomForRadius(radiusKm, lat);
       initialZoom = Math.max(MIN_ZOOM, Math.min(initialMaxZoom, initialZoom));

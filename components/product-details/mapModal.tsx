@@ -104,6 +104,12 @@ export default function MapModal({
         try {
             const data = JSON.parse(event.nativeEvent.data);
 
+            // Log debug messages from WebView
+            if (data.type === 'debug') {
+                console.log('[WebView Debug]', data.message, data.data || '');
+                return;
+            }
+
             if (data.type === 'mapReady') {
                 setIsMapReady(true);
             } else if (data.type === 'locationTapped') {
@@ -172,7 +178,16 @@ export default function MapModal({
                     onMessage={handleWebViewMessage}
                     scrollEnabled={false}
                     javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    originWhitelist={['*']}
+                    allowFileAccess={true}
+                    allowUniversalAccessFromFileURLs={true}
+                    mixedContentMode="always"
                     onLoad={() => setIsMapReady(true)}
+                    onError={(syntheticEvent) => {
+                        const { nativeEvent } = syntheticEvent;
+                        console.error('[WebView Error]', nativeEvent);
+                    }}
                 />
 
                 {/* Top Bar */}
