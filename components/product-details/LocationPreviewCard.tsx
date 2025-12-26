@@ -69,7 +69,6 @@ function generateStaticMapHtml(
     var layer = protomapsL.leafletLayer({
       url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
       labelLang: 'ar',
-      theme: 'light',
       maxZoom: 18,
       minZoom: 5
     });
