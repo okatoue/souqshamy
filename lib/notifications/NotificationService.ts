@@ -312,6 +312,11 @@ class NotificationService {
             }
 
             console.log('[Notifications] Batch process result:', data);
+            // Log debug info if available
+            if (data?.debug && data.debug.length > 0) {
+                console.log('[Notifications] Debug info:');
+                data.debug.forEach((msg: string) => console.log('  ', msg));
+            }
             return {
                 sent: data?.sent || 0,
                 failed: data?.failed || 0,
