@@ -278,10 +278,17 @@ export interface ProfileTranslations {
   oauthPasswordNote: string;
   sellerProfile: string;
   noListings: string;
+  sellerNoListings: string;
   listings: string;
   ratings: string;
   ratingsComingSoon: string;
   joinedDate: string;
+  daysOnPlatform: string;
+  daysOnPlatform_plural: string;
+  monthsOnPlatform: string;
+  monthsOnPlatform_plural: string;
+  yearsOnPlatform: string;
+  yearsOnPlatform_plural: string;
 }
 
 export interface SettingsTranslations {
@@ -377,6 +384,11 @@ export interface TimeTranslations {
   weeksAgo: string;
   monthsAgo: string;
   yearsAgo: string;
+  today: string;
+  yesterday: string;
+  yesterdayAt: string;
+  overAMonthAgo: string;
+  overAYearAgo: string;
 }
 
 export interface ValidationTranslations {
