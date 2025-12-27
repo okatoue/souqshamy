@@ -16,8 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, Subcategory } from '@/assets/categories';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
 import { useRTL } from '@/lib/rtl_context';
 import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -81,7 +83,12 @@ export default function PostListingScreen() {
   // Format the selected category for display
   const getCategoryDisplayText = () => {
     if (selectedCategory && selectedSubcategory) {
-      return `${selectedCategory.icon} ${selectedCategory.name} › ${selectedSubcategory.name}`;
+      const catName = getCategoryTranslation(selectedCategory.id, t);
+      const subName = getSubcategoryTranslation(selectedSubcategory.id, t);
+      // Use RTL-aware separator
+      return isRTL
+        ? `${selectedCategory.icon} ${subName} ‹ ${catName}`
+        : `${selectedCategory.icon} ${catName} › ${subName}`;
     }
     return t('post.selectCategory');
   };
@@ -128,7 +135,11 @@ export default function PostListingScreen() {
                 ]}>
                   {getCategoryDisplayText()}
                 </Text>
-                <Text style={[styles.categoryButtonIcon, { color: placeholderColor, transform: [{ scaleX: isRTL ? -1 : 1 }] }]}>›</Text>
+                <Ionicons
+                  name={isRTL ? "chevron-back" : "chevron-forward"}
+                  size={20}
+                  color={placeholderColor}
+                />
               </View>
             </TouchableOpacity>
 
@@ -197,17 +208,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   categoryButtonContent: {
-    // RTL flexDirection applied dynamically
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   categoryButtonText: {
     fontSize: 16,
     flex: 1,
-  },
-  categoryButtonIcon: {
-    fontSize: 24,
-    marginLeft: 8,
   },
   continueButton: {
     marginTop: 30,

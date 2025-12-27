@@ -8,6 +8,7 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { BRAND_COLOR } from '@/constants/theme';
 import { useTheme, useThemeColor } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
+import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
 import { useRTL } from '@/lib/rtl_context';
 import { rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
@@ -142,7 +143,7 @@ export default function CategoryListingScreen() {
                   },
                 ]}
               >
-                {sub.name}
+                {getSubcategoryTranslation(sub.id, t)}
               </Text>
             </Pressable>
           ))}
@@ -224,7 +225,9 @@ export default function CategoryListingScreen() {
       {/* Header */}
       <View style={[styles.header, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]}>
         <BackButton variant="arrow" size={24} light />
-        <Text style={styles.headerTitle}>{params.name || selectedCategory?.name}</Text>
+        <Text style={styles.headerTitle}>
+          {params.name || (selectedCategory ? getCategoryTranslation(selectedCategory.id, t) : '')}
+        </Text>
         <View style={styles.headerRight} />
       </View>
 

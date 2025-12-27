@@ -33,6 +33,7 @@ const ar: TranslationKeys = {
     item: 'عنصر',
     items: 'عناصر',
     keep: 'إبقاء',
+    options: 'خيارات',
   },
   auth: {
     loginOrSignup: 'تسجيل الدخول أو إنشاء حساب',
