@@ -106,7 +106,7 @@ export default function HomeScreen() {
               onChangeText={setSearchQuery}
               onSubmitEditing={handleSearch}
               onFocus={handleSearchBarFocus}
-              placeholder="Search all listings..."
+              placeholder={t('home.searchPlaceholder')}
               showIcon={true}
               showClearButton={true}
               style={styles.searchBarContent}
@@ -114,7 +114,7 @@ export default function HomeScreen() {
           </ThemedView>
 
           <ThemedView style={styles.titleContainer}>
-            <ThemedText type="title">All Categories</ThemedText>
+            <ThemedText type="title">{t('home.categories')}</ThemedText>
           </ThemedView>
 
           <CategoriesList />

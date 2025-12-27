@@ -9,6 +9,7 @@ import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     FlatList,
@@ -156,6 +157,7 @@ const ConversationItem = memo(function ConversationItem({
 });
 
 export default function ChatsScreen() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
 
@@ -211,20 +213,17 @@ export default function ChatsScreen() {
         }
 
         const count = selectedIds.size;
-        const message = count === 1
-            ? 'Are you sure you want to delete this conversation?'
-            : `Are you sure you want to delete ${count} conversations?`;
 
         Alert.alert(
-            'Delete Conversations',
-            message,
+            t('chat.deleteConversations'),
+            t('chat.deleteConversationsConfirm', { count }),
             [
                 {
-                    text: 'Cancel',
+                    text: t('common.cancel'),
                     style: 'cancel',
                 },
                 {
-                    text: 'Delete',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: async () => {
                         // Delete all selected conversations
@@ -292,16 +291,16 @@ export default function ChatsScreen() {
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="chat-outline" size={80} color={mutedColor} />
-            <ThemedText style={styles.emptyTitle}>No Conversations Yet</ThemedText>
+            <ThemedText style={styles.emptyTitle}>{t('chat.noConversations')}</ThemedText>
             <ThemedText style={[styles.emptySubtext, { color: secondaryTextColor }]}>
-                Start chatting with sellers by visiting a listing and tapping "Chat"
+                {t('chat.noConversationsSubtext')}
             </ThemedText>
             <Pressable
                 style={[styles.browseButton, { backgroundColor: BRAND_COLOR }]}
                 onPress={() => router.push('/(tabs)')}
             >
                 <Ionicons name="search" size={20} color="white" />
-                <Text style={styles.browseButtonText}>Browse Listings</Text>
+                <Text style={styles.browseButtonText}>{t('chat.browseListings')}</Text>
             </Pressable>
         </View>
     );
@@ -310,18 +309,18 @@ export default function ChatsScreen() {
     if (!user) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-                <ScreenHeader title="Messages" rightAction={EditButton} />
+                <ScreenHeader title={t('chat.messages')} rightAction={EditButton} />
                 <View style={styles.emptyContainer}>
                     <MaterialCommunityIcons name="account-lock" size={80} color={mutedColor} />
-                    <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
+                    <ThemedText style={styles.emptyTitle}>{t('chat.signInRequired')}</ThemedText>
                     <ThemedText style={[styles.emptySubtext, { color: secondaryTextColor }]}>
-                        Please sign in to view your messages
+                        {t('chat.signInRequiredSubtext')}
                     </ThemedText>
                     <Pressable
                         style={[styles.browseButton, { backgroundColor: BRAND_COLOR }]}
                         onPress={() => router.push('/(auth)')}
                     >
-                        <Text style={styles.browseButtonText}>Sign In</Text>
+                        <Text style={styles.browseButtonText}>{t('auth.signIn')}</Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -330,7 +329,7 @@ export default function ChatsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
-            <ScreenHeader title="Messages" rightAction={EditButton} />
+            <ScreenHeader title={t('chat.messages')} rightAction={EditButton} />
 
             <FlatList
                 data={conversations}
