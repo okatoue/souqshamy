@@ -65,8 +65,37 @@ export const MAP_HTML = `
     var isInitialized = false;
     var MIN_ZOOM = 5;
     var MAX_ZOOM = 18; // OSM tiles max zoom
+    var WORLD_MAX_ZOOM = 8; // Max zoom for areas outside Syria coverage
     var moveDebounceTimer = null;
     var sliderActive = false;
+
+    // Syria/Lebanon/Jordan coverage bounds
+    var COVERAGE_BOUNDS = {
+      south: 29.0,
+      north: 37.5,
+      west: 34.5,
+      east: 43.0
+    };
+
+    // Check if a point is within the Syria detail coverage area
+    function isInCoverage(lat, lng) {
+      return lat >= COVERAGE_BOUNDS.south &&
+             lat <= COVERAGE_BOUNDS.north &&
+             lng >= COVERAGE_BOUNDS.west &&
+             lng <= COVERAGE_BOUNDS.east;
+    }
+
+    // Enforce zoom limits based on coverage area
+    function enforceZoomLimits() {
+      if (!map) return;
+      var center = map.getCenter();
+      var currentZoom = map.getZoom();
+
+      if (!isInCoverage(center.lat, center.lng) && currentZoom > WORLD_MAX_ZOOM) {
+        map.setZoom(WORLD_MAX_ZOOM, { animate: true });
+        debugLog('Zoom limited outside coverage', { zoom: WORLD_MAX_ZOOM });
+      }
+    }
 
     // Debug logging function
     function debugLog(message, data) {
@@ -199,6 +228,7 @@ export const MAP_HTML = `
 
       map.on('moveend', function() {
         updateMaxZoom();
+        enforceZoomLimits();
 
         if (moveDebounceTimer) clearTimeout(moveDebounceTimer);
         moveDebounceTimer = setTimeout(function() {
@@ -213,6 +243,7 @@ export const MAP_HTML = `
 
       map.on('zoomend', function() {
         if (sliderActive) return;
+        enforceZoomLimits();
         sendRadiusUpdate();
       });
 

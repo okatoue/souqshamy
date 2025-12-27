@@ -36,6 +36,35 @@ export const MAP_HTML = `
     var isInitialized = false;
     var MAX_ZOOM = 16;
     var MIN_ZOOM = 5;
+    var WORLD_MAX_ZOOM = 8; // Max zoom for areas outside Syria coverage
+
+    // Syria/Lebanon/Jordan coverage bounds
+    var COVERAGE_BOUNDS = {
+      south: 29.0,
+      north: 37.5,
+      west: 34.5,
+      east: 43.0
+    };
+
+    // Check if a point is within the Syria detail coverage area
+    function isInCoverage(lat, lng) {
+      return lat >= COVERAGE_BOUNDS.south &&
+             lat <= COVERAGE_BOUNDS.north &&
+             lng >= COVERAGE_BOUNDS.west &&
+             lng <= COVERAGE_BOUNDS.east;
+    }
+
+    // Enforce zoom limits based on coverage area
+    function enforceZoomLimits() {
+      if (!map) return;
+      var center = map.getCenter();
+      var currentZoom = map.getZoom();
+
+      if (!isInCoverage(center.lat, center.lng) && currentZoom > WORLD_MAX_ZOOM) {
+        map.setZoom(WORLD_MAX_ZOOM, { animate: true });
+        debugLog('Zoom limited outside coverage', { zoom: WORLD_MAX_ZOOM });
+      }
+    }
 
     // Debug logging function
     function debugLog(message, data) {
@@ -138,6 +167,15 @@ export const MAP_HTML = `
         if (map.getZoom() < MIN_ZOOM) {
           map.setZoom(MIN_ZOOM);
         }
+      });
+
+      // Enforce zoom limits when panning outside coverage
+      map.on('moveend', function() {
+        enforceZoomLimits();
+      });
+
+      map.on('zoomend', function() {
+        enforceZoomLimits();
       });
 
       map.on('click', function(e) {
