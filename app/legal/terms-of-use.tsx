@@ -1,8 +1,11 @@
 import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Stack } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +26,8 @@ function Section({ title, children }: SectionProps) {
 }
 
 export default function TermsOfUseScreen() {
+    const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
@@ -33,115 +38,82 @@ export default function TermsOfUseScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: borderColor }]}>
+            <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                 <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
-                    Terms of Use
+                    {t('legal.termsOfUse')}
                 </Text>
                 <View style={styles.headerSpacer} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={[styles.lastUpdated, { color: mutedColor }]}>
-                    Last updated: December 2024
+                <Text style={[styles.lastUpdated, rtlTextAlign(isRTL), { color: mutedColor }]}>
+                    {t('legal.lastUpdated', { date: 'December 2024' })}
                 </Text>
 
-                <Section title="Acceptance of Terms">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        By accessing or using SouqJari ("the App"), you agree to be bound by these
-                        Terms of Use. If you do not agree to these terms, please do not use the App.
+                <Section title={t('legal.termsAcceptanceTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsAcceptanceContent')}
                     </Text>
                 </Section>
 
-                <Section title="User Accounts">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        {'\u2022'} You must be at least 18 years old to use the App{'\n'}
-                        {'\u2022'} You are responsible for maintaining the confidentiality of your account{'\n'}
-                        {'\u2022'} You are responsible for all activities under your account{'\n'}
-                        {'\u2022'} You must provide accurate and complete information{'\n'}
-                        {'\u2022'} One person may only maintain one account
+                <Section title={t('legal.termsAccountsTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsAccountsContent')}
                     </Text>
                 </Section>
 
-                <Section title="Listing Rules">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        When creating listings, you agree to:{'\n\n'}
-                        {'\u2022'} Only list items you own or are authorized to sell{'\n'}
-                        {'\u2022'} Provide accurate descriptions and photos{'\n'}
-                        {'\u2022'} Set fair and honest prices{'\n'}
-                        {'\u2022'} Respond to buyer inquiries in a timely manner{'\n'}
-                        {'\u2022'} Complete transactions in good faith
+                <Section title={t('legal.termsListingRulesTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsListingRulesContent')}
                     </Text>
                 </Section>
 
-                <Section title="Prohibited Content">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        The following are strictly prohibited:{'\n\n'}
-                        {'\u2022'} Illegal or stolen items{'\n'}
-                        {'\u2022'} Counterfeit or pirated goods{'\n'}
-                        {'\u2022'} Weapons, drugs, or dangerous materials{'\n'}
-                        {'\u2022'} Adult content or services{'\n'}
-                        {'\u2022'} Fraudulent or misleading listings{'\n'}
-                        {'\u2022'} Spam or unsolicited advertising{'\n'}
-                        {'\u2022'} Content that violates intellectual property rights
+                <Section title={t('legal.termsProhibitedTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsProhibitedContent')}
                     </Text>
                 </Section>
 
-                <Section title="User Conduct">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        You agree not to:{'\n\n'}
-                        {'\u2022'} Harass, threaten, or abuse other users{'\n'}
-                        {'\u2022'} Attempt to circumvent our fees or systems{'\n'}
-                        {'\u2022'} Use the App for any illegal purpose{'\n'}
-                        {'\u2022'} Interfere with the App's operation{'\n'}
-                        {'\u2022'} Create multiple accounts
+                <Section title={t('legal.termsUserConductTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsUserConductContent')}
                     </Text>
                 </Section>
 
-                <Section title="Intellectual Property">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        The App and its original content, features, and functionality are owned by
-                        SouqJari and are protected by international copyright, trademark, and other
-                        intellectual property laws.
+                <Section title={t('legal.termsIPTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsIPContent')}
                     </Text>
                 </Section>
 
-                <Section title="Disclaimers">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        {'\u2022'} SouqJari is a platform for connecting buyers and sellers{'\n'}
-                        {'\u2022'} We do not verify listings or guarantee transactions{'\n'}
-                        {'\u2022'} We are not responsible for the quality of items listed{'\n'}
-                        {'\u2022'} Users transact at their own risk{'\n'}
-                        {'\u2022'} The App is provided "as is" without warranties
+                <Section title={t('legal.termsDisclaimersTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsDisclaimersContent')}
                     </Text>
                 </Section>
 
-                <Section title="Limitation of Liability">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        To the maximum extent permitted by law, SouqJari shall not be liable for
-                        any indirect, incidental, special, consequential, or punitive damages arising
-                        out of your use of the App.
+                <Section title={t('legal.termsLiabilityTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsLiabilityContent')}
                     </Text>
                 </Section>
 
-                <Section title="Account Termination">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We reserve the right to suspend or terminate accounts that violate these
-                        terms. Users may delete their accounts at any time through the App settings.
+                <Section title={t('legal.termsTerminationTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsTerminationContent')}
                     </Text>
                 </Section>
 
-                <Section title="Changes to Terms">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We may update these Terms of Use from time to time. Continued use of the
-                        App after changes constitutes acceptance of the new terms.
+                <Section title={t('legal.termsChangesTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsChangesContent')}
                     </Text>
                 </Section>
 
-                <Section title="Contact">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        For questions about these Terms of Use, please contact:{'\n\n'}
-                        legal@souqjari.com
+                <Section title={t('legal.termsContactTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.termsContactContent')}
                     </Text>
                 </Section>
             </ScrollView>

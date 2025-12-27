@@ -1,9 +1,12 @@
 import { BottomSheet, BottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlMarginEnd, rtlRow } from '@/lib/rtlStyles';
 import { ThemePreference, useThemeContext } from '@/lib/theme_context';
 import { Ionicons } from '@expo/vector-icons';
-import React, { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ThemeOption {
@@ -12,27 +15,6 @@ interface ThemeOption {
     icon: keyof typeof Ionicons.glyphMap;
     description: string;
 }
-
-const THEME_OPTIONS: ThemeOption[] = [
-    {
-        value: 'light',
-        label: 'Light',
-        icon: 'sunny-outline',
-        description: 'Always use light theme',
-    },
-    {
-        value: 'dark',
-        label: 'Dark',
-        icon: 'moon-outline',
-        description: 'Always use dark theme',
-    },
-    {
-        value: 'system',
-        label: 'System',
-        icon: 'phone-portrait-outline',
-        description: 'Match device settings',
-    },
-];
 
 export interface ThemePickerRefProps {
     open: () => void;
@@ -46,6 +28,8 @@ interface ThemePickerProps {
 
 export const ThemePicker = forwardRef<ThemePickerRefProps, ThemePickerProps>(
     ({ onClose }, ref) => {
+        const { t } = useTranslation();
+        const { isRTL } = useRTL();
         const bottomSheetRef = useRef<BottomSheetRefProps>(null);
         const { themePreference, setThemePreference } = useThemeContext();
 
@@ -53,6 +37,28 @@ export const ThemePicker = forwardRef<ThemePickerRefProps, ThemePickerProps>(
         const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
         const iconColor = useThemeColor({}, 'icon');
         const itemBackground = useThemeColor({}, 'sheetItemBackground');
+
+        // Create theme options with translated labels
+        const themeOptions = useMemo<ThemeOption[]>(() => [
+            {
+                value: 'light',
+                label: t('settings.themeLight'),
+                icon: 'sunny-outline',
+                description: t('settings.themeLightSubtitle'),
+            },
+            {
+                value: 'dark',
+                label: t('settings.themeDark'),
+                icon: 'moon-outline',
+                description: t('settings.themeDarkSubtitle'),
+            },
+            {
+                value: 'system',
+                label: t('settings.themeSystem'),
+                icon: 'phone-portrait-outline',
+                description: t('settings.themeSystemSubtitle'),
+            },
+        ], [t]);
 
         useImperativeHandle(ref, () => ({
             open: () => {
@@ -75,23 +81,23 @@ export const ThemePicker = forwardRef<ThemePickerRefProps, ThemePickerProps>(
         return (
             <BottomSheet
                 ref={bottomSheetRef}
-                title="App Theme"
+                title={t('settings.appTheme')}
                 snapPoints={['40%']}
                 onDismiss={onClose}
             >
                 <View style={styles.container}>
-                    {THEME_OPTIONS.map((option) => (
+                    {themeOptions.map((option) => (
                         <TouchableOpacity
                             key={option.value}
-                            style={[styles.themeOption, { backgroundColor: itemBackground }]}
+                            style={[styles.themeOption, rtlRow(isRTL), { backgroundColor: itemBackground }]}
                             onPress={() => handleSelect(option.value)}
                             activeOpacity={0.7}
                             accessibilityRole="radio"
                             accessibilityState={{ checked: themePreference === option.value }}
                             accessibilityLabel={`${option.label} theme. ${option.description}`}
                         >
-                            <View style={styles.themeOptionLeft}>
-                                <View style={[styles.iconContainer, { backgroundColor: `${BRAND_COLOR}15` }]}>
+                            <View style={[styles.themeOptionLeft, rtlRow(isRTL)]}>
+                                <View style={[styles.iconContainer, rtlMarginEnd(isRTL, SPACING.md), { backgroundColor: `${BRAND_COLOR}15` }]}>
                                     <Ionicons
                                         name={option.icon}
                                         size={20}
@@ -146,7 +152,6 @@ const styles = StyleSheet.create({
         borderRadius: BORDER_RADIUS.sm,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: SPACING.md,
     },
     textContainer: {
         flex: 1,

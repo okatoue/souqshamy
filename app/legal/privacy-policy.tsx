@@ -1,8 +1,11 @@
 import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Stack } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +26,8 @@ function Section({ title, children }: SectionProps) {
 }
 
 export default function PrivacyPolicyScreen() {
+    const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
@@ -33,91 +38,64 @@ export default function PrivacyPolicyScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: borderColor }]}>
+            <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                 <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
-                    Privacy Policy
+                    {t('legal.privacyPolicy')}
                 </Text>
                 <View style={styles.headerSpacer} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={[styles.lastUpdated, { color: mutedColor }]}>
-                    Last updated: December 2024
+                <Text style={[styles.lastUpdated, rtlTextAlign(isRTL), { color: mutedColor }]}>
+                    {t('legal.lastUpdated', { date: 'December 2024' })}
                 </Text>
 
-                <Section title="Introduction">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        SouqJari ("we", "our", or "us") is committed to protecting your privacy.
-                        This Privacy Policy explains how we collect, use, and share your personal
-                        information when you use our mobile application.
+                <Section title={t('legal.privacyIntroTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyIntroContent')}
                     </Text>
                 </Section>
 
-                <Section title="Information We Collect">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        {'\u2022'} Account information (email, name, phone number){'\n'}
-                        {'\u2022'} Profile information (avatar, bio){'\n'}
-                        {'\u2022'} Listing content (photos, descriptions, prices){'\n'}
-                        {'\u2022'} Location data (for listing location){'\n'}
-                        {'\u2022'} Messages between users{'\n'}
-                        {'\u2022'} Device information and usage data
+                <Section title={t('legal.privacyInfoCollectTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyInfoCollectContent')}
                     </Text>
                 </Section>
 
-                <Section title="How We Use Your Information">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We use your information to:{'\n\n'}
-                        {'\u2022'} Provide and improve our services{'\n'}
-                        {'\u2022'} Enable communication between buyers and sellers{'\n'}
-                        {'\u2022'} Personalize your experience{'\n'}
-                        {'\u2022'} Send important notifications{'\n'}
-                        {'\u2022'} Ensure safety and security
+                <Section title={t('legal.privacyHowUseTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyHowUseContent')}
                     </Text>
                 </Section>
 
-                <Section title="Data Sharing">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We may share your information with:{'\n\n'}
-                        {'\u2022'} Other users (public profile and listings){'\n'}
-                        {'\u2022'} Service providers who help us operate the app{'\n'}
-                        {'\u2022'} Law enforcement when required by law{'\n\n'}
-                        We do not sell your personal information to third parties.
+                <Section title={t('legal.privacyDataSharingTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyDataSharingContent')}
                     </Text>
                 </Section>
 
-                <Section title="Data Retention">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We retain your data while your account is active. When you delete your
-                        account, your data is removed within 30 days in accordance with GDPR
-                        requirements.
+                <Section title={t('legal.privacyDataRetentionTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyDataRetentionContent')}
                     </Text>
                 </Section>
 
-                <Section title="Your Rights">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        You have the right to:{'\n\n'}
-                        {'\u2022'} Access your personal data{'\n'}
-                        {'\u2022'} Correct inaccurate data{'\n'}
-                        {'\u2022'} Delete your account and data{'\n'}
-                        {'\u2022'} Export your data{'\n'}
-                        {'\u2022'} Opt out of marketing communications
+                <Section title={t('legal.privacyYourRightsTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyYourRightsContent')}
                     </Text>
                 </Section>
 
-                <Section title="Data Security">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        We implement appropriate technical and organizational measures to protect
-                        your personal information against unauthorized access, alteration, disclosure,
-                        or destruction.
+                <Section title={t('legal.privacySecurityTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacySecurityContent')}
                     </Text>
                 </Section>
 
-                <Section title="Contact Us">
-                    <Text style={[styles.paragraph, { color: textColor }]}>
-                        If you have questions about this Privacy Policy or wish to exercise your
-                        rights, please contact us at:{'\n\n'}
-                        privacy@souqjari.com
+                <Section title={t('legal.privacyContactTitle')}>
+                    <Text style={[styles.paragraph, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('legal.privacyContactContent')}
                     </Text>
                 </Section>
             </ScrollView>

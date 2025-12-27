@@ -1,5 +1,7 @@
 import { BORDER_RADIUS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon, rtlMarginEnd, rtlRow } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -36,6 +38,7 @@ export function SettingsMenuItem({
     destructive = false,
     disabled = false,
 }: SettingsMenuItemProps) {
+    const { isRTL } = useRTL();
     const textColor = useThemeColor({}, 'text');
     const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
@@ -51,6 +54,7 @@ export function SettingsMenuItem({
         <Pressable
             style={({ pressed }) => [
                 styles.menuItem,
+                rtlRow(isRTL),
                 { borderBottomColor: borderColor },
                 pressed && !disabled && { backgroundColor: pressedBg },
                 disabled && styles.menuItemDisabled,
@@ -62,8 +66,8 @@ export function SettingsMenuItem({
             accessibilityHint={subtitle}
             accessibilityState={{ disabled }}
         >
-            <View style={styles.menuItemLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
+            <View style={[styles.menuItemLeft, rtlRow(isRTL)]}>
+                <View style={[styles.iconContainer, rtlMarginEnd(isRTL, SPACING.md), { backgroundColor: `${color}15` }]}>
                     <Ionicons name={icon} size={20} color={color} />
                 </View>
                 <View style={styles.menuItemText}>
@@ -81,7 +85,11 @@ export function SettingsMenuItem({
             {rightElement}
 
             {showArrow && !rightElement && (
-                <Ionicons name="chevron-forward" size={20} color={chevronColor} />
+                <Ionicons
+                    name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')}
+                    size={20}
+                    color={chevronColor}
+                />
             )}
         </Pressable>
     );
@@ -110,7 +118,6 @@ const styles = StyleSheet.create({
         borderRadius: BORDER_RADIUS.sm,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: SPACING.md,
     },
     menuItemText: {
         flex: 1,
