@@ -91,18 +91,15 @@ export const MAP_HTML = `
       var center = map.getCenter();
       var currentZoom = map.getZoom();
       var inCoverage = isInCoverage(center.lat, center.lng);
+      var allowedMaxZoom = inCoverage ? MAX_ZOOM : WORLD_MAX_ZOOM;
 
-      debugLog('enforceZoomLimits check', {
-        lat: center.lat,
-        lng: center.lng,
-        zoom: currentZoom,
-        inCoverage: inCoverage,
-        maxAllowed: inCoverage ? MAX_ZOOM : WORLD_MAX_ZOOM
-      });
+      // Dynamically update map's maxZoom to prevent zooming past limit
+      map.setMaxZoom(allowedMaxZoom);
 
-      if (!inCoverage && currentZoom > WORLD_MAX_ZOOM) {
-        debugLog('Limiting zoom outside coverage', { from: currentZoom, to: WORLD_MAX_ZOOM });
-        map.setZoom(WORLD_MAX_ZOOM);
+      // If already zoomed past the new limit, zoom out
+      if (currentZoom > allowedMaxZoom) {
+        debugLog('Zooming out to allowed max', { from: currentZoom, to: allowedMaxZoom });
+        map.setZoom(allowedMaxZoom);
       }
     }
 
