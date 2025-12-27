@@ -114,12 +114,7 @@ export default function HomeScreen() {
             />
           </ThemedView>
 
-          <Text
-            style={[
-              styles.categoryTitle,
-              { textAlign: isRTL ? 'right' : 'left', color: textColor }
-            ]}
-          >
+          <Text style={[styles.categoryTitle, { color: textColor }]}>
             {t('home.categories')}
           </Text>
 
