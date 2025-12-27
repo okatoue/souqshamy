@@ -1,6 +1,20 @@
 # Syria-Only PMTiles: Comparison & Implementation
 
+> **Note:** As of December 2025, the app now uses a **dual-layer architecture** with a world base layer + Syria detail layer. This eliminates grey areas entirely without needing `maxBounds` restrictions. See `MAP-TILES-IMPLEMENTATION.md` for current implementation details.
+
 This guide compares Syria-only vs multi-country PMTiles and shows how to implement either option.
+
+## Current Architecture: Dual Layer
+
+The app now uses two PMTiles layers:
+1. **World Base** (`world-base.pmtiles`, ~44 MB) - Zoom 0-6, covers entire world
+2. **Syria Detail** (`middle-east-arabic.pmtiles`, ~1 GB) - Zoom 5-18, covers Syria/Lebanon/Jordan
+
+This approach:
+- ✅ No grey areas anywhere
+- ✅ No `maxBounds` restrictions needed
+- ✅ Users can pan freely worldwide
+- ✅ Syria region shows full detail
 
 ## Quick Comparison
 
@@ -131,61 +145,52 @@ url: 'https://images.souqjari.com/maps/syria-only-arabic.pmtiles'
 
 Test with users near borders (Daraa, Quneitra, Deir ez-Zor) to ensure acceptable experience.
 
-## Map Bounds Explained
+## Map Bounds (Legacy - No Longer Used)
 
-### What You Just Implemented (Multi-Country Bounds)
+> **Note:** With the dual-layer architecture, `maxBounds` is no longer needed. The world base layer provides coverage everywhere, so users never see grey tiles.
+
+### Previous Implementation (Removed)
+
+Previously, the app used `maxBounds` to prevent users from panning outside the PMTiles coverage:
 
 ```javascript
+// OLD APPROACH - NO LONGER USED
 var bounds = L.latLngBounds(
-  [29.0, 34.5],  // SW: Southern Jordan (Aqaba area)
-  [37.5, 43.0]   // NE: Northern Syria (Qamishli area)
+  [29.0, 34.5],  // SW: Southern Jordan
+  [37.5, 43.0]   // NE: Northern Syria
 );
 
 map = L.map('map', {
   maxBounds: bounds,
-  maxBoundsViscosity: 1.0  // Hard boundary (0.0 = soft, 1.0 = hard)
+  maxBoundsViscosity: 1.0
 });
 ```
 
-**How it works:**
-- Users **cannot pan** outside the defined rectangle
-- Map "bounces back" if they try to drag beyond bounds
-- Prevents seeing grey tiles outside coverage area
-- `maxBoundsViscosity: 1.0` creates a hard wall (cannot scroll past at all)
+**Problems with this approach:**
+- Buggy boundary behavior at edges
+- Users couldn't explore context outside Syria
+- Felt restrictive
 
-**Coordinates explained:**
-```
-[37.5, 43.0]  ───────────────  NE Corner
-     │                              │
-     │        Your Coverage         │
-     │           Area               │
-     │                              │
-[29.0, 34.5]  ───────────────  SW Corner
-     │                              │
-   Lat                            Lng
-```
+### Current Implementation (Dual Layer)
 
-### Alternative: Syria-Only Bounds
-
-If you switch to Syria-only PMTiles, use these bounds:
+Now the map has no bounds restrictions:
 
 ```javascript
-// Syria-only coverage
-var bounds = L.latLngBounds(
-  [32.3, 35.5],  // SW: Daraa/Quneitra area
-  [37.3, 42.4]   // NE: Hasaka/Qamishli area
-);
+// CURRENT APPROACH - No bounds needed
+map = L.map('map', {
+  zoomControl: false,
+  attributionControl: false,
+  // No maxBounds - dual layer handles coverage
+});
+
+// World base layer renders everywhere
+// Syria detail layer renders in coverage area
 ```
 
-### Visualize Your Bounds
-
-Use this tool to see your coverage area:
-**http://boundingbox.klokantech.com/**
-
-1. Draw a rectangle on the map
-2. Select "CSV" format
-3. Coordinates are: `minLon,minLat,maxLon,maxLat`
-4. Convert to Leaflet format: `[[minLat, minLon], [maxLat, maxLon]]`
+**Benefits:**
+- No grey areas anywhere
+- Smooth panning experience
+- Users can see geographic context
 
 ## Cost Analysis
 
