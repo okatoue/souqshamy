@@ -1,6 +1,8 @@
 // components/ui/BackButton.tsx
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon, rtlMarginStart } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React from 'react';
@@ -32,10 +34,14 @@ export function BackButton({
   style,
   accessibilityLabel = 'Go back',
 }: BackButtonProps) {
+  const { isRTL } = useRTL();
   const themeIconColor = useThemeColor({}, 'icon');
 
   const iconColor = light ? '#FFFFFF' : (color ?? themeIconColor);
-  const iconName = variant === 'arrow' ? 'arrow-back' : 'chevron-back';
+  // In RTL mode, back arrow should point right (forward direction)
+  const iconName = variant === 'arrow'
+    ? rtlIcon(isRTL, 'arrow-back', 'arrow-forward')
+    : rtlIcon(isRTL, 'chevron-back', 'chevron-forward');
 
   const handlePress = () => {
     if (onPress) {
@@ -48,7 +54,7 @@ export function BackButton({
   return (
     <Pressable
       onPress={handlePress}
-      style={[styles.button, style]}
+      style={[styles.button, rtlMarginStart(isRTL, -SPACING.xs), style]}
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
     >
@@ -60,6 +66,5 @@ export function BackButton({
 const styles = StyleSheet.create({
   button: {
     padding: SPACING.xs,
-    marginLeft: -SPACING.xs,
   },
 });
