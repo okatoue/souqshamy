@@ -12,7 +12,7 @@ import { useAutoLocationDetection } from '@/hooks/useAutoLocationDetection';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useRTL } from '@/lib/rtl_context';
-import { rtlRow, rtlMarginStart } from '@/lib/rtlStyles';
+import { rtlMarginStart } from '@/lib/rtlStyles';
 import { useTranslation } from '@/localization';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -114,7 +114,11 @@ export default function HomeScreen() {
             />
           </ThemedView>
 
-          <ThemedView style={[styles.titleContainer, rtlRow(isRTL), rtlMarginStart(isRTL, SPACING.lg)]}>
+          <ThemedView style={[
+            styles.titleContainer,
+            rtlMarginStart(isRTL, SPACING.lg),
+            { alignSelf: isRTL ? 'flex-end' : 'flex-start' }
+          ]}>
             <ThemedText type="title">{t('home.categories')}</ThemedText>
           </ThemedView>
 
