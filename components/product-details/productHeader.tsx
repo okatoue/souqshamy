@@ -1,7 +1,9 @@
 import { ThemedText } from '@/components/themed-text';
 import { BackButton } from '@/components/ui/BackButton';
 import { SPACING } from '@/constants/theme';
+import { useRTL } from '@/lib/rtl_context';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 
 interface ProductHeaderProps {
@@ -9,12 +11,16 @@ interface ProductHeaderProps {
   title?: string;
 }
 
-export default function ProductHeader({ onBack, title = 'Product Details' }: ProductHeaderProps) {
+export default function ProductHeader({ onBack, title }: ProductHeaderProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
+  const displayTitle = title || t('productDetails.listingDetails');
+
   return (
     <View style={styles.header}>
       <BackButton variant="arrow" size={24} onPress={onBack} style={styles.backButton} />
-      <ThemedText type="title" style={styles.headerTitle}>
-        {title}
+      <ThemedText type="title" style={[styles.headerTitle, isRTL && styles.headerTitleRTL]}>
+        {displayTitle}
       </ThemedText>
     </View>
   );
@@ -34,5 +40,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     marginLeft: SPACING.md,
+  },
+  headerTitleRTL: {
+    marginLeft: 0,
+    marginRight: SPACING.md,
+    textAlign: 'right',
   },
 });

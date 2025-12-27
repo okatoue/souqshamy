@@ -1,7 +1,10 @@
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlTextAlign } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     StyleSheet,
     Text,
@@ -21,6 +24,8 @@ interface LocationSectionProps {
 }
 
 export default function LocationSection({ location, coordinates, radius, onPress }: LocationSectionProps) {
+    const { t } = useTranslation();
+    const { isRTL } = useRTL();
     // Theme colors
     const textColor = useThemeColor({}, 'text');
     const inputBg = useThemeColor({}, 'inputBackground');
@@ -31,7 +36,9 @@ export default function LocationSection({ location, coordinates, radius, onPress
     if (!location || !coordinates) {
         return (
             <View style={styles.container}>
-                <Text style={[styles.label, { color: textColor }]}>Location *</Text>
+                <Text style={[styles.label, rtlTextAlign(isRTL), { color: textColor }]}>
+                    {t('productDetails.location')} *
+                </Text>
                 <TouchableOpacity
                     style={[styles.emptyLocationBox, { backgroundColor: inputBg, borderColor }]}
                     onPress={onPress}
@@ -39,10 +46,10 @@ export default function LocationSection({ location, coordinates, radius, onPress
                 >
                     <Ionicons name="location-outline" size={32} color={mutedColor} />
                     <Text style={[styles.emptyLocationTitle, { color: textColor }]}>
-                        Select Location
+                        {t('productDetails.selectLocation')}
                     </Text>
                     <Text style={[styles.emptyLocationSubtitle, { color: mutedColor }]}>
-                        Tap to choose on map
+                        {t('productDetails.tapToSelectLocation')}
                     </Text>
                 </TouchableOpacity>
             </View>
@@ -52,7 +59,9 @@ export default function LocationSection({ location, coordinates, radius, onPress
     // At this point TypeScript knows location is string and coordinates is non-null
     return (
         <View style={styles.container}>
-            <Text style={[styles.label, { color: textColor }]}>Location *</Text>
+            <Text style={[styles.label, rtlTextAlign(isRTL), { color: textColor }]}>
+                {t('productDetails.location')} *
+            </Text>
             <LocationPreviewCard
                 location={location}
                 coordinates={coordinates}

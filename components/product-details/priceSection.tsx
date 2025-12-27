@@ -2,8 +2,11 @@ import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPriceInput } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Fontisto } from '@expo/vector-icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface PriceSectionProps {
@@ -19,6 +22,8 @@ export default function PriceSection({
   currency,
   setCurrency
 }: PriceSectionProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
@@ -36,8 +41,10 @@ export default function PriceSection({
 
   return (
     <ThemedView variant="card" style={[styles.section, { borderColor }]}>
-      <Text style={[styles.sectionTitle, { color: textColor }]}>Price</Text>
-      <View style={styles.priceContainer}>
+      <Text style={[styles.sectionTitle, rtlTextAlign(isRTL), { color: textColor }]}>
+        {t('productDetails.price')}
+      </Text>
+      <View style={[styles.priceContainer, rtlRow(isRTL)]}>
         <TouchableOpacity
           style={[styles.currencyButton, { backgroundColor: inputBg, borderColor }]}
           onPress={handleCurrencyPress}
@@ -48,7 +55,7 @@ export default function PriceSection({
         </TouchableOpacity>
 
         <TextInput
-          style={[styles.priceInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
+          style={[styles.priceInput, rtlTextAlign(isRTL), { backgroundColor: inputBg, borderColor, color: textColor }]}
           placeholder="0.00"
           placeholderTextColor={COLORS.placeholder}
           keyboardType="decimal-pad"
