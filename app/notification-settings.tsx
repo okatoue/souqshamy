@@ -1,10 +1,13 @@
 import { BackButton } from '@/components/ui/BackButton';
 import { BORDER_RADIUS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface NotificationToggleProps {
@@ -62,6 +65,8 @@ function Section({ title, children }: SectionProps) {
 }
 
 export default function NotificationSettingsScreen() {
+    const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const backgroundColor = useThemeColor({}, 'background');
     const textColor = useThemeColor({}, 'text');
     const mutedColor = useThemeColor({}, 'textMuted');
@@ -80,54 +85,54 @@ export default function NotificationSettingsScreen() {
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Header */}
-            <View style={[styles.header, { borderBottomColor: borderColor }]}>
+            <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                 <BackButton />
                 <Text style={[styles.headerTitle, { color: textColor }]}>
-                    Notifications
+                    {t('notifications.title')}
                 </Text>
                 <View style={styles.headerSpacer} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Master Toggle */}
-                <Section title="PUSH NOTIFICATIONS">
+                <Section title={t('notifications.pushNotifications')}>
                     <NotificationToggle
-                        title="Enable Push Notifications"
-                        subtitle="Receive notifications on your device"
+                        title={t('notifications.enablePush')}
+                        subtitle={t('notifications.enablePushSubtitle')}
                         value={pushEnabled}
                         onValueChange={setPushEnabled}
                     />
                 </Section>
 
                 {/* Notification Types */}
-                <Section title="NOTIFICATION TYPES">
+                <Section title={t('notifications.notificationTypes')}>
                     <NotificationToggle
-                        title="Messages"
-                        subtitle="When someone sends you a message"
+                        title={t('notifications.messages')}
+                        subtitle={t('notifications.messagesSubtitle')}
                         value={messageNotifs}
                         onValueChange={setMessageNotifs}
                         disabled={!pushEnabled}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
-                        title="Listing Activity"
-                        subtitle="When your listing gets views or favorites"
+                        title={t('notifications.listingActivity')}
+                        subtitle={t('notifications.listingActivitySubtitle')}
                         value={listingNotifs}
                         onValueChange={setListingNotifs}
                         disabled={!pushEnabled}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
-                        title="Price Drops"
-                        subtitle="When favorited items drop in price"
+                        title={t('notifications.priceDrops')}
+                        subtitle={t('notifications.priceDropsSubtitle')}
                         value={priceDropNotifs}
                         onValueChange={setPriceDropNotifs}
                         disabled={!pushEnabled}
                     />
                     <View style={[styles.divider, { backgroundColor: borderColor }]} />
                     <NotificationToggle
-                        title="Promotions & Updates"
-                        subtitle="Special offers and app updates"
+                        title={t('notifications.promoUpdates')}
+                        subtitle={t('notifications.promoUpdatesSubtitle')}
                         value={promoNotifs}
                         onValueChange={setPromoNotifs}
                         disabled={!pushEnabled}
@@ -135,11 +140,10 @@ export default function NotificationSettingsScreen() {
                 </Section>
 
                 {/* Notice */}
-                <View style={styles.notice}>
+                <View style={[styles.notice, rtlRow(isRTL)]}>
                     <Ionicons name="information-circle" size={20} color={mutedColor} />
                     <Text style={[styles.noticeText, { color: mutedColor }]}>
-                        Push notifications require permission. You may need to enable them in your
-                        device settings if you haven't already.
+                        {t('notifications.permissionNotice')}
                     </Text>
                 </View>
             </ScrollView>

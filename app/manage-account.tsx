@@ -90,9 +90,9 @@ export default function ManageAccountScreen() {
     const handleChangePassword = () => {
         if (isOAuthUser) {
             Alert.alert(
-                'Cannot Change Password',
-                'You signed in with Google or Facebook. To set a password, please use the "Forgot Password" option on the login screen.',
-                [{ text: 'OK' }]
+                t('auth.cannotChangePassword'),
+                t('auth.cannotChangePasswordMessage'),
+                [{ text: t('common.ok') }]
             );
             return;
         }
@@ -102,19 +102,19 @@ export default function ManageAccountScreen() {
     const handleSubmitPasswordChange = async () => {
         // Validation
         if (!currentPassword) {
-            Alert.alert('Error', 'Please enter your current password.');
+            Alert.alert(t('common.error'), t('auth.currentPasswordPlaceholder'));
             return;
         }
         if (!newPassword) {
-            Alert.alert('Error', 'Please enter a new password.');
+            Alert.alert(t('common.error'), t('auth.newPasswordPlaceholder'));
             return;
         }
         if (newPassword.length < 6) {
-            Alert.alert('Error', 'New password must be at least 6 characters.');
+            Alert.alert(t('common.error'), t('auth.passwordMinLength'));
             return;
         }
         if (newPassword !== confirmPassword) {
-            Alert.alert('Error', 'New passwords do not match.');
+            Alert.alert(t('common.error'), t('auth.passwordsDoNotMatch'));
             return;
         }
 
@@ -128,7 +128,7 @@ export default function ManageAccountScreen() {
             });
 
             if (signInError) {
-                Alert.alert('Error', 'Current password is incorrect.');
+                Alert.alert(t('common.error'), t('auth.currentPasswordIncorrect'));
                 setIsChangingPassword(false);
                 return;
             }
@@ -139,11 +139,11 @@ export default function ManageAccountScreen() {
             });
 
             if (updateError) {
-                Alert.alert('Error', updateError.message);
+                Alert.alert(t('common.error'), updateError.message);
             } else {
-                Alert.alert('Success', 'Your password has been updated.', [
+                Alert.alert(t('common.confirm'), t('auth.passwordUpdated'), [
                     {
-                        text: 'OK',
+                        text: t('common.ok'),
                         onPress: () => {
                             setShowPasswordModal(false);
                             resetPasswordForm();
@@ -152,7 +152,7 @@ export default function ManageAccountScreen() {
                 ]);
             }
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'An unexpected error occurred.');
+            Alert.alert(t('common.error'), error.message || t('errors.unexpected'));
         } finally {
             setIsChangingPassword(false);
         }
@@ -160,12 +160,12 @@ export default function ManageAccountScreen() {
 
     const handleDeleteAccount = () => {
         Alert.alert(
-            'Delete Account',
-            'Are you sure you want to delete your account? This action cannot be undone. All your listings, messages, and data will be permanently deleted.',
+            t('manageAccount.deleteAccountTitle'),
+            t('manageAccount.deleteAccountWarning'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Delete',
+                    text: t('common.delete'),
                     style: 'destructive',
                     onPress: () => setShowDeleteModal(true),
                 },
@@ -178,13 +178,13 @@ export default function ManageAccountScreen() {
         if (isOAuthUser) {
             // OAuth users must type "DELETE" to confirm
             if (confirmationPhrase !== 'DELETE') {
-                Alert.alert('Error', 'Please type DELETE to confirm account deletion.');
+                Alert.alert(t('common.error'), t('manageAccount.typeDeleteExact'));
                 return;
             }
         } else {
             // Password users must enter their password
             if (!deletePassword) {
-                Alert.alert('Error', 'Please enter your password to confirm deletion.');
+                Alert.alert(t('common.error'), t('manageAccount.enterPasswordToConfirm'));
                 return;
             }
         }
@@ -200,7 +200,7 @@ export default function ManageAccountScreen() {
                 });
 
                 if (signInError) {
-                    Alert.alert('Error', 'Password is incorrect.');
+                    Alert.alert(t('common.error'), t('manageAccount.passwordIncorrect'));
                     setIsDeleting(false);
                     return;
                 }
@@ -213,7 +213,7 @@ export default function ManageAccountScreen() {
                 .eq('id', user?.id);
 
             if (deleteError) {
-                Alert.alert('Error', deleteError.message || 'Failed to delete account. Please try again.');
+                Alert.alert(t('common.error'), deleteError.message || t('manageAccount.deleteError'));
                 setIsDeleting(false);
                 return;
             }
@@ -228,7 +228,7 @@ export default function ManageAccountScreen() {
             await signOut();
             router.replace('/(auth)');
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'An unexpected error occurred.');
+            Alert.alert(t('common.error'), error.message || t('errors.unexpected'));
             setIsDeleting(false);
         }
     };
@@ -302,10 +302,10 @@ export default function ManageAccountScreen() {
                                 }}
                                 style={styles.modalCloseButton}
                             >
-                                <Text style={[styles.modalCloseText, { color: BRAND_COLOR }]}>Cancel</Text>
+                                <Text style={[styles.modalCloseText, { color: BRAND_COLOR }]}>{t('common.cancel')}</Text>
                             </Pressable>
                             <ThemedText type="defaultSemiBold" style={styles.modalTitle}>
-                                Change Password
+                                {t('settings.changePassword')}
                             </ThemedText>
                             <View style={styles.modalHeaderSpacer} />
                         </View>
@@ -318,7 +318,7 @@ export default function ManageAccountScreen() {
                             {/* Current Password */}
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.label, { color: labelColor }]}>
-                                    Current Password
+                                    {t('auth.currentPassword')}
                                 </Text>
                                 <View style={styles.inputWrapper}>
                                     <TextInput
@@ -332,7 +332,7 @@ export default function ManageAccountScreen() {
                                         ]}
                                         value={currentPassword}
                                         onChangeText={setCurrentPassword}
-                                        placeholder="Enter current password"
+                                        placeholder={t('auth.currentPasswordPlaceholder')}
                                         placeholderTextColor={COLORS.placeholder}
                                         secureTextEntry={!showCurrentPassword}
                                         autoCapitalize="none"
@@ -354,7 +354,7 @@ export default function ManageAccountScreen() {
                             {/* New Password */}
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.label, { color: labelColor }]}>
-                                    New Password
+                                    {t('auth.newPassword')}
                                 </Text>
                                 <View style={styles.inputWrapper}>
                                     <TextInput
@@ -368,7 +368,7 @@ export default function ManageAccountScreen() {
                                         ]}
                                         value={newPassword}
                                         onChangeText={setNewPassword}
-                                        placeholder="Enter new password"
+                                        placeholder={t('auth.newPasswordPlaceholder')}
                                         placeholderTextColor={COLORS.placeholder}
                                         secureTextEntry={!showNewPassword}
                                         autoCapitalize="none"
@@ -386,14 +386,14 @@ export default function ManageAccountScreen() {
                                     </Pressable>
                                 </View>
                                 <Text style={[styles.helperText, { color: labelColor }]}>
-                                    Password must be at least 6 characters
+                                    {t('auth.passwordMinLength')}
                                 </Text>
                             </View>
 
                             {/* Confirm New Password */}
                             <View style={styles.inputGroup}>
                                 <Text style={[styles.label, { color: labelColor }]}>
-                                    Confirm New Password
+                                    {t('auth.confirmNewPassword')}
                                 </Text>
                                 <View style={styles.inputWrapper}>
                                     <TextInput
@@ -407,7 +407,7 @@ export default function ManageAccountScreen() {
                                         ]}
                                         value={confirmPassword}
                                         onChangeText={setConfirmPassword}
-                                        placeholder="Confirm new password"
+                                        placeholder={t('auth.confirmNewPasswordPlaceholder')}
                                         placeholderTextColor={COLORS.placeholder}
                                         secureTextEntry={!showConfirmPassword}
                                         autoCapitalize="none"
@@ -440,7 +440,7 @@ export default function ManageAccountScreen() {
                                 {isChangingPassword ? (
                                     <ActivityIndicator color="white" size="small" />
                                 ) : (
-                                    <Text style={styles.submitButtonText}>Update Password</Text>
+                                    <Text style={styles.submitButtonText}>{t('auth.updatePassword')}</Text>
                                 )}
                             </Pressable>
                         </View>
@@ -472,10 +472,10 @@ export default function ManageAccountScreen() {
                                 }}
                                 style={styles.modalCloseButton}
                             >
-                                <Text style={[styles.modalCloseText, { color: BRAND_COLOR }]}>Cancel</Text>
+                                <Text style={[styles.modalCloseText, { color: BRAND_COLOR }]}>{t('common.cancel')}</Text>
                             </Pressable>
                             <ThemedText type="defaultSemiBold" style={styles.modalTitle}>
-                                Delete Account
+                                {t('manageAccount.deleteAccountTitle')}
                             </ThemedText>
                             <View style={styles.modalHeaderSpacer} />
                         </View>
@@ -489,11 +489,10 @@ export default function ManageAccountScreen() {
                             <View style={styles.warningContainer}>
                                 <MaterialIcons name="warning" size={48} color="#FF3B30" />
                                 <Text style={[styles.warningTitle, { color: textColor }]}>
-                                    This action is permanent
+                                    {t('manageAccount.deleteAccountPermanent')}
                                 </Text>
                                 <Text style={[styles.warningText, { color: labelColor }]}>
-                                    Once you delete your account, all your data including listings, messages,
-                                    and profile information will be permanently removed and cannot be recovered.
+                                    {t('manageAccount.deleteAccountPermanentMessage')}
                                 </Text>
                             </View>
 
@@ -501,9 +500,7 @@ export default function ManageAccountScreen() {
                                 /* OAuth User: Type DELETE to confirm */
                                 <View style={styles.inputGroup}>
                                     <Text style={[styles.label, { color: labelColor }]}>
-                                        You signed in with {getProviderDisplayName(oauthProvider)}. Type{' '}
-                                        <Text style={{ fontWeight: '700', color: '#FF3B30' }}>DELETE</Text>
-                                        {' '}to confirm account deletion.
+                                        {t('manageAccount.oauthDeleteMessage', { provider: getProviderDisplayName(oauthProvider) })}
                                     </Text>
                                     <View style={styles.inputWrapper}>
                                         <TextInput
@@ -517,7 +514,7 @@ export default function ManageAccountScreen() {
                                             ]}
                                             value={confirmationPhrase}
                                             onChangeText={setConfirmationPhrase}
-                                            placeholder="Type DELETE"
+                                            placeholder={t('manageAccount.typeDeleteToConfirm')}
                                             placeholderTextColor={COLORS.placeholder}
                                             autoCapitalize="characters"
                                             autoCorrect={false}
@@ -525,7 +522,7 @@ export default function ManageAccountScreen() {
                                     </View>
                                     {confirmationPhrase.length > 0 && confirmationPhrase !== 'DELETE' && (
                                         <Text style={[styles.helperText, { color: '#FF3B30' }]}>
-                                            Please type DELETE exactly as shown
+                                            {t('manageAccount.typeDeleteExact')}
                                         </Text>
                                     )}
                                 </View>
@@ -533,7 +530,7 @@ export default function ManageAccountScreen() {
                                 /* Password User: Enter password */
                                 <View style={styles.inputGroup}>
                                     <Text style={[styles.label, { color: labelColor }]}>
-                                        Enter your password to confirm
+                                        {t('manageAccount.enterPasswordToConfirm')}
                                     </Text>
                                     <View style={styles.inputWrapper}>
                                         <TextInput
@@ -547,7 +544,7 @@ export default function ManageAccountScreen() {
                                             ]}
                                             value={deletePassword}
                                             onChangeText={setDeletePassword}
-                                            placeholder="Enter password"
+                                            placeholder={t('manageAccount.enterPassword')}
                                             placeholderTextColor={COLORS.placeholder}
                                             secureTextEntry={!showDeletePassword}
                                             autoCapitalize="none"
@@ -586,7 +583,7 @@ export default function ManageAccountScreen() {
                                     <ActivityIndicator color="white" size="small" />
                                 ) : (
                                     <Text style={styles.submitButtonText}>
-                                        Delete My Account
+                                        {t('manageAccount.deleteMyAccount')}
                                     </Text>
                                 )}
                             </Pressable>

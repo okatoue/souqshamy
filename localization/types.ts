@@ -18,6 +18,10 @@ export interface TranslationKeys {
   errors: ErrorTranslations;
   time: TimeTranslations;
   validation: ValidationTranslations;
+  notifications: NotificationsTranslations;
+  help: HelpTranslations;
+  legal: LegalTranslations;
+  manageAccount: ManageAccountTranslations;
 }
 
 export interface CommonTranslations {
@@ -43,6 +47,12 @@ export interface CommonTranslations {
   seeAll: string;
   showMore: string;
   showLess: string;
+  stay: string;
+  discard: string;
+  saveChanges: string;
+  remove: string;
+  comingSoon: string;
+  comingSoonMessage: string;
 }
 
 export interface AuthTranslations {
@@ -87,6 +97,19 @@ export interface AuthTranslations {
   oauthError: string;
   signInMethod: string;
   signInMethodMessage: string;
+  noAccountSignUp: string;
+  currentPassword: string;
+  currentPasswordPlaceholder: string;
+  newPasswordPlaceholder: string;
+  confirmNewPassword: string;
+  confirmNewPasswordPlaceholder: string;
+  passwordMinLength: string;
+  updatePassword: string;
+  passwordUpdated: string;
+  currentPasswordIncorrect: string;
+  passwordsDoNotMatch: string;
+  cannotChangePassword: string;
+  cannotChangePasswordMessage: string;
 }
 
 export interface TabTranslations {
@@ -289,6 +312,19 @@ export interface ProfileTranslations {
   monthsOnPlatform_plural: string;
   yearsOnPlatform: string;
   yearsOnPlatform_plural: string;
+  enterName: string;
+  enterPhone: string;
+  noEmailSet: string;
+  emailSecurityNote: string;
+  profileUpdated: string;
+  updateFailed: string;
+  memberSince: string;
+  permissionRequired: string;
+  photoLibraryPermission: string;
+  avatarUpdateFailed: string;
+  avatarUploadFailed: string;
+  uploadFailed: string;
+  removePhotoFailed: string;
 }
 
 export interface SettingsTranslations {
@@ -299,6 +335,9 @@ export interface SettingsTranslations {
   themeLight: string;
   themeDark: string;
   themeSystem: string;
+  themeLightSubtitle: string;
+  themeDarkSubtitle: string;
+  themeSystemSubtitle: string;
   language: string;
   languageArabic: string;
   languageEnglish: string;
@@ -310,6 +349,24 @@ export interface SettingsTranslations {
   privacyPolicy: string;
   termsOfUse: string;
   version: string;
+  accountSettings: string;
+  appSettings: string;
+  manageAccount: string;
+  manageAccountSubtitle: string;
+  security: string;
+  changePassword: string;
+  changePasswordSubtitle: string;
+  notAvailableSocial: string;
+  dangerZone: string;
+  deleteAccount: string;
+  deleteAccountSubtitle: string;
+  supportLegal: string;
+  helpSubtitle: string;
+  notificationsSubtitle: string;
+  logOut: string;
+  logOutConfirm: string;
+  logOutFailed: string;
+  signInPrompt: string;
 }
 
 export interface SearchTranslations {
@@ -374,6 +431,7 @@ export interface ErrorTranslations {
   timeout: string;
   unauthorized: string;
   forbidden: string;
+  unexpected: string;
 }
 
 export interface TimeTranslations {
@@ -401,6 +459,109 @@ export interface ValidationTranslations {
   titleTooShort: string;
   titleTooLong: string;
   descriptionTooLong: string;
+}
+
+export interface NotificationsTranslations {
+  title: string;
+  pushNotifications: string;
+  enablePush: string;
+  enablePushSubtitle: string;
+  notificationTypes: string;
+  messages: string;
+  messagesSubtitle: string;
+  listingActivity: string;
+  listingActivitySubtitle: string;
+  priceDrops: string;
+  priceDropsSubtitle: string;
+  promoUpdates: string;
+  promoUpdatesSubtitle: string;
+  permissionNotice: string;
+}
+
+export interface HelpTranslations {
+  title: string;
+  contactSupport: string;
+  emailSupport: string;
+  emailSupportSubtitle: string;
+  whatsappSupport: string;
+  whatsappSupportSubtitle: string;
+  whatsappComingSoon: string;
+  faq: string;
+  responseTime: string;
+  faqPostListing: string;
+  faqPostListingAnswer: string;
+  faqEditListing: string;
+  faqEditListingAnswer: string;
+  faqContactSeller: string;
+  faqContactSellerAnswer: string;
+  faqDeleteAccount: string;
+  faqDeleteAccountAnswer: string;
+  faqDataSafety: string;
+  faqDataSafetyAnswer: string;
+  faqReportListing: string;
+  faqReportListingAnswer: string;
+}
+
+export interface LegalTranslations {
+  lastUpdated: string;
+  // Privacy Policy
+  privacyPolicy: string;
+  privacyIntroTitle: string;
+  privacyIntroContent: string;
+  privacyInfoCollectTitle: string;
+  privacyInfoCollectContent: string;
+  privacyHowUseTitle: string;
+  privacyHowUseContent: string;
+  privacyDataSharingTitle: string;
+  privacyDataSharingContent: string;
+  privacyDataRetentionTitle: string;
+  privacyDataRetentionContent: string;
+  privacyYourRightsTitle: string;
+  privacyYourRightsContent: string;
+  privacySecurityTitle: string;
+  privacySecurityContent: string;
+  privacyContactTitle: string;
+  privacyContactContent: string;
+  // Terms of Use
+  termsOfUse: string;
+  termsAcceptanceTitle: string;
+  termsAcceptanceContent: string;
+  termsAccountsTitle: string;
+  termsAccountsContent: string;
+  termsListingRulesTitle: string;
+  termsListingRulesContent: string;
+  termsProhibitedTitle: string;
+  termsProhibitedContent: string;
+  termsUserConductTitle: string;
+  termsUserConductContent: string;
+  termsIPTitle: string;
+  termsIPContent: string;
+  termsDisclaimersTitle: string;
+  termsDisclaimersContent: string;
+  termsLiabilityTitle: string;
+  termsLiabilityContent: string;
+  termsTerminationTitle: string;
+  termsTerminationContent: string;
+  termsChangesTitle: string;
+  termsChangesContent: string;
+  termsContactTitle: string;
+  termsContactContent: string;
+}
+
+export interface ManageAccountTranslations {
+  title: string;
+  deleteAccountTitle: string;
+  deleteAccountWarning: string;
+  deleteAccountPermanent: string;
+  deleteAccountPermanentMessage: string;
+  typeDeleteToConfirm: string;
+  typeDeleteExact: string;
+  enterPasswordToConfirm: string;
+  enterPassword: string;
+  deleteMyAccount: string;
+  oauthDeleteMessage: string;
+  passwordIncorrect: string;
+  deleteError: string;
 }
 
 // Type for accessing nested translation keys with dot notation
