@@ -1,4 +1,6 @@
 import { useAuth } from '@/lib/auth_context';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
@@ -86,9 +88,10 @@ interface EmptyStateProps {
   totalCount: number;
   onCreatePress: () => void;
   t: (key: string) => string;
+  isRTL: boolean;
 }
 
-function EmptyState({ statusFilter, totalCount, onCreatePress, t }: EmptyStateProps) {
+function EmptyState({ statusFilter, totalCount, onCreatePress, t, isRTL }: EmptyStateProps) {
   const iconMutedColor = useThemeColor({}, 'iconMuted');
   const mutedColor = useThemeColor({}, 'textMuted');
 
@@ -102,11 +105,11 @@ function EmptyState({ statusFilter, totalCount, onCreatePress, t }: EmptyStatePr
           {t('listings.noListingsSubtitle')}
         </ThemedText>
         <Pressable
-          style={[styles.createButton, { backgroundColor: BRAND_COLOR }]}
+          style={[styles.createButton, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]}
           onPress={onCreatePress}
         >
           <MaterialIcons name="add" size={20} color="white" />
-          <Text style={styles.createButtonText}>{t('listings.createFirst')}</Text>
+          <Text style={[styles.createButtonText, rtlMarginStart(isRTL, 6)]}>{t('listings.createFirst')}</Text>
         </Pressable>
       </View>
     );
@@ -147,6 +150,7 @@ function EmptyState({ statusFilter, totalCount, onCreatePress, t }: EmptyStatePr
 
 export default function ListingsScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const { user } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -301,6 +305,7 @@ export default function ListingsScreen() {
             totalCount={listings.length}
             onCreatePress={handleCreateListing}
             t={t}
+            isRTL={isRTL}
           />
         }
         refreshControl={
@@ -401,7 +406,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   createButton: {
-    flexDirection: 'row',
+    // RTL flexDirection applied dynamically
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -411,6 +416,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 6,
+    // RTL margin applied dynamically
   },
 });

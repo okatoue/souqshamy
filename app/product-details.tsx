@@ -33,11 +33,14 @@ import { useCreateListing } from '@/hooks/useCreateListing';
 import { ListingDraft, useDraft } from '@/hooks/useDraft';
 import { useAuth } from '@/lib/auth_context';
 import { unformatPrice } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { useAppColorScheme } from '@/lib/theme_context';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const params = useLocalSearchParams();
 
   const router = useRouter();
@@ -365,7 +368,7 @@ export default function ProductDetailsScreen() {
               <Text style={[styles.draftPromptText, { color: textColor }]}>
                 {t('productDetails.draftRestorePrompt')}
               </Text>
-              <View style={styles.draftPromptButtons}>
+              <View style={[styles.draftPromptButtons, rtlRow(isRTL)]}>
                 <Pressable
                   style={[styles.draftButton, styles.draftButtonSecondary]}
                   onPress={handleDiscardDraft}

@@ -7,6 +7,8 @@ import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/lib/auth_context';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -25,6 +27,7 @@ const ITEM_HEIGHT = 140;
 
 export default function FavoritesScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const { user } = useAuth();
   const router = useRouter();
   const {
@@ -86,7 +89,7 @@ export default function FavoritesScreen() {
           title={t('favorites.favorites')}
           rightAction={<UserIcon />}
         />
-        <FavoritesSkeleton skeletonBg={skeletonBg} />
+        <FavoritesSkeleton skeletonBg={skeletonBg} isRTL={isRTL} />
       </SafeAreaView>
     );
   }
@@ -160,13 +163,13 @@ export default function FavoritesScreen() {
 /**
  * Skeleton loading component for smoother loading experience.
  */
-function FavoritesSkeleton({ skeletonBg }: { skeletonBg: string }) {
+function FavoritesSkeleton({ skeletonBg, isRTL }: { skeletonBg: string; isRTL: boolean }) {
   return (
     <View style={styles.skeletonContainer}>
       {[1, 2, 3, 4].map((i) => (
-        <View key={i} style={styles.skeletonCard}>
+        <View key={i} style={[styles.skeletonCard, rtlRow(isRTL)]}>
           <View style={[styles.skeletonImage, { backgroundColor: skeletonBg }]} />
-          <View style={styles.skeletonContent}>
+          <View style={[styles.skeletonContent, rtlMarginStart(isRTL, SPACING.sm)]}>
             <View style={[styles.skeletonTitle, { backgroundColor: skeletonBg }]} />
             <View style={[styles.skeletonPrice, { backgroundColor: skeletonBg }]} />
             <View style={[styles.skeletonMeta, { backgroundColor: skeletonBg }]} />
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
   skeletonCard: {
-    flexDirection: 'row',
+    // RTL flexDirection applied dynamically
     padding: SPACING.sm,
     marginBottom: SPACING.md,
     borderRadius: BORDER_RADIUS.lg,
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   },
   skeletonContent: {
     flex: 1,
-    marginLeft: SPACING.sm,
+    // RTL margin applied dynamically
     justifyContent: 'center',
   },
   skeletonTitle: {

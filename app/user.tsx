@@ -7,6 +7,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
 import { getAppInfo } from '@/lib/appInfo';
 import { useAuth } from '@/lib/auth_context';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon, rtlMarginEnd, rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { useThemeContext } from '@/lib/theme_context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -25,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function UserScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const { user, signOut } = useAuth();
     const { profile, getDisplayName, fetchProfile } = useProfile();
     const router = useRouter();
@@ -114,7 +117,7 @@ export default function UserScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             {/* Header - Sticky */}
-            <ThemedView style={styles.header}>
+            <ThemedView style={[styles.header, rtlRow(isRTL)]}>
                 <BackButton />
                 <ThemedText type="title" style={styles.headerTitle}>{t('settings.account')}</ThemedText>
                 <View style={styles.headerSpacer} />
@@ -128,12 +131,13 @@ export default function UserScreen() {
                 <Pressable
                     style={({ pressed }) => [
                         styles.userCard,
+                        rtlRow(isRTL),
                         { backgroundColor: cardBackground },
                         pressed && styles.userCardPressed
                     ]}
                     onPress={() => router.push('/personal-details')}
                 >
-                    <View style={styles.avatarContainer}>
+                    <View style={[styles.avatarContainer, rtlMarginEnd(isRTL, 15)]}>
                         {profile?.avatar_url ? (
                             <Image
                                 source={{ uri: profile.avatar_url }}
@@ -157,7 +161,7 @@ export default function UserScreen() {
                         </Text>
                     </View>
                     <Ionicons
-                        name="chevron-forward"
+                        name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')}
                         size={22}
                         color={chevronColor}
                         style={styles.userCardChevron}
@@ -271,7 +275,7 @@ const styles = StyleSheet.create({
         marginLeft: 'auto',
     },
     avatarContainer: {
-        marginRight: 15,
+        // RTL margin applied dynamically
     },
     avatarImage: {
         width: 70,

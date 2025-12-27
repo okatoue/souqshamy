@@ -6,6 +6,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useMessages } from '@/hooks/useMessages';
 import { useAuth } from '@/lib/auth_context';
 import { formatPrice, getDisplayName } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon, rtlMarginStart, rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { supabase } from '@/lib/supabase';
 import { ConversationWithDetails, Message } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -28,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const params = useLocalSearchParams<{ id: string }>();
     const conversationId = params.id;
     const { user } = useAuth();
@@ -315,10 +318,10 @@ export default function ChatScreen() {
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
             >
                 {/* Header */}
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
+                <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                     <BackButton color="#007AFF" style={styles.backIconButton} />
 
-                    <View style={styles.headerContent}>
+                    <View style={[styles.headerContent, rtlRow(isRTL), rtlMarginStart(isRTL, 4)]}>
                         {conversation.other_user.avatar_url ? (
                             <Image
                                 source={{ uri: conversation.other_user.avatar_url }}
@@ -327,7 +330,7 @@ export default function ChatScreen() {
                         ) : (
                             <MaterialCommunityIcons name="account-circle" size={40} color={secondaryTextColor} />
                         )}
-                        <Text style={[styles.headerName, { color: textColor }]} numberOfLines={1}>
+                        <Text style={[styles.headerName, rtlMarginStart(isRTL, 10), { color: textColor }]} numberOfLines={1}>
                             {conversation.other_user.display_name}
                         </Text>
                     </View>
@@ -335,7 +338,7 @@ export default function ChatScreen() {
 
                 {/* Listing Preview */}
                 <Pressable
-                    style={[styles.listingPreview, { backgroundColor: cardBg, borderBottomColor: borderColor }]}
+                    style={[styles.listingPreview, rtlRow(isRTL), { backgroundColor: cardBg, borderBottomColor: borderColor }]}
                     onPress={handleListingPress}
                 >
                     {conversation.listing?.images?.[0] && (
@@ -344,15 +347,15 @@ export default function ChatScreen() {
                             style={styles.previewImage}
                         />
                     )}
-                    <View style={styles.previewDetails}>
-                        <Text style={[styles.previewTitle, { color: textColor }]} numberOfLines={1}>
+                    <View style={[styles.previewDetails, rtlMarginStart(isRTL, 12)]}>
+                        <Text style={[styles.previewTitle, rtlTextAlign(isRTL), { color: textColor }]} numberOfLines={1}>
                             {conversation.listing?.title}
                         </Text>
-                        <Text style={[styles.previewPrice, { color: textColor }]}>
+                        <Text style={[styles.previewPrice, rtlTextAlign(isRTL), { color: textColor }]}>
                             {conversation.listing ? formatPrice(conversation.listing.price, conversation.listing.currency) : ''}
                         </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
+                    <Ionicons name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')} size={20} color={secondaryTextColor} />
                 </Pressable>
 
                 {/* Messages */}
@@ -376,6 +379,7 @@ export default function ChatScreen() {
                 {/* Input - Single VoiceRecorder instance to prevent state reset */}
                 <View style={[
                     styles.inputContainer,
+                    rtlRow(isRTL),
                     {
                         backgroundColor: cardBg,
                         borderTopColor: borderColor,
@@ -385,7 +389,7 @@ export default function ChatScreen() {
                     {/* TextInput - hidden when recording */}
                     {!isRecordingActive && (
                         <TextInput
-                            style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
+                            style={[styles.textInput, rtlTextAlign(isRTL), { backgroundColor: inputBg, color: textColor }]}
                             placeholder={t('chat.typeMessage')}
                             placeholderTextColor={secondaryTextColor}
                             value={messageText}
@@ -400,7 +404,7 @@ export default function ChatScreen() {
                     {/* Send button - only when there's text and not recording */}
                     {!isRecordingActive && messageText.trim() ? (
                         <Pressable
-                            style={styles.sendButton}
+                            style={[styles.sendButton, rtlMarginStart(isRTL, 8)]}
                             onPress={handleSend}
                             disabled={isSending}
                             accessibilityRole="button"
@@ -470,9 +474,9 @@ const styles = StyleSheet.create({
     },
     headerContent: {
         flex: 1,
-        flexDirection: 'row',
+        // RTL flexDirection applied dynamically
         alignItems: 'center',
-        marginLeft: 4,
+        // RTL margin applied dynamically
     },
     headerAvatar: {
         width: 36,
@@ -482,7 +486,7 @@ const styles = StyleSheet.create({
     headerName: {
         fontSize: 17,
         fontWeight: '600',
-        marginLeft: 10,
+        // RTL margin applied dynamically
         flex: 1,
     },
     listingPreview: {
@@ -498,7 +502,7 @@ const styles = StyleSheet.create({
     },
     previewDetails: {
         flex: 1,
-        marginLeft: 12,
+        // RTL margin applied dynamically
     },
     previewTitle: {
         fontSize: 14,
@@ -577,7 +581,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#007AFF',
         justifyContent: 'center',
         alignItems: 'center',
-        marginLeft: 8,
+        // RTL margin applied dynamically
     },
     sendButtonDisabled: {
         backgroundColor: '#ccc',

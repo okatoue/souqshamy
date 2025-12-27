@@ -4,6 +4,8 @@ import { BackButton } from '@/components/ui/BackButton';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSearchListings } from '@/hooks/useSearchListings';
 import { navigateToListing } from '@/app/listing/[id]';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlMarginStart, rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
@@ -22,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SearchScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const params = useLocalSearchParams<{ q?: string }>();
     const [searchQuery, setSearchQuery] = useState(params.q || '');
     const searchInputRef = useRef<TextInput>(null);
@@ -106,9 +109,9 @@ export default function SearchScreen() {
                 {t('search.searchFailed')}
             </Text>
             <Text style={styles.emptySubtext}>{error?.message}</Text>
-            <Pressable style={styles.retryButton} onPress={handleSearch}>
+            <Pressable style={[styles.retryButton, rtlRow(isRTL)]} onPress={handleSearch}>
                 <MaterialIcons name="refresh" size={20} color="white" />
-                <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
+                <Text style={[styles.retryButtonText, rtlMarginStart(isRTL, 8)]}>{t('common.tryAgain')}</Text>
             </Pressable>
         </View>
     );
@@ -117,14 +120,14 @@ export default function SearchScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             <Stack.Screen options={{ headerShown: false }} />
             {/* Header with Search Bar */}
-            <View style={styles.header}>
+            <View style={[styles.header, rtlRow(isRTL)]}>
                 <BackButton variant="arrow" size={24} light />
 
-                <View style={[styles.searchInputContainer, { backgroundColor: inputBg }]}>
+                <View style={[styles.searchInputContainer, rtlRow(isRTL), { backgroundColor: inputBg }]}>
                     <Ionicons name="search" size={20} color="#888" />
                     <TextInput
                         ref={searchInputRef}
-                        style={[styles.searchInput, { color: textColor }]}
+                        style={[styles.searchInput, rtlTextAlign(isRTL), rtlMarginStart(isRTL, 8), { color: textColor }]}
                         placeholder={t('search.searchPlaceholder')}
                         placeholderTextColor="#888"
                         value={searchQuery}
@@ -200,7 +203,7 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
-        marginLeft: 8,
+        // RTL margin applied dynamically
     },
     clearButton: {
         padding: 4,
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: '600',
         fontSize: 16,
-        marginLeft: 8,
+        // RTL margin applied dynamically
     },
     loadingContainer: {
         flex: 1,

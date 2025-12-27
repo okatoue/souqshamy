@@ -16,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Category, Subcategory } from '@/assets/categories';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +27,7 @@ import { UserIcon } from '../../components/ui/userIcon';
 
 export default function PostListingScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const [listingTitle, setListingTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
@@ -104,7 +107,7 @@ export default function PostListingScreen() {
                 placeholder={t('post.titlePlaceholder')}
                 value={listingTitle}
                 onChangeText={setListingTitle}
-                style={[styles.listingTitleContent, { color: textColor }]}
+                style={[styles.listingTitleContent, rtlTextAlign(isRTL), { color: textColor }]}
                 placeholderTextColor={placeholderColor}
                 returnKeyType="done"
                 blurOnSubmit={true}
@@ -117,14 +120,15 @@ export default function PostListingScreen() {
               onPress={handleOpenPress}
               activeOpacity={0.8}
             >
-              <View style={styles.categoryButtonContent}>
+              <View style={[styles.categoryButtonContent, rtlRow(isRTL)]}>
                 <Text style={[
                   styles.categoryButtonText,
+                  rtlTextAlign(isRTL),
                   { color: selectedCategory ? textColor : placeholderColor }
                 ]}>
                   {getCategoryDisplayText()}
                 </Text>
-                <Text style={[styles.categoryButtonIcon, { color: placeholderColor }]}>›</Text>
+                <Text style={[styles.categoryButtonIcon, { color: placeholderColor, transform: [{ scaleX: isRTL ? -1 : 1 }] }]}>›</Text>
               </View>
             </TouchableOpacity>
 
@@ -193,7 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   categoryButtonContent: {
-    flexDirection: 'row',
+    // RTL flexDirection applied dynamically
     justifyContent: 'space-between',
     alignItems: 'center',
   },
