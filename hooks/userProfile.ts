@@ -9,7 +9,6 @@ export interface Profile {
     phone_number: string | null;
     display_name: string | null;
     avatar_url: string | null;
-    bio: string | null;
     email_verified: boolean;
     created_at: string;
     updated_at: string;

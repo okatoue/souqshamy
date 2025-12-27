@@ -38,7 +38,6 @@ export default function PersonalDetailsScreen() {
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [bio, setBio] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
 
@@ -64,7 +63,6 @@ export default function PersonalDetailsScreen() {
             setDisplayName(profile.display_name || '');
             setEmail(profile.email || '');
             setPhoneNumber(profile.phone_number || '');
-            setBio(profile.bio || '');
             hasInitialized.current = true;
         }
     }, [profile]);
@@ -74,10 +72,9 @@ export default function PersonalDetailsScreen() {
         if (profile) {
             const nameChanged = displayName !== (profile.display_name || '');
             const phoneChanged = phoneNumber !== (profile.phone_number || '');
-            const bioChanged = bio !== (profile.bio || '');
-            setHasChanges(nameChanged || phoneChanged || bioChanged);
+            setHasChanges(nameChanged || phoneChanged);
         }
-    }, [displayName, phoneNumber, bio, profile]);
+    }, [displayName, phoneNumber, profile]);
 
     const handleBack = () => {
         if (hasChanges) {
@@ -102,7 +99,6 @@ export default function PersonalDetailsScreen() {
             const success = await updateProfile({
                 display_name: displayName.trim() || null,
                 phone_number: phoneNumber.trim() || null,
-                bio: bio.trim() || null,
             });
 
             if (success) {
@@ -379,36 +375,6 @@ export default function PersonalDetailsScreen() {
                                 autoCorrect={false}
                             />
                         </View>
-
-                        {/* Bio */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, rtlTextAlign(isRTL), { color: labelColor }]}>
-                                {t('profile.bio')}
-                            </Text>
-                            <TextInput
-                                style={[
-                                    styles.input,
-                                    styles.textArea,
-                                    rtlTextAlign(isRTL),
-                                    {
-                                        backgroundColor: inputBackground,
-                                        borderColor: borderColor,
-                                        color: bio ? textColor : COLORS.muted,
-                                    },
-                                ]}
-                                value={bio}
-                                onChangeText={setBio}
-                                placeholder={t('profile.bioPlaceholder')}
-                                placeholderTextColor={COLORS.placeholder}
-                                multiline
-                                numberOfLines={4}
-                                maxLength={500}
-                                textAlignVertical="top"
-                            />
-                            <Text style={[styles.charCount, { color: labelColor, textAlign: isRTL ? 'left' : 'right' }]}>
-                                {bio.length}/500
-                            </Text>
-                        </View>
                     </ThemedView>
                 </ScrollView>
 
@@ -501,16 +467,6 @@ const styles = StyleSheet.create({
     helperText: {
         fontSize: 12,
         marginLeft: SPACING.xs,
-        marginTop: SPACING.xs,
-    },
-    textArea: {
-        height: 100,
-        paddingTop: SPACING.md,
-        paddingBottom: SPACING.md,
-    },
-    charCount: {
-        fontSize: 12,
-        textAlign: 'right',
         marginTop: SPACING.xs,
     },
     footer: {
