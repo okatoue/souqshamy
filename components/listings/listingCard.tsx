@@ -5,6 +5,8 @@ import { ListingMeta } from '@/components/ui/ListingMeta';
 import { BORDER_RADIUS, BRAND_COLOR, COLORS, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo } from 'react';
@@ -23,6 +25,7 @@ const IMAGE_SIZE = 100;
  * Memoized for FlatList performance optimization.
  */
 export const ListingCard = memo(function ListingCard({ item, onPress }: ListingCardProps) {
+  const { isRTL } = useRTL();
   const textColor = useThemeColor({}, 'text');
   const cardBg = useThemeColor({ light: '#fff', dark: '#1c1c1e' }, 'background');
   const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'text');
@@ -71,7 +74,11 @@ export const ListingCard = memo(function ListingCard({ item, onPress }: ListingC
 
         {/* Arrow */}
         <View style={styles.arrow}>
-          <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+          <Ionicons
+            name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')}
+            size={20}
+            color={COLORS.muted}
+          />
         </View>
       </Pressable>
     </View>

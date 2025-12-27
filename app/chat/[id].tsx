@@ -411,7 +411,12 @@ export default function ChatScreen() {
                             accessibilityLabel="Send message"
                             accessibilityState={{ disabled: isSending }}
                         >
-                            <Ionicons name="send" size={20} color="white" />
+                            <Ionicons
+                                name="send"
+                                size={20}
+                                color="white"
+                                style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+                            />
                         </Pressable>
                     ) : (
                         /* Single VoiceRecorder - always the same instance */

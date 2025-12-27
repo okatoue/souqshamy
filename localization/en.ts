@@ -30,6 +30,9 @@ const en: TranslationKeys = {
     remove: 'Remove',
     comingSoon: 'Coming Soon',
     comingSoonMessage: '{{feature}} is coming soon!',
+    item: 'item',
+    items: 'items',
+    keep: 'Keep',
   },
   auth: {
     loginOrSignup: 'Log in or Sign up',
@@ -227,10 +230,13 @@ const en: TranslationKeys = {
     noFavorites: 'No Favorites Yet',
     noFavoritesSubtext: 'Save listings you like by tapping the heart icon',
     browseNow: 'Browse Now',
-    removeFavorite: 'Remove from Favorites',
+    removeFavorite: 'Remove',
     addFavorite: 'Add to Favorites',
     signInRequired: 'Sign In Required',
     signInRequiredSubtext: 'Please sign in to view your favorites',
+    itemSold: 'Item Sold',
+    itemUnavailable: 'Item Unavailable',
+    removeUnavailableMessage: 'This listing is no longer available. Would you like to remove it from your favorites?',
   },
   post: {
     postListing: 'Post a Listing',
@@ -454,6 +460,11 @@ const en: TranslationKeys = {
     yesterdayAt: 'Yesterday {{time}}',
     overAMonthAgo: 'over a month ago',
     overAYearAgo: 'over a year ago',
+    // Short format for chat list
+    now: 'Now',
+    minutesShort: '{{count}}m',
+    hoursShort: '{{count}}h',
+    daysShort: '{{count}}d',
   },
   validation: {
     required: 'This field is required',

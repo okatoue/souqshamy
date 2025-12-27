@@ -131,7 +131,7 @@ export default function FavoritesScreen() {
           <EmptyState
             icon="heart-outline"
             title={t('favorites.noFavorites')}
-            subtitle={t('favorites.noFavoritesSubtitle')}
+            subtitle={t('favorites.noFavoritesSubtext')}
             action={{
               label: t('favorites.browseNow'),
               icon: 'search',

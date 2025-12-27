@@ -54,6 +54,9 @@ export interface CommonTranslations {
   remove: string;
   comingSoon: string;
   comingSoonMessage: string;
+  item: string;
+  items: string;
+  keep: string;
 }
 
 export interface AuthTranslations {
@@ -262,6 +265,9 @@ export interface FavoritesTranslations {
   addFavorite: string;
   signInRequired: string;
   signInRequiredSubtext: string;
+  itemSold: string;
+  itemUnavailable: string;
+  removeUnavailableMessage: string;
 }
 
 export interface PostTranslations {
@@ -494,6 +500,11 @@ export interface TimeTranslations {
   yesterdayAt: string;
   overAMonthAgo: string;
   overAYearAgo: string;
+  // Short format for chat list
+  now: string;
+  minutesShort: string;
+  hoursShort: string;
+  daysShort: string;
 }
 
 export interface ValidationTranslations {

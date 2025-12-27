@@ -4,6 +4,8 @@ import { ListingMeta } from '@/components/ui/ListingMeta';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
 import { Ionicons } from '@expo/vector-icons';
 import React, { ReactNode } from 'react';
@@ -76,6 +78,9 @@ export function BaseListingCard({
   showCategory = true,
   showChevron = true,
 }: BaseListingCardProps) {
+  // RTL support
+  const { isRTL } = useRTL();
+
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
@@ -146,7 +151,11 @@ export function BaseListingCard({
           {/* Chevron indicator */}
           {showChevron && (
             <View style={styles.chevron}>
-              <Ionicons name="chevron-forward" size={20} color={COLORS.muted} />
+              <Ionicons
+                name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')}
+                size={20}
+                color={COLORS.muted}
+              />
             </View>
           )}
         </View>

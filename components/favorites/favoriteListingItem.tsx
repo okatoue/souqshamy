@@ -3,6 +3,7 @@ import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 // =============================================================================
@@ -24,6 +25,7 @@ interface StatusBadgeProps {
 }
 
 function StatusBadge({ status }: StatusBadgeProps) {
+  const { t } = useTranslation();
   const isSold = status === 'sold';
 
   return (
@@ -39,7 +41,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
         color="white"
       />
       <Text style={styles.statusText}>
-        {isSold ? 'Sold' : 'Unavailable'}
+        {isSold ? t('listings.sold') : t('listings.inactive')}
       </Text>
     </View>
   );
@@ -54,6 +56,8 @@ interface RemoveButtonProps {
 }
 
 function RemoveButton({ onPress }: RemoveButtonProps) {
+  const { t } = useTranslation();
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -61,11 +65,11 @@ function RemoveButton({ onPress }: RemoveButtonProps) {
         pressed && styles.removeButtonPressed,
       ]}
       onPress={onPress}
-      accessibilityLabel="Remove from favorites"
+      accessibilityLabel={t('favorites.removeFavorite')}
       accessibilityRole="button"
     >
       <Ionicons name="heart-dislike-outline" size={18} color={COLORS.favorite} />
-      <Text style={styles.removeButtonText}>Remove</Text>
+      <Text style={styles.removeButtonText}>{t('favorites.removeFavorite')}</Text>
     </Pressable>
   );
 }
@@ -86,17 +90,18 @@ function FavoriteListingItemComponent({
   onPress,
   onRemoveFavorite,
 }: FavoriteListingItemProps) {
+  const { t } = useTranslation();
   const isInactive = item.status !== 'active';
 
   const handlePress = (listing: Listing) => {
     if (isInactive) {
       Alert.alert(
-        listing.status === 'sold' ? 'Item Sold' : 'Item Unavailable',
-        'This listing is no longer available. Would you like to remove it from your favorites?',
+        listing.status === 'sold' ? t('favorites.itemSold') : t('favorites.itemUnavailable'),
+        t('favorites.removeUnavailableMessage'),
         [
-          { text: 'Keep', style: 'cancel' },
+          { text: t('common.keep'), style: 'cancel' },
           {
-            text: 'Remove',
+            text: t('common.remove'),
             style: 'destructive',
             onPress: () => onRemoveFavorite(String(listing.id)),
           },
