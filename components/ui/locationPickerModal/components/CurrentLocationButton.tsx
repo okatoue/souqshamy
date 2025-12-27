@@ -1,6 +1,7 @@
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
 interface CurrentLocationButtonProps {
@@ -10,6 +11,7 @@ interface CurrentLocationButtonProps {
 }
 
 export function CurrentLocationButton({ onPress, loading = false, disabled = false }: CurrentLocationButtonProps) {
+    const { t } = useTranslation();
     const cardBg = useThemeColor({ light: 'rgba(255, 255, 255, 0.95)', dark: 'rgba(28, 28, 30, 0.95)' }, 'background');
     const tintColor = useThemeColor({}, 'tint');
     const textColor = useThemeColor({}, 'text');
@@ -22,7 +24,7 @@ export function CurrentLocationButton({ onPress, loading = false, disabled = fal
             onPress={onPress}
             disabled={isDisabled}
             accessibilityRole="button"
-            accessibilityLabel="Use my current location"
+            accessibilityLabel={t('location.useMyLocation')}
             accessibilityState={{ disabled: isDisabled }}
         >
             {loading ? (
@@ -35,7 +37,7 @@ export function CurrentLocationButton({ onPress, loading = false, disabled = fal
                 />
             )}
             <Text style={[styles.buttonText, { color: textColor }]}>
-                My Location
+                {t('location.myLocation')}
             </Text>
         </TouchableOpacity>
     );

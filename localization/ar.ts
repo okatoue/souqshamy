@@ -154,6 +154,7 @@ const ar: TranslationKeys = {
     myListings: 'إعلاناتي',
     noListings: 'لا توجد إعلانات',
     noListingsSubtext: 'ابدأ البيع بإنشاء إعلانك الأول',
+    noListingsSubtitle: 'ابدأ البيع بإنشاء إعلانك الأول',
     createFirst: 'أنشئ إعلانك الأول',
     createListing: 'إنشاء إعلان',
     active: 'نشط',
@@ -194,6 +195,41 @@ const ar: TranslationKeys = {
     views: 'مشاهدات',
     favorites: 'مفضلة',
     shareError: 'تعذر مشاركة الإعلان',
+    // Sign in required
+    signInRequired: 'تسجيل الدخول مطلوب',
+    signInRequiredSubtitle: 'يرجى تسجيل الدخول لعرض إعلاناتك',
+    // Filter tabs
+    filterAll: 'الكل',
+    filterActive: 'نشط',
+    filterSold: 'مُباع',
+    filterHidden: 'مخفي',
+    // Empty state messages for filters
+    noListingsInFilter: 'لا توجد إعلانات في هذا الفلتر',
+    noActive: 'لا توجد إعلانات نشطة',
+    noSold: 'لا توجد إعلانات مباعة',
+    noInactive: 'لا توجد إعلانات مخفية',
+    // Status badges
+    statusActive: 'نشط',
+    statusSold: 'مُباع',
+    statusHidden: 'مخفي',
+    statusUnavailable: 'غير متوفر',
+    // Action buttons
+    actionEdit: 'تعديل',
+    actionMarkSold: 'تحديد كمُباع',
+    actionRemove: 'إزالة',
+    actionReactivate: 'إعادة تفعيل',
+    actionRestore: 'استعادة',
+    actionDeleteForever: 'حذف نهائي',
+    // Confirmation dialogs
+    removeConfirmTitle: 'إزالة الإعلان؟',
+    removeConfirmMessage: 'سيتم إخفاء هذا الإعلان عن المشترين. يمكنك استعادته لاحقاً.',
+    deleteForeverConfirmTitle: 'حذف نهائي؟',
+    deleteForeverConfirmMessage: 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف الإعلان نهائياً.',
+    markSoldConfirmTitle: 'تحديد كمُباع؟',
+    markSoldConfirmMessage: 'سيتم تحديد إعلانك كمُباع.',
+    // Success/error messages
+    listingRemoved: 'تم إزالة الإعلان',
+    updateFailed: 'فشل التحديث. يرجى المحاولة مرة أخرى.',
   },
   chat: {
     messages: 'الرسائل',
@@ -419,6 +455,11 @@ const ar: TranslationKeys = {
     km: 'كم',
     confirmLocation: 'تأكيد الموقع',
     changeLocation: 'تغيير الموقع',
+    myLocation: 'موقعي',
+    useMyLocation: 'استخدام موقعي الحالي',
+    couldNotGetLocation: 'تعذر تحديد موقعك الحالي. يرجى المحاولة مرة أخرى.',
+    permissionRequired: 'الإذن مطلوب',
+    pleaseAllowLocation: 'يرجى السماح بالوصول إلى الموقع لاستخدام هذه الميزة',
   },
   alerts: {
     error: 'خطأ',

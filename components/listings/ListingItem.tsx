@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-ic
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 // =============================================================================
@@ -30,17 +31,19 @@ interface StatusBadgeProps {
 }
 
 function StatusBadge({ status }: StatusBadgeProps) {
+  const { t } = useTranslation();
+
   let badgeColor = COLORS.statusActive;
-  let statusText = 'Active';
+  let statusText = t('listings.statusActive');
   let iconName: 'checkmark-circle' | 'pricetag' | 'eye-off' = 'checkmark-circle';
 
   if (status === 'sold') {
     badgeColor = COLORS.statusSold;
-    statusText = 'Sold';
+    statusText = t('listings.statusSold');
     iconName = 'pricetag';
   } else if (status === 'inactive') {
     badgeColor = COLORS.statusInactive;
-    statusText = 'Hidden';
+    statusText = t('listings.statusHidden');
     iconName = 'eye-off';
   }
 
@@ -75,6 +78,7 @@ function ActionButtons({
   onRestore,
   setIsUpdating,
 }: ActionButtonsProps) {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const handleEdit = (e: any) => {
@@ -98,7 +102,7 @@ function ActionButtons({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to mark listing as sold. Please try again.');
+      Alert.alert(t('alerts.error'), t('listings.updateFailed'));
     }
   };
 
@@ -116,7 +120,7 @@ function ActionButtons({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to reactivate listing. Please try again.');
+      Alert.alert(t('alerts.error'), t('listings.updateFailed'));
     }
   };
 
@@ -127,12 +131,12 @@ function ActionButtons({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
-      'Remove Listing',
-      'This will hide the listing from buyers. You can restore it later.',
+      t('listings.removeConfirmTitle'),
+      t('listings.removeConfirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('listings.actionRemove'),
           style: 'destructive',
           onPress: async () => {
             setIsUpdating(true);
@@ -143,7 +147,7 @@ function ActionButtons({
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', 'Failed to remove listing. Please try again.');
+              Alert.alert(t('alerts.error'), t('listings.updateFailed'));
             }
           },
         },
@@ -165,7 +169,7 @@ function ActionButtons({
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to restore listing. Please try again.');
+      Alert.alert(t('alerts.error'), t('listings.updateFailed'));
     }
   };
 
@@ -176,12 +180,12 @@ function ActionButtons({
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
-      'Delete Forever',
-      'This will permanently delete this listing and all its images. This cannot be undone.',
+      t('listings.deleteForeverConfirmTitle'),
+      t('listings.deleteForeverConfirmMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete Forever',
+          text: t('listings.actionDeleteForever'),
           style: 'destructive',
           onPress: async () => {
             setIsUpdating(true);
@@ -192,7 +196,7 @@ function ActionButtons({
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } else {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              Alert.alert('Error', 'Failed to delete listing. Please try again.');
+              Alert.alert(t('alerts.error'), t('listings.updateFailed'));
             }
           },
         },
@@ -211,7 +215,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <Ionicons name="pencil" size={18} color={isUpdating ? '#999' : BRAND_COLOR} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : BRAND_COLOR }]}>Edit</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : BRAND_COLOR }]}>{t('listings.actionEdit')}</Text>
           </Pressable>
 
           <Pressable
@@ -220,7 +224,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialCommunityIcons name="check-circle" size={20} color={isUpdating ? '#999' : COLORS.success} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>Mark Sold</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>{t('listings.actionMarkSold')}</Text>
           </Pressable>
 
           <Pressable
@@ -229,7 +233,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialIcons name="delete-outline" size={20} color={isUpdating ? '#999' : COLORS.error} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>Remove</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>{t('listings.actionRemove')}</Text>
           </Pressable>
         </>
       )}
@@ -243,7 +247,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <Ionicons name="pencil" size={18} color={isUpdating ? '#999' : BRAND_COLOR} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : BRAND_COLOR }]}>Edit</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : BRAND_COLOR }]}>{t('listings.actionEdit')}</Text>
           </Pressable>
 
           <Pressable
@@ -252,7 +256,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialCommunityIcons name="replay" size={20} color={isUpdating ? '#999' : COLORS.success} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>Reactivate</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>{t('listings.actionReactivate')}</Text>
           </Pressable>
 
           <Pressable
@@ -261,7 +265,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialIcons name="delete-outline" size={20} color={isUpdating ? '#999' : COLORS.error} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>Remove</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>{t('listings.actionRemove')}</Text>
           </Pressable>
         </>
       )}
@@ -275,7 +279,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialCommunityIcons name="replay" size={20} color={isUpdating ? '#999' : COLORS.success} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>Restore</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.success }]}>{t('listings.actionRestore')}</Text>
           </Pressable>
 
           <Pressable
@@ -284,7 +288,7 @@ function ActionButtons({
             disabled={isUpdating}
           >
             <MaterialIcons name="delete-forever" size={20} color={isUpdating ? '#999' : COLORS.error} />
-            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>Delete Forever</Text>
+            <Text style={[styles.actionButtonText, { color: isUpdating ? '#999' : COLORS.error }]}>{t('listings.actionDeleteForever')}</Text>
           </Pressable>
         </>
       )}

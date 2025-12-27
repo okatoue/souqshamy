@@ -154,6 +154,7 @@ const en: TranslationKeys = {
     myListings: 'My Listings',
     noListings: 'No Listings Yet',
     noListingsSubtext: 'Start selling by creating your first listing',
+    noListingsSubtitle: 'Start selling by creating your first listing',
     createFirst: 'Create Your First Listing',
     createListing: 'Create Listing',
     active: 'Active',
@@ -194,6 +195,41 @@ const en: TranslationKeys = {
     views: 'views',
     favorites: 'favorites',
     shareError: 'Unable to share listing',
+    // Sign in required
+    signInRequired: 'Sign In Required',
+    signInRequiredSubtitle: 'Please sign in to view your listings',
+    // Filter tabs
+    filterAll: 'All',
+    filterActive: 'Active',
+    filterSold: 'Sold',
+    filterHidden: 'Hidden',
+    // Empty state messages for filters
+    noListingsInFilter: 'No listings in this filter',
+    noActive: 'No active listings',
+    noSold: 'No sold listings',
+    noInactive: 'No hidden listings',
+    // Status badges
+    statusActive: 'Active',
+    statusSold: 'Sold',
+    statusHidden: 'Hidden',
+    statusUnavailable: 'Unavailable',
+    // Action buttons
+    actionEdit: 'Edit',
+    actionMarkSold: 'Mark Sold',
+    actionRemove: 'Remove',
+    actionReactivate: 'Reactivate',
+    actionRestore: 'Restore',
+    actionDeleteForever: 'Delete Forever',
+    // Confirmation dialogs
+    removeConfirmTitle: 'Remove Listing?',
+    removeConfirmMessage: 'This listing will be hidden from buyers. You can restore it later.',
+    deleteForeverConfirmTitle: 'Delete Forever?',
+    deleteForeverConfirmMessage: 'This action cannot be undone. The listing will be permanently deleted.',
+    markSoldConfirmTitle: 'Mark as Sold?',
+    markSoldConfirmMessage: 'This will mark your listing as sold.',
+    // Success/error messages
+    listingRemoved: 'Listing removed',
+    updateFailed: 'Update failed. Please try again.',
   },
   chat: {
     messages: 'Messages',
@@ -419,6 +455,11 @@ const en: TranslationKeys = {
     km: 'km',
     confirmLocation: 'Confirm Location',
     changeLocation: 'Change Location',
+    myLocation: 'My Location',
+    useMyLocation: 'Use my current location',
+    couldNotGetLocation: 'Could not get your current location. Please try again.',
+    permissionRequired: 'Permission Required',
+    pleaseAllowLocation: 'Please allow location access to use this feature',
   },
   alerts: {
     error: 'Error',
