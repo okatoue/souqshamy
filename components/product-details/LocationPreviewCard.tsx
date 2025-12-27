@@ -93,7 +93,7 @@ function generateStaticMapHtml(
       var worldBaseLayer = protomapsL.leafletLayer({
         url: worldBaseUrl,
         flavor: 'light',
-        maxZoom: 8,
+        maxZoom: 6,
         minZoom: 0
       });
       worldBaseLayer.addTo(map);

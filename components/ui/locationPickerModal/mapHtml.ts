@@ -65,7 +65,7 @@ export const MAP_HTML = `
     var isInitialized = false;
     var MIN_ZOOM = 5;
     var MAX_ZOOM = 18; // OSM tiles max zoom
-    var WORLD_MAX_ZOOM = 8; // Max zoom for areas outside Syria coverage
+    var WORLD_MAX_ZOOM = 6; // Max zoom for areas outside Syria coverage (matches world-base.pmtiles)
     var moveDebounceTimer = null;
     var sliderActive = false;
 
@@ -193,7 +193,7 @@ export const MAP_HTML = `
         var worldBaseLayer = protomapsL.leafletLayer({
           url: worldBaseUrl,
           flavor: 'light',
-          maxZoom: 8,
+          maxZoom: 6,
           minZoom: 0
         });
         worldBaseLayer.addTo(map);

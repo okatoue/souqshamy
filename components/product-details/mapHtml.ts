@@ -36,7 +36,7 @@ export const MAP_HTML = `
     var isInitialized = false;
     var MAX_ZOOM = 16;
     var MIN_ZOOM = 5;
-    var WORLD_MAX_ZOOM = 8; // Max zoom for areas outside Syria coverage
+    var WORLD_MAX_ZOOM = 6; // Max zoom for areas outside Syria coverage (matches world-base.pmtiles)
 
     // Syria/Lebanon/Jordan coverage bounds
     var COVERAGE_BOUNDS = {
@@ -122,7 +122,7 @@ export const MAP_HTML = `
         var worldBaseLayer = protomapsL.leafletLayer({
           url: worldBaseUrl,
           flavor: 'light',
-          maxZoom: 8,
+          maxZoom: 6,
           minZoom: 0
         });
         worldBaseLayer.addTo(map);
