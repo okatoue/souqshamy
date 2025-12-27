@@ -3,7 +3,7 @@ import { useTranslation } from '@/localization';
 import i18n from '@/localization';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { useThemeColor } from '@/hooks/useThemeColor';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export function LanguageSwitcher() {
   const { t } = useTranslation();
