@@ -14,7 +14,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 const RATINGS_ENABLED = false;
 
 interface SellerProfileHeaderProps {
-    profile: UserProfile & { created_at: string; bio?: string | null };
+    profile: UserProfile & { created_at: string };
 }
 
 export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
@@ -61,13 +61,6 @@ export function SellerProfileHeader({ profile }: SellerProfileHeaderProps) {
                 <Text style={[styles.platformTime, { color: mutedColor }]}>
                     Member for {getTimeOnPlatform(profile.created_at)}
                 </Text>
-
-                {/* Bio */}
-                {profile.bio && (
-                    <Text style={[styles.bio, { color: mutedColor }]} numberOfLines={3}>
-                        {profile.bio}
-                    </Text>
-                )}
             </View>
         </View>
     );
@@ -126,10 +119,5 @@ const styles = StyleSheet.create({
     },
     platformTime: {
         fontSize: 13,
-    },
-    bio: {
-        fontSize: 13,
-        lineHeight: 18,
-        marginTop: SPACING.sm,
     },
 });

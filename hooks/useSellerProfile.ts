@@ -12,7 +12,6 @@ export interface SellerProfile {
     display_name: string | null;
     email: string | null;
     avatar_url: string | null;
-    bio: string | null;
     created_at: string;
 }
 
@@ -53,7 +52,7 @@ export function useSellerProfile(sellerId: string | undefined): UseSellerProfile
             const [profileResult, listingsResult] = await Promise.all([
                 supabase
                     .from('profiles')
-                    .select('id, display_name, email, avatar_url, bio, created_at')
+                    .select('id, display_name, email, avatar_url, created_at')
                     .eq('id', sellerId)
                     .single(),
                 supabase
