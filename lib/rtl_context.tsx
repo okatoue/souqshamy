@@ -8,7 +8,7 @@ interface RTLContextType {
 }
 
 const RTLContext = createContext<RTLContextType>({
-  isRTL: false,
+  isRTL: true,  // Default to RTL for Arabic-first experience
   currentLanguage: 'ar',
 });
 
@@ -39,11 +39,11 @@ export function RTLProvider({ children }: RTLProviderProps) {
       // Check if RTL state actually changed (requires app restart)
       if (I18nManager.isRTL !== newIsRTL) {
         Alert.alert(
-          'Restart Required',
-          'The app needs to restart to apply the language change correctly.',
+          'يجب إعادة التشغيل',
+          'يجب إعادة تشغيل التطبيق لتطبيق تغيير اللغة بشكل صحيح.',
           [
             {
-              text: 'OK',
+              text: 'حسناً',
               style: 'default',
             },
           ]

@@ -1,27 +1,11 @@
 import i18n from 'i18next';
 import { initReactI18next, useTranslation as useI18nTranslation } from 'react-i18next';
-import * as Localization from 'expo-localization';
 
 import en from './en';
 import ar from './ar';
 
-// Get device language, defaulting to Arabic if unavailable
-const getDeviceLanguage = (): string => {
-  try {
-    const locales = Localization.getLocales();
-    if (locales && locales.length > 0) {
-      const languageCode = locales[0].languageCode;
-      // Only return 'en' if it's English, otherwise default to 'ar'
-      if (languageCode === 'en') {
-        return 'en';
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to get device language:', error);
-  }
-  // Default to Arabic
-  return 'ar';
-};
+// Always default to Arabic for consistent Arabic-first experience
+const getDefaultLanguage = (): string => 'ar';
 
 const resources = {
   en: { translation: en },
@@ -32,8 +16,8 @@ i18n
   .use(initReactI18next)
   .init({
     resources,
-    lng: getDeviceLanguage(), // Detected device language
-    fallbackLng: 'en', // Fallback to English
+    lng: getDefaultLanguage(), // Always Arabic
+    fallbackLng: 'ar', // Fallback to Arabic
     defaultNS: 'translation',
     interpolation: {
       escapeValue: false, // React already escapes values
