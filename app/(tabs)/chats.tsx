@@ -10,6 +10,7 @@ import { rtlIcon, rtlMarginEnd, rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import i18n from '@/localization';
 import React, { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -49,11 +50,11 @@ const formatTime = (dateString: string) => {
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-    if (diffInMinutes < 1) return 'Now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    if (diffInHours < 24) return `${diffInHours}h`;
-    if (diffInDays < 7) return `${diffInDays}d`;
-    return date.toLocaleDateString();
+    if (diffInMinutes < 1) return i18n.t('time.now');
+    if (diffInMinutes < 60) return i18n.t('time.minutesShort', { count: diffInMinutes });
+    if (diffInHours < 24) return i18n.t('time.hoursShort', { count: diffInHours });
+    if (diffInDays < 7) return i18n.t('time.daysShort', { count: diffInDays });
+    return date.toLocaleDateString(i18n.language === 'ar' ? 'ar-SY' : 'en-US');
 };
 
 const ConversationItem = memo(function ConversationItem({

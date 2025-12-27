@@ -30,6 +30,9 @@ const ar: TranslationKeys = {
     remove: 'إزالة',
     comingSoon: 'قريباً',
     comingSoonMessage: '{{feature}} قريباً!',
+    item: 'عنصر',
+    items: 'عناصر',
+    keep: 'إبقاء',
   },
   auth: {
     loginOrSignup: 'تسجيل الدخول أو إنشاء حساب',
@@ -227,10 +230,13 @@ const ar: TranslationKeys = {
     noFavorites: 'لا توجد مفضلات',
     noFavoritesSubtext: 'احفظ الإعلانات التي تعجبك بالضغط على أيقونة القلب',
     browseNow: 'تصفح الآن',
-    removeFavorite: 'إزالة من المفضلة',
+    removeFavorite: 'إزالة',
     addFavorite: 'إضافة إلى المفضلة',
     signInRequired: 'تسجيل الدخول مطلوب',
     signInRequiredSubtext: 'يرجى تسجيل الدخول لعرض مفضلاتك',
+    itemSold: 'تم البيع',
+    itemUnavailable: 'غير متوفر',
+    removeUnavailableMessage: 'هذا الإعلان لم يعد متاحاً. هل تريد إزالته من المفضلة؟',
   },
   post: {
     postListing: 'نشر إعلان',
@@ -454,6 +460,11 @@ const ar: TranslationKeys = {
     yesterdayAt: 'أمس {{time}}',
     overAMonthAgo: 'منذ أكثر من شهر',
     overAYearAgo: 'منذ أكثر من سنة',
+    // Short format for chat list
+    now: 'الآن',
+    minutesShort: '{{count}}د',
+    hoursShort: '{{count}}س',
+    daysShort: '{{count}}ي',
   },
   validation: {
     required: 'هذا الحقل مطلوب',
