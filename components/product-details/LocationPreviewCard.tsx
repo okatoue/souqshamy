@@ -70,6 +70,12 @@ function generateStaticMapHtml(
     debugLog('Initializing static preview map', { lat: ${lat}, lng: ${lng}, zoom: ${zoom} });
 
     try {
+      // Define coverage bounds (Lebanon + Syria + Jordan)
+      var bounds = L.latLngBounds(
+        [29.0, 34.5],  // SW: Southern Jordan
+        [37.5, 43.0]   // NE: Northern Syria
+      );
+
       var map = L.map('map', {
         zoomControl: false,
         attributionControl: false,
@@ -79,7 +85,9 @@ function generateStaticMapHtml(
         scrollWheelZoom: false,
         boxZoom: false,
         keyboard: false,
-        tap: false
+        tap: false,
+        maxBounds: bounds,
+        maxBoundsViscosity: 1.0
       }).setView([${lat}, ${lng}], ${zoom});
 
       debugLog('Leaflet map created successfully');
