@@ -11,6 +11,7 @@ import { navigateToListing } from '@/app/listing/[id]';
 import { Listing } from '@/types/listing';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FlatList,
   RefreshControl,
@@ -23,6 +24,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const ITEM_HEIGHT = 140;
 
 export default function FavoritesScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const {
@@ -81,7 +83,7 @@ export default function FavoritesScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
         <ScreenHeader
-          title="Favorites"
+          title={t('favorites.favorites')}
           rightAction={<UserIcon />}
         />
         <FavoritesSkeleton skeletonBg={skeletonBg} />
@@ -94,10 +96,10 @@ export default function FavoritesScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <EmptyState
           icon="account-heart-outline"
-          title="Sign In Required"
-          subtitle="Please sign in to save and view your favorites"
+          title={t('favorites.signInRequired')}
+          subtitle={t('favorites.signInRequiredSubtitle')}
           action={{
-            label: 'Sign In',
+            label: t('auth.signIn'),
             onPress: () => router.push('/(auth)'),
           }}
         />
@@ -105,12 +107,12 @@ export default function FavoritesScreen() {
     );
   }
 
-  const itemLabel = favorites.length === 1 ? 'item' : 'items';
+  const itemLabel = favorites.length === 1 ? t('common.item') : t('common.items');
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       <ScreenHeader
-        title="Favorites"
+        title={t('favorites.favorites')}
         subtitle={`${favorites.length} ${itemLabel}`}
         rightAction={<UserIcon />}
       />
@@ -125,10 +127,10 @@ export default function FavoritesScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="heart-outline"
-            title="No Favorites Yet"
-            subtitle="Listings you save will appear here"
+            title={t('favorites.noFavorites')}
+            subtitle={t('favorites.noFavoritesSubtitle')}
             action={{
-              label: 'Browse Listings',
+              label: t('favorites.browseNow'),
               icon: 'search',
               onPress: () => router.push('/(tabs)'),
             }}

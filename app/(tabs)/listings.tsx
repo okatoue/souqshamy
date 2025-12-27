@@ -2,6 +2,7 @@ import { useAuth } from '@/lib/auth_context';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FlatList,
   Pressable,
@@ -84,9 +85,10 @@ interface EmptyStateProps {
   statusFilter: StatusFilter;
   totalCount: number;
   onCreatePress: () => void;
+  t: (key: string) => string;
 }
 
-function EmptyState({ statusFilter, totalCount, onCreatePress }: EmptyStateProps) {
+function EmptyState({ statusFilter, totalCount, onCreatePress, t }: EmptyStateProps) {
   const iconMutedColor = useThemeColor({}, 'iconMuted');
   const mutedColor = useThemeColor({}, 'textMuted');
 
@@ -95,16 +97,16 @@ function EmptyState({ statusFilter, totalCount, onCreatePress }: EmptyStateProps
     return (
       <View style={styles.emptyContainer}>
         <MaterialCommunityIcons name="package-variant" size={80} color={iconMutedColor} />
-        <ThemedText style={styles.emptyTitle}>No Listings Yet</ThemedText>
+        <ThemedText style={styles.emptyTitle}>{t('listings.noListings')}</ThemedText>
         <ThemedText style={styles.emptySubtext}>
-          Start selling by posting your first listing
+          {t('listings.noListingsSubtitle')}
         </ThemedText>
         <Pressable
           style={[styles.createButton, { backgroundColor: BRAND_COLOR }]}
           onPress={onCreatePress}
         >
           <MaterialIcons name="add" size={20} color="white" />
-          <Text style={styles.createButtonText}>Create Your First Listing</Text>
+          <Text style={styles.createButtonText}>{t('listings.createFirst')}</Text>
         </Pressable>
       </View>
     );
@@ -112,10 +114,10 @@ function EmptyState({ statusFilter, totalCount, onCreatePress }: EmptyStateProps
 
   // Has listings but none in this filter
   const messages: Record<StatusFilter, string> = {
-    all: "You don't have any listings",
-    active: "You don't have any active listings",
-    sold: "You haven't sold any items yet",
-    inactive: "You don't have any hidden listings",
+    all: t('listings.noListingsInFilter'),
+    active: t('listings.noActive'),
+    sold: t('listings.noSold'),
+    inactive: t('listings.noInactive'),
   };
 
   const icons: Record<StatusFilter, any> = {
@@ -144,6 +146,7 @@ function EmptyState({ statusFilter, totalCount, onCreatePress }: EmptyStateProps
 // =============================================================================
 
 export default function ListingsScreen() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -225,22 +228,22 @@ export default function ListingsScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor }]}>
         <View style={styles.emptyContainer}>
           <MaterialCommunityIcons name="account-lock" size={80} color={iconMutedColor} />
-          <ThemedText style={styles.emptyTitle}>Sign In Required</ThemedText>
+          <ThemedText style={styles.emptyTitle}>{t('listings.signInRequired')}</ThemedText>
           <ThemedText style={styles.emptySubtext}>
-            Please sign in to view your listings
+            {t('listings.signInRequiredSubtitle')}
           </ThemedText>
           <Pressable
             style={[styles.createButton, { backgroundColor: BRAND_COLOR }]}
             onPress={() => router.push('/(auth)')}
           >
-            <Text style={styles.createButtonText}>Sign In</Text>
+            <Text style={styles.createButtonText}>{t('auth.signIn')}</Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
-  const itemLabel = listings.length === 1 ? 'item' : 'items';
+  const itemLabel = listings.length === 1 ? t('common.item') : t('common.items');
 
   const AddButton = (
     <Pressable
@@ -254,7 +257,7 @@ export default function ListingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top']}>
       <ScreenHeader
-        title="My Listings"
+        title={t('listings.myListings')}
         subtitle={`${listings.length} ${itemLabel}`}
         rightAction={AddButton}
       />
@@ -262,25 +265,25 @@ export default function ListingsScreen() {
       {/* Status Filter Tabs */}
       <View style={[styles.filterContainer, { borderBottomColor: borderColor }]}>
         <FilterTab
-          label="All"
+          label={t('listings.filterAll')}
           count={statusCounts.all}
           isActive={statusFilter === 'all'}
           onPress={() => setStatusFilter('all')}
         />
         <FilterTab
-          label="Active"
+          label={t('listings.filterActive')}
           count={statusCounts.active}
           isActive={statusFilter === 'active'}
           onPress={() => setStatusFilter('active')}
         />
         <FilterTab
-          label="Sold"
+          label={t('listings.filterSold')}
           count={statusCounts.sold}
           isActive={statusFilter === 'sold'}
           onPress={() => setStatusFilter('sold')}
         />
         <FilterTab
-          label="Hidden"
+          label={t('listings.filterHidden')}
           count={statusCounts.inactive}
           isActive={statusFilter === 'inactive'}
           onPress={() => setStatusFilter('inactive')}
@@ -297,6 +300,7 @@ export default function ListingsScreen() {
             statusFilter={statusFilter}
             totalCount={listings.length}
             onCreatePress={handleCreateListing}
+            t={t}
           />
         }
         refreshControl={
