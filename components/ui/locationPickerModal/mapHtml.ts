@@ -192,6 +192,7 @@ export const MAP_HTML = `
         debugLog('World base layer added');
 
         // LAYER 2: Syria detail layer (high detail, Arabic labels)
+        // Only renders within coverage bounds to avoid grey overlay on world base
         var syriaDetailUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
         debugLog('Adding Syria detail layer', { url: syriaDetailUrl });
 
@@ -200,7 +201,11 @@ export const MAP_HTML = `
           lang: 'ar',
           flavor: 'light',
           maxZoom: 18,
-          minZoom: MIN_ZOOM
+          minZoom: MIN_ZOOM,
+          bounds: L.latLngBounds(
+            [COVERAGE_BOUNDS.south, COVERAGE_BOUNDS.west],
+            [COVERAGE_BOUNDS.north, COVERAGE_BOUNDS.east]
+          )
         });
         syriaDetailLayer.addTo(map);
 
