@@ -9,7 +9,7 @@ import { useProfile } from '@/hooks/userProfile';
 import { getAppInfo } from '@/lib/appInfo';
 import { useAuth } from '@/lib/auth_context';
 import { useRTL } from '@/lib/rtl_context';
-import { rtlIcon, rtlMarginEnd, rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
+import { rtlIcon, rtlMarginEnd, rtlMarginStart, rtlMarginStartAuto, rtlRow } from '@/lib/rtlStyles';
 import { useThemeContext } from '@/lib/theme_context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -165,7 +165,7 @@ export default function UserScreen() {
                         name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')}
                         size={22}
                         color={chevronColor}
-                        style={styles.userCardChevron}
+                        style={rtlMarginStartAuto(isRTL)}
                     />
                 </Pressable>
 
@@ -285,9 +285,6 @@ const styles = StyleSheet.create({
     },
     userCardPressed: {
         opacity: 0.7,
-    },
-    userCardChevron: {
-        marginLeft: 'auto',
     },
     avatarContainer: {
         // RTL margin applied dynamically
