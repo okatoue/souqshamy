@@ -13,9 +13,13 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, I18nManager, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { I18nextProvider } from 'react-i18next';
+
+// Force RTL before any component renders for Arabic-first experience
+I18nManager.allowRTL(true);
+I18nManager.forceRTL(true);
 
 function RootLayoutNav() {
   const { user, loading: authLoading, isPasswordResetInProgress } = useAuth();
