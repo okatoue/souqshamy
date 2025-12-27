@@ -12,7 +12,6 @@ import { useAutoLocationDetection } from '@/hooks/useAutoLocationDetection';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useRTL } from '@/lib/rtl_context';
-import { rtlMarginStart } from '@/lib/rtlStyles';
 import { useTranslation } from '@/localization';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
@@ -116,8 +115,7 @@ export default function HomeScreen() {
 
           <ThemedView style={[
             styles.titleContainer,
-            rtlMarginStart(isRTL, SPACING.lg),
-            { alignSelf: isRTL ? 'flex-end' : 'flex-start' }
+            { justifyContent: isRTL ? 'flex-end' : 'flex-start' }
           ]}>
             <ThemedText type="title">{t('home.categories')}</ThemedText>
           </ThemedView>
@@ -163,6 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
   headerDivider: {
