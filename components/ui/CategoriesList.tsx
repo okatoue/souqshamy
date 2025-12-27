@@ -3,6 +3,8 @@ import categoriesData from '@/assets/categories.json';
 import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/ui/bottomSheet';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
+import { useTranslation } from '@/localization';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useRef } from 'react';
@@ -21,6 +23,7 @@ interface CategoryDisplayItem {
 }
 
 export function CategoriesList() {
+    const { t } = useTranslation();
     const textColor = useThemeColor({}, 'text');
     const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
 
@@ -30,17 +33,17 @@ export function CategoriesList() {
     const buySellCategory = categoriesData.categories.find(c => c.id === 1);
 
     // Build category display data from categories.json + categoryAssets
-    // This ensures category names come from the single source of truth (JSON)
+    // This ensures category names are translated based on current language
     // while icons come from the centralized asset map
     const categoryDisplayData = useMemo<CategoryDisplayItem[]>(() => {
         return categoriesData.categories
             .filter(category => getCategoryIcon(category.id) !== null)
             .map(category => ({
                 id: category.id,
-                name: category.name,
+                name: getCategoryTranslation(category.id, t),
                 image: getCategoryIcon(category.id)!,
             }));
-    }, []);
+    }, [t]);
 
     const handleCategoryPress = (category: CategoryDisplayItem) => {
         // Buy & Sell (id: 1) opens the bottom sheet for subcategory selection
@@ -134,7 +137,7 @@ export function CategoriesList() {
             {/* Bottom sheet showing ONLY Buy & Sell subcategories */}
             <CategoryBottomSheet
                 ref={bottomSheetRef}
-                title="Buy & Sell Categories"
+                title={t('categories.buySell')}
                 showCategories={false}
             >
                 <View style={{ paddingBottom: 20 }} accessibilityRole="list">
@@ -144,12 +147,12 @@ export function CategoriesList() {
                             style={[styles.sheetItem, { backgroundColor: itemBackground }]}
                             onPress={() => handleSubcategoryPress(subcategory)}
                             activeOpacity={0.7}
-                            accessibilityLabel={`Select ${subcategory.name}`}
+                            accessibilityLabel={`Select ${getSubcategoryTranslation(subcategory.id, t)}`}
                             accessibilityRole="button"
                             accessibilityHint="Shows listings in this subcategory"
                         >
                             <Text style={[styles.sheetItemText, { color: textColor }]}>
-                                {subcategory.name}
+                                {getSubcategoryTranslation(subcategory.id, t)}
                             </Text>
                             <MaterialIcons name="chevron-right" size={24} color={textColor} style={{ opacity: 0.5 }} />
                         </TouchableOpacity>

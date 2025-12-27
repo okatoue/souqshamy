@@ -99,8 +99,53 @@ const en: TranslationKeys = {
     searchPlaceholder: 'Search listings...',
     categories: 'Categories',
     recentlyViewed: 'Recently Viewed',
-    noRecentlyViewed: 'No recently viewed listings',
+    noRecentlyViewed: 'No Recently Viewed',
+    noRecentlyViewedSubtext: 'Listings you view will appear here',
+    clearRecentlyViewed: 'Clear',
     browseListings: 'Browse Listings',
+  },
+  categories: {
+    // Main categories
+    buySell: 'Buy & Sell',
+    cars: 'Cars',
+    realEstate: 'Real Estate',
+    jobs: 'Jobs',
+    services: 'Services',
+    pets: 'Pets',
+    // Buy & Sell subcategories
+    electronics: 'Electronics',
+    furniture: 'Furniture',
+    clothing: 'Clothing',
+    books: 'Books',
+    phones: 'Phones',
+    computers: 'Computers',
+    homeAppliances: 'Home Appliances',
+    toysGames: 'Toys & Games',
+    sportsEquipment: 'Sports Equipment',
+    // Cars subcategories
+    carsTrucks: 'Cars & Trucks',
+    motorcycles: 'Motorcycles',
+    vehicleParts: 'Vehicle Parts',
+    // Real Estate subcategories
+    forRent: 'For Rent',
+    forSale: 'For Sale',
+    // Jobs subcategories
+    accounting: 'Accounting',
+    customerService: 'Customer Service',
+    healthcare: 'Healthcare',
+    sales: 'Sales',
+    itProgramming: 'IT & Programming',
+    // Services subcategories
+    homeMaintenance: 'Home Maintenance',
+    tutoring: 'Tutoring',
+    cleaning: 'Cleaning',
+    moving: 'Moving',
+    // Pets subcategories
+    cats: 'Cats',
+    dogs: 'Dogs',
+    birds: 'Birds',
+    // Common
+    other: 'Other',
   },
   listings: {
     myListings: 'My Listings',

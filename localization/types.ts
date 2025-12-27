@@ -5,6 +5,7 @@ export interface TranslationKeys {
   auth: AuthTranslations;
   tabs: TabTranslations;
   home: HomeTranslations;
+  categories: CategoriesTranslations;
   listings: ListingsTranslations;
   chat: ChatTranslations;
   favorites: FavoritesTranslations;
@@ -126,7 +127,53 @@ export interface HomeTranslations {
   categories: string;
   recentlyViewed: string;
   noRecentlyViewed: string;
+  noRecentlyViewedSubtext: string;
+  clearRecentlyViewed: string;
   browseListings: string;
+}
+
+export interface CategoriesTranslations {
+  // Main categories
+  buySell: string;
+  cars: string;
+  realEstate: string;
+  jobs: string;
+  services: string;
+  pets: string;
+  // Buy & Sell subcategories
+  electronics: string;
+  furniture: string;
+  clothing: string;
+  books: string;
+  phones: string;
+  computers: string;
+  homeAppliances: string;
+  toysGames: string;
+  sportsEquipment: string;
+  // Cars subcategories
+  carsTrucks: string;
+  motorcycles: string;
+  vehicleParts: string;
+  // Real Estate subcategories
+  forRent: string;
+  forSale: string;
+  // Jobs subcategories
+  accounting: string;
+  customerService: string;
+  healthcare: string;
+  sales: string;
+  itProgramming: string;
+  // Services subcategories
+  homeMaintenance: string;
+  tutoring: string;
+  cleaning: string;
+  moving: string;
+  // Pets subcategories
+  cats: string;
+  dogs: string;
+  birds: string;
+  // Common
+  other: string;
 }
 
 export interface ListingsTranslations {
@@ -571,6 +618,7 @@ export type TranslationKeyPath =
   | `auth.passwordRequirements.${keyof AuthTranslations['passwordRequirements']}`
   | `tabs.${keyof TabTranslations}`
   | `home.${keyof HomeTranslations}`
+  | `categories.${keyof CategoriesTranslations}`
   | `listings.${keyof ListingsTranslations}`
   | `chat.${keyof ChatTranslations}`
   | `favorites.${keyof FavoritesTranslations}`
