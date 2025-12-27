@@ -5,7 +5,6 @@ import { BORDER_RADIUS, BRAND_COLOR, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getProviderDisplayName, isOAuthOnlyUser, OAuthProvider } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
-import { exportUserData, shareExportedData } from '@/lib/dataExport';
 import { useRTL } from '@/lib/rtl_context';
 import { rtlRow } from '@/lib/rtlStyles';
 import { supabase } from '@/lib/supabase';
@@ -60,9 +59,6 @@ export default function ManageAccountScreen() {
     // OAuth user detection state - uses shared utility for consistent detection
     const [isOAuthUser, setIsOAuthUser] = useState(false);
     const [oauthProvider, setOAuthProvider] = useState<OAuthProvider | undefined>(undefined);
-
-    // Data export state
-    const [isExporting, setIsExporting] = useState(false);
 
     // Check if user signed in via OAuth (no password) using shared utility
     useEffect(() => {
@@ -177,24 +173,6 @@ export default function ManageAccountScreen() {
         );
     };
 
-    const handleExportData = async () => {
-        if (!user?.id) return;
-
-        setIsExporting(true);
-        try {
-            const filePath = await exportUserData(user.id);
-            await shareExportedData(filePath);
-        } catch (error: any) {
-            Alert.alert(
-                'Export Failed',
-                error.message || 'Failed to export your data. Please try again.',
-                [{ text: 'OK' }]
-            );
-        } finally {
-            setIsExporting(false);
-        }
-    };
-
     const handleConfirmDelete = async () => {
         // Different validation for OAuth vs password users
         if (isOAuthUser) {
@@ -283,18 +261,6 @@ export default function ManageAccountScreen() {
                             subtitle={isOAuthUser ? t('settings.notAvailableSocial') : t('settings.changePasswordSubtitle')}
                             onPress={handleChangePassword}
                             disabled={isOAuthUser}
-                        />
-                    </SettingsSection>
-
-                    {/* Your Data Section */}
-                    <SettingsSection title={t('settings.yourData')}>
-                        <SettingsMenuItem
-                            icon="download-outline"
-                            title={t('settings.exportData')}
-                            subtitle={t('settings.exportDataSubtitle')}
-                            onPress={handleExportData}
-                            disabled={isExporting}
-                            rightElement={isExporting ? <ActivityIndicator size="small" color={BRAND_COLOR} /> : undefined}
                         />
                     </SettingsSection>
 
