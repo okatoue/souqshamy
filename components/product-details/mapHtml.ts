@@ -65,20 +65,13 @@ export const MAP_HTML = `
       debugLog('Initializing map', { lat: lat, lng: lng });
 
       try {
-        // Define coverage bounds (Lebanon + Syria + Jordan)
-        var bounds = L.latLngBounds(
-          [29.0, 34.5],  // SW: Southern Jordan
-          [37.5, 43.0]   // NE: Northern Syria
-        );
-
         map = L.map('map', {
           zoomControl: false,
           attributionControl: false,
           minZoom: MIN_ZOOM,
           maxZoom: MAX_ZOOM,
           bounceAtZoomLimits: false,
-          maxBounds: bounds,          // Restrict panning to coverage area
-          maxBoundsViscosity: 1.0     // Hard boundary
+          maxBoundsViscosity: 1.0
         }).setView([lat, lng], 12);
 
         debugLog('Leaflet map created successfully');
