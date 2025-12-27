@@ -16,37 +16,28 @@ import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Mode = 'signup-verification' | 'password-reset';
 type Step = 'email' | 'code' | 'password' | 'success';
 
-// Content configuration based on mode
-const CONTENT = {
-  'signup-verification': {
-    codeTitle: 'Verify Your Email',
-    codeSubtitle: "We've sent a 6-digit verification code to",
-    codeIcon: 'mail-outline' as const,
-    verifyButtonTitle: 'Verify Email',
-    successTitle: 'Email Verified!',
-    successSubtitle: 'Your email has been successfully verified. You can now start using SouqJari.',
-    successButtonTitle: 'Get Started',
-    codeLength: 6,
-  },
-  'password-reset': {
-    codeTitle: 'Enter Code',
-    codeSubtitle: "We've sent a 6-digit code to",
-    codeIcon: 'key-outline' as const,
-    verifyButtonTitle: 'Verify Code',
-    successTitle: 'Password Reset!',
-    successSubtitle: 'Your password has been successfully reset. You can now sign in with your new password.',
-    successButtonTitle: 'Sign In',
-    codeLength: 6,
-  },
-};
+const CODE_LENGTH = 6;
 
 export default function VerifyScreen() {
+  const { t } = useTranslation();
+
+  // Content configuration based on mode - using translations
+  const getContent = (mode: Mode) => ({
+    codeTitle: mode === 'signup-verification' ? t('auth.verifyEmail') : t('auth.enterCode'),
+    codeSubtitle: t('auth.verifyEmailSubtitle'),
+    codeIcon: mode === 'signup-verification' ? 'mail-outline' as const : 'key-outline' as const,
+    verifyButtonTitle: mode === 'signup-verification' ? t('auth.verifyEmail') : t('auth.enterCode'),
+    successTitle: mode === 'signup-verification' ? t('auth.emailVerified') : t('auth.passwordReset'),
+    successSubtitle: mode === 'signup-verification' ? t('auth.emailVerifiedSubtitle') : t('auth.passwordResetSubtitle'),
+    successButtonTitle: mode === 'signup-verification' ? t('auth.getStarted') : t('auth.signIn'),
+  });
   const params = useLocalSearchParams<{
     mode: Mode;
     email: string;
@@ -56,7 +47,7 @@ export default function VerifyScreen() {
 
   const mode: Mode = params.mode || 'signup-verification';
   const initialEmail = params.email || '';
-  const content = CONTENT[mode];
+  const content = getContent(mode);
 
   // For password-reset, start at 'email' step if no email provided, otherwise 'code'
   // For signup-verification, always start at 'code' step
@@ -67,7 +58,7 @@ export default function VerifyScreen() {
 
   const [step, setStep] = useState<Step>(getInitialStep());
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState<string[]>(Array(content.codeLength).fill(''));
+  const [code, setCode] = useState<string[]>(Array(CODE_LENGTH).fill(''));
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -79,12 +70,12 @@ export default function VerifyScreen() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t('alerts.error'), t('validation.required'));
       return;
     }
 
     if (!isValidEmail(trimmedEmail)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('alerts.error'), t('validation.invalidEmail'));
       return;
     }
 
@@ -101,7 +92,7 @@ export default function VerifyScreen() {
       if (error) {
         await setPasswordResetInProgress(false);
         if (error.message.includes('User not found') || error.message.includes('No user found')) {
-          Alert.alert('Account Not Found', 'No account found with this email address.');
+          Alert.alert(t('alerts.error'), t('errors.unauthorized'));
         } else {
           handleAuthError(error, 'password-reset');
         }
@@ -128,8 +119,8 @@ export default function VerifyScreen() {
   const handleVerifyCode = async () => {
     const fullCode = code.join('');
 
-    if (fullCode.length !== content.codeLength) {
-      Alert.alert('Error', `Please enter the complete ${content.codeLength}-digit code`);
+    if (fullCode.length !== CODE_LENGTH) {
+      Alert.alert(t('alerts.error'), t('validation.required'));
       return;
     }
 
@@ -147,8 +138,8 @@ export default function VerifyScreen() {
       });
 
       if (error) {
-        Alert.alert('Invalid Code', 'The code you entered is invalid or has expired. Please try again.');
-        setCode(Array(content.codeLength).fill(''));
+        Alert.alert(t('alerts.error'), t('auth.invalidCode'));
+        setCode(Array(CODE_LENGTH).fill(''));
       } else {
         // SUCCESS - For signup verification, update the profile's email_verified flag
         if (mode === 'signup-verification' && data?.user) {
@@ -165,7 +156,7 @@ export default function VerifyScreen() {
       }
     } catch (error: any) {
       handleAuthError(error, 'verification');
-      setCode(Array(content.codeLength).fill(''));
+      setCode(Array(CODE_LENGTH).fill(''));
     } finally {
       setLoading(false);
     }
@@ -174,12 +165,12 @@ export default function VerifyScreen() {
   // Step 3 (password-reset only): Set new password
   const handleResetPassword = async () => {
     if (!password) {
-      Alert.alert('Error', 'Please enter a new password');
+      Alert.alert(t('alerts.error'), t('validation.required'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('alerts.error'), t('validation.passwordTooShort'));
       return;
     }
 
@@ -203,7 +194,7 @@ export default function VerifyScreen() {
 
   // Resend verification code
   const handleResendCode = async () => {
-    setCode(Array(content.codeLength).fill(''));
+    setCode(Array(CODE_LENGTH).fill(''));
     setLoading(true);
 
     try {
@@ -217,7 +208,7 @@ export default function VerifyScreen() {
         if (error) {
           handleAuthError(error, 'verification');
         } else {
-          Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
+          Alert.alert(t('alerts.success'), t('auth.codeSent'));
         }
       } else {
         // Use signInWithOtp for password reset - don't set loading again
@@ -285,14 +276,13 @@ export default function VerifyScreen() {
           <AuthLogo icon="key-outline" />
 
           <AuthTitle
-            title="Forgot Password?"
-            subtitle="Enter your email and we'll send you a verification code."
+            title={t('auth.forgotPassword')}
           />
 
           <View style={styles.inputSection}>
             <AuthInput
-              label="Email Address"
-              placeholder="Enter your email address"
+              label={t('auth.emailLabel')}
+              placeholder={t('auth.emailPlaceholder')}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -304,7 +294,7 @@ export default function VerifyScreen() {
             />
           </View>
 
-          <AuthButton title="Send Code" onPress={handleSendCode} loading={loading} />
+          <AuthButton title={t('auth.continue')} onPress={handleSendCode} loading={loading} />
         </>
       )}
 
@@ -319,12 +309,12 @@ export default function VerifyScreen() {
             highlightedText={email}
           />
 
-          <OTPInput code={code} onCodeChange={setCode} length={content.codeLength} disabled={loading} />
+          <OTPInput code={code} onCodeChange={setCode} length={CODE_LENGTH} disabled={loading} />
 
           <AuthButton title={content.verifyButtonTitle} onPress={handleVerifyCode} loading={loading} />
 
           <AuthButton
-            title="Didn't receive the code? Resend"
+            title={t('auth.resendCode')}
             variant="link"
             onPress={handleResendCode}
             disabled={loading}
@@ -332,7 +322,7 @@ export default function VerifyScreen() {
           />
 
           <AuthButton
-            title="Back to Sign In"
+            title={t('common.back')}
             variant="link"
             onPress={handleBackToSignIn}
             disabled={loading}
@@ -347,21 +337,20 @@ export default function VerifyScreen() {
           <AuthLogo icon="lock-closed-outline" />
 
           <AuthTitle
-            title="New Password"
-            subtitle="Create a strong password for your account."
+            title={t('auth.newPassword')}
           />
 
           <View style={authStyles.formSection}>
             <AuthPasswordInput
-              label="New Password"
-              placeholder="Enter new password"
+              label={t('auth.newPassword')}
+              placeholder={t('auth.newPasswordPlaceholder')}
               value={password}
               onChangeText={setPassword}
               editable={!loading}
             />
           </View>
 
-          <AuthButton title="Reset Password" onPress={handleResetPassword} loading={loading} />
+          <AuthButton title={t('auth.setNewPassword')} onPress={handleResetPassword} loading={loading} />
         </>
       )}
     </AuthLayout>
