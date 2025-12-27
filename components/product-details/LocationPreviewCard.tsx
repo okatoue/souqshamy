@@ -101,15 +101,23 @@ function generateStaticMapHtml(
       debugLog('World base layer added');
 
       // LAYER 2: Syria detail layer (high detail, Arabic labels)
+      // Only renders within coverage bounds to avoid grey overlay on world base
       var syriaDetailUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
       debugLog('Adding Syria detail layer', { url: syriaDetailUrl });
+
+      // Syria/Lebanon/Jordan coverage bounds
+      var coverageBounds = L.latLngBounds(
+        [29.0, 34.5],  // SW: Southern Jordan
+        [37.5, 43.0]   // NE: Northern Syria
+      );
 
       var syriaDetailLayer = protomapsL.leafletLayer({
         url: syriaDetailUrl,
         lang: 'ar',
         flavor: 'light',
         maxZoom: 18,
-        minZoom: 5
+        minZoom: 5,
+        bounds: coverageBounds
       });
       syriaDetailLayer.addTo(map);
 
