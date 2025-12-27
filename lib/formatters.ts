@@ -1,9 +1,38 @@
 /**
  * Shared formatting utilities for the SouqShamy marketplace app.
  * Consolidates duplicated formatting functions from across the codebase.
+ * Supports locale-aware formatting for Arabic and English.
  */
 
 import categoriesData from '@/assets/categories.json';
+import i18n from '@/localization';
+
+// ============================================================================
+// Locale Utilities
+// ============================================================================
+
+/**
+ * Gets the current locale string for Intl APIs.
+ * @returns 'ar-SY' for Arabic, 'en-US' for English
+ */
+function getCurrentLocale(): string {
+    return i18n.language === 'ar' ? 'ar-SY' : 'en-US';
+}
+
+// ============================================================================
+// Number Formatting
+// ============================================================================
+
+/**
+ * Formats a number using locale-aware formatting.
+ * Uses Arabic numerals for Arabic locale, Western numerals for English.
+ * @param num - The number to format
+ * @returns Locale-formatted number string
+ */
+export function formatNumber(num: number): string {
+    const locale = getCurrentLocale();
+    return new Intl.NumberFormat(locale).format(num);
+}
 
 // ============================================================================
 // Date Formatting
@@ -11,6 +40,7 @@ import categoriesData from '@/assets/categories.json';
 
 /**
  * Formats a date string into a human-readable relative time format.
+ * Uses locale-aware formatting with translation keys.
  * @param dateString - ISO date string to format
  * @returns Formatted string like "Just now", "5m ago", "2h ago", "3d ago", or locale date
  */
@@ -21,15 +51,16 @@ export function formatDate(dateString: string): string {
     const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`;
-    return date.toLocaleDateString();
+    if (diffInMinutes < 1) return i18n.t('time.justNow');
+    if (diffInMinutes < 60) return i18n.t('time.minutesAgo', { count: diffInMinutes });
+    if (diffInHours < 24) return i18n.t('time.hoursAgo', { count: diffInHours });
+    if (diffInHours < 168) return i18n.t('time.daysAgo', { count: Math.floor(diffInHours / 24) });
+    return date.toLocaleDateString(getCurrentLocale());
 }
 
 /**
  * Formats a date string for chat messages with time display.
+ * Uses locale-aware formatting.
  * @param dateString - ISO date string to format
  * @returns Formatted string with time (e.g., "2:30 PM", "Yesterday 2:30 PM")
  */
@@ -38,15 +69,16 @@ export function formatMessageTime(dateString: string): string {
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const locale = getCurrentLocale();
 
-    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeStr = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
     if (diffInHours < 24) {
         return timeStr;
     } else if (diffInHours < 48) {
-        return `Yesterday ${timeStr}`;
+        return i18n.t('time.yesterdayAt', { time: timeStr });
     }
-    return `${date.toLocaleDateString()} ${timeStr}`;
+    return `${date.toLocaleDateString(locale)} ${timeStr}`;
 }
 
 // ============================================================================
@@ -55,12 +87,16 @@ export function formatMessageTime(dateString: string): string {
 
 /**
  * Formats a price with the appropriate currency symbol.
+ * Uses locale-aware number formatting and supports "free" translation.
  * @param price - The numeric price value
  * @param currency - Currency code ('SYP' or 'USD')
- * @returns Formatted price string (e.g., "£1,000" or "USD 1,000")
+ * @returns Formatted price string (e.g., "£1,000" or "USD 1,000" or "Free")
  */
-export function formatPrice(price: number, currency: string): string {
-    const formattedNumber = price.toLocaleString();
+export function formatPrice(price: number, currency: string = 'SYP'): string {
+    if (price === 0) {
+        return i18n.t('listings.free');
+    }
+    const formattedNumber = formatNumber(price);
     if (currency === 'SYP') {
         return `£${formattedNumber}`;
     }
@@ -200,6 +236,7 @@ export function truncateText(text: string, maxLength: number): string {
 /**
  * Formats a date into a human-readable relative time string.
  * Uses friendly terms like "today", "yesterday", "2 weeks ago", "over a month ago".
+ * Supports locale-aware formatting with translation keys.
  * @param dateString - ISO date string to format
  * @returns Formatted string like "today", "3 days ago", "over a month ago"
  */
@@ -214,16 +251,16 @@ export function formatRelativeTime(dateString: string): string {
     const diffInMonths = Math.floor(diffInDays / 30);
     const diffInYears = Math.floor(diffInDays / 365);
 
-    if (diffInMinutes < 60) return 'today';
-    if (diffInHours < 24) return 'today';
-    if (diffInDays === 1) return 'yesterday';
-    if (diffInDays < 7) return `${diffInDays} days ago`;
-    if (diffInWeeks === 1) return '1 week ago';
-    if (diffInWeeks < 4) return `${diffInWeeks} weeks ago`;
-    if (diffInMonths === 1) return 'over a month ago';
-    if (diffInMonths < 12) return `${diffInMonths} months ago`;
-    if (diffInYears === 1) return 'over a year ago';
-    return `${diffInYears} years ago`;
+    if (diffInMinutes < 60) return i18n.t('time.today');
+    if (diffInHours < 24) return i18n.t('time.today');
+    if (diffInDays === 1) return i18n.t('time.yesterday');
+    if (diffInDays < 7) return i18n.t('time.daysAgo', { count: diffInDays });
+    if (diffInWeeks === 1) return i18n.t('time.weeksAgo', { count: 1 });
+    if (diffInWeeks < 4) return i18n.t('time.weeksAgo', { count: diffInWeeks });
+    if (diffInMonths === 1) return i18n.t('time.overAMonthAgo');
+    if (diffInMonths < 12) return i18n.t('time.monthsAgo', { count: diffInMonths });
+    if (diffInYears === 1) return i18n.t('time.overAYearAgo');
+    return i18n.t('time.yearsAgo', { count: diffInYears });
 }
 
 /**
@@ -241,6 +278,7 @@ export function getYearsSince(dateString: string): number {
 
 /**
  * Gets a human-readable string for time on platform.
+ * Uses locale-aware formatting with translation keys.
  * @param dateString - ISO date string of when user joined
  * @returns Formatted string like "5 days on SouqJari", "3 months on SouqJari", "2 yrs on SouqJari"
  */
@@ -251,13 +289,14 @@ export function getTimeOnPlatform(dateString: string): string {
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
     if (diffInDays < 30) {
-        return `${Math.max(1, diffInDays)} ${diffInDays === 1 ? 'day' : 'days'} on SouqJari`;
+        const days = Math.max(1, diffInDays);
+        return i18n.t('profile.daysOnPlatform', { count: days });
     } else if (diffInDays < 365) {
         const months = Math.floor(diffInDays / 30);
-        return `${months} ${months === 1 ? 'month' : 'months'} on SouqJari`;
+        return i18n.t('profile.monthsOnPlatform', { count: months });
     } else {
         const years = Math.floor(diffInDays / 365);
-        return `${years} ${years === 1 ? 'yr' : 'yrs'} on SouqJari`;
+        return i18n.t('profile.yearsOnPlatform', { count: years });
     }
 }
 
