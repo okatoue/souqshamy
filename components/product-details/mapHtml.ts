@@ -59,10 +59,19 @@ export const MAP_HTML = `
       if (!map) return;
       var center = map.getCenter();
       var currentZoom = map.getZoom();
+      var inCoverage = isInCoverage(center.lat, center.lng);
 
-      if (!isInCoverage(center.lat, center.lng) && currentZoom > WORLD_MAX_ZOOM) {
-        map.setZoom(WORLD_MAX_ZOOM, { animate: true });
-        debugLog('Zoom limited outside coverage', { zoom: WORLD_MAX_ZOOM });
+      debugLog('enforceZoomLimits check', {
+        lat: center.lat,
+        lng: center.lng,
+        zoom: currentZoom,
+        inCoverage: inCoverage,
+        maxAllowed: inCoverage ? MAX_ZOOM : WORLD_MAX_ZOOM
+      });
+
+      if (!inCoverage && currentZoom > WORLD_MAX_ZOOM) {
+        debugLog('Limiting zoom outside coverage', { from: currentZoom, to: WORLD_MAX_ZOOM });
+        map.setZoom(WORLD_MAX_ZOOM);
       }
     }
 
