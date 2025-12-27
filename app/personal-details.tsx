@@ -10,6 +10,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Alert,
@@ -26,6 +27,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PersonalDetailsScreen() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const { profile, isLoading, updateProfile } = useProfile();
 
@@ -77,11 +79,11 @@ export default function PersonalDetailsScreen() {
     const handleBack = () => {
         if (hasChanges) {
             Alert.alert(
-                'Unsaved Changes',
-                'You have unsaved changes. Are you sure you want to go back?',
+                t('profile.unsavedChanges'),
+                t('profile.unsavedChangesMessage'),
                 [
-                    { text: 'Stay', style: 'cancel' },
-                    { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+                    { text: t('common.stay'), style: 'cancel' },
+                    { text: t('common.discard'), style: 'destructive', onPress: () => router.back() },
                 ]
             );
         } else {
@@ -101,14 +103,14 @@ export default function PersonalDetailsScreen() {
             });
 
             if (success) {
-                Alert.alert('Success', 'Your profile has been updated.', [
-                    { text: 'OK', onPress: () => router.back() }
+                Alert.alert(t('alerts.success'), t('profile.profileUpdated'), [
+                    { text: t('common.ok'), onPress: () => router.back() }
                 ]);
             } else {
-                Alert.alert('Error', 'Failed to update profile. Please try again.');
+                Alert.alert(t('alerts.error'), t('profile.updateFailed'));
             }
         } catch (error) {
-            Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+            Alert.alert(t('alerts.error'), t('errors.unexpected'));
         } finally {
             setIsSaving(false);
         }
@@ -122,9 +124,9 @@ export default function PersonalDetailsScreen() {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
                 Alert.alert(
-                    'Permission Required',
-                    'Please allow access to your photo library to upload a profile picture.',
-                    [{ text: 'OK' }]
+                    t('profile.permissionRequired'),
+                    t('profile.photoLibraryPermission'),
+                    [{ text: t('common.ok') }]
                 );
                 return;
             }
@@ -160,15 +162,15 @@ export default function PersonalDetailsScreen() {
                     setLocalAvatarUri(null); // Clear local URI, profile will have the new URL
                 } else {
                     setLocalAvatarUri(null);
-                    Alert.alert('Error', 'Failed to update profile with new avatar.');
+                    Alert.alert(t('alerts.error'), t('profile.avatarUpdateFailed'));
                 }
             } catch (uploadError) {
                 setLocalAvatarUri(null);
-                const message = uploadError instanceof Error ? uploadError.message : 'Failed to upload avatar';
-                Alert.alert('Upload Failed', message);
+                const message = uploadError instanceof Error ? uploadError.message : t('profile.avatarUploadFailed');
+                Alert.alert(t('profile.uploadFailed'), message);
             }
         } catch (error) {
-            Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+            Alert.alert(t('alerts.error'), t('errors.unexpected'));
         } finally {
             setIsUploadingAvatar(false);
         }
@@ -178,12 +180,12 @@ export default function PersonalDetailsScreen() {
         if (!profile?.avatar_url) return;
 
         Alert.alert(
-            'Remove Photo',
-            'Are you sure you want to remove your profile photo?',
+            t('profile.removePhoto'),
+            t('profile.removePhotoConfirm'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Remove',
+                    text: t('common.remove'),
                     style: 'destructive',
                     onPress: async () => {
                         setIsUploadingAvatar(true);
@@ -195,10 +197,10 @@ export default function PersonalDetailsScreen() {
                             const success = await updateProfile({ avatar_url: null });
 
                             if (!success) {
-                                Alert.alert('Error', 'Failed to update profile.');
+                                Alert.alert(t('alerts.error'), t('profile.updateFailed'));
                             }
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to remove photo. Please try again.');
+                            Alert.alert(t('alerts.error'), t('profile.removePhotoFailed'));
                         } finally {
                             setIsUploadingAvatar(false);
                         }
@@ -231,7 +233,7 @@ export default function PersonalDetailsScreen() {
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
                     <BackButton onPress={handleBack} />
                     <ThemedText type="title" style={styles.headerTitle}>
-                        Personal Details
+                        {t('profile.personalDetails')}
                     </ThemedText>
                     <View style={styles.headerSpacer} />
                 </View>
@@ -278,7 +280,7 @@ export default function PersonalDetailsScreen() {
                             disabled={isUploadingAvatar}
                         >
                             <Text style={[styles.changePhotoText, { color: BRAND_COLOR }]}>
-                                Change Photo
+                                {t('profile.changePhoto')}
                             </Text>
                         </Pressable>
                         {profile?.avatar_url && !localAvatarUri && (
@@ -288,7 +290,7 @@ export default function PersonalDetailsScreen() {
                                 disabled={isUploadingAvatar}
                             >
                                 <Text style={styles.removePhotoText}>
-                                    Remove Photo
+                                    {t('profile.removePhoto')}
                                 </Text>
                             </Pressable>
                         )}
@@ -299,7 +301,7 @@ export default function PersonalDetailsScreen() {
                         {/* Display Name */}
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: labelColor }]}>
-                                Display Name
+                                {t('profile.displayName')}
                             </Text>
                             <TextInput
                                 style={[
@@ -312,7 +314,7 @@ export default function PersonalDetailsScreen() {
                                 ]}
                                 value={displayName}
                                 onChangeText={setDisplayName}
-                                placeholder="Enter your name"
+                                placeholder={t('profile.enterName')}
                                 placeholderTextColor={COLORS.placeholder}
                                 autoCapitalize="words"
                                 autoCorrect={false}
@@ -322,7 +324,7 @@ export default function PersonalDetailsScreen() {
                         {/* Email (Read-only) */}
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: labelColor }]}>
-                                Email
+                                {t('auth.emailLabel')}
                             </Text>
                             <View style={styles.inputWrapper}>
                                 <TextInput
@@ -337,7 +339,7 @@ export default function PersonalDetailsScreen() {
                                     ]}
                                     value={email}
                                     editable={false}
-                                    placeholder="No email set"
+                                    placeholder={t('profile.noEmailSet')}
                                     placeholderTextColor={COLORS.placeholder}
                                 />
                                 <View style={styles.lockIconContainer}>
@@ -345,14 +347,14 @@ export default function PersonalDetailsScreen() {
                                 </View>
                             </View>
                             <Text style={[styles.helperText, { color: labelColor }]}>
-                                Email cannot be changed here for security reasons.
+                                {t('profile.emailSecurityNote')}
                             </Text>
                         </View>
 
                         {/* Phone Number */}
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: labelColor }]}>
-                                Phone Number
+                                {t('profile.phoneNumber')}
                             </Text>
                             <TextInput
                                 style={[
@@ -365,7 +367,7 @@ export default function PersonalDetailsScreen() {
                                 ]}
                                 value={phoneNumber}
                                 onChangeText={setPhoneNumber}
-                                placeholder="Enter your phone number"
+                                placeholder={t('profile.enterPhone')}
                                 placeholderTextColor={COLORS.placeholder}
                                 keyboardType="phone-pad"
                                 autoCorrect={false}
@@ -375,7 +377,7 @@ export default function PersonalDetailsScreen() {
                         {/* Bio */}
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: labelColor }]}>
-                                Bio
+                                {t('profile.bio')}
                             </Text>
                             <TextInput
                                 style={[
@@ -389,7 +391,7 @@ export default function PersonalDetailsScreen() {
                                 ]}
                                 value={bio}
                                 onChangeText={setBio}
-                                placeholder="Tell others about yourself..."
+                                placeholder={t('profile.bioPlaceholder')}
                                 placeholderTextColor={COLORS.placeholder}
                                 multiline
                                 numberOfLines={4}
@@ -416,7 +418,7 @@ export default function PersonalDetailsScreen() {
                         {isSaving ? (
                             <ActivityIndicator color="white" size="small" />
                         ) : (
-                            <Text style={styles.saveButtonText}>Save Changes</Text>
+                            <Text style={styles.saveButtonText}>{t('common.saveChanges')}</Text>
                         )}
                     </Pressable>
                 </View>
