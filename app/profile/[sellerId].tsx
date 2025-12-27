@@ -23,6 +23,7 @@ import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 // RATING SYSTEM - useState was used for activeTab, commented out for future reuse
 // import React, { useCallback, useState } from 'react';
 import {
@@ -41,11 +42,11 @@ const CARD_GAP = SPACING.sm;
 const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 2 - CARD_GAP) / 2;
 
 // Header component
-function Header({ textColor, onShare }: { textColor: string; onShare?: () => void }) {
+function Header({ textColor, onShare, title }: { textColor: string; onShare?: () => void; title: string }) {
     return (
         <View style={styles.header}>
             <BackButton style={styles.headerButton} />
-            <Text style={[styles.headerTitle, { color: textColor }]}>Profile</Text>
+            <Text style={[styles.headerTitle, { color: textColor }]}>{title}</Text>
             {onShare ? (
                 <Pressable onPress={onShare} style={styles.headerButton}>
                     <Ionicons name="share-outline" size={24} color={textColor} />
@@ -58,6 +59,7 @@ function Header({ textColor, onShare }: { textColor: string; onShare?: () => voi
 }
 
 export default function SellerProfileScreen() {
+    const { t } = useTranslation();
     const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
     const { profile, listings, isLoading } = useSellerProfile(sellerId);
     // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
@@ -100,12 +102,12 @@ export default function SellerProfileScreen() {
     const renderEmptyListings = useCallback(() => (
         <View style={styles.emptyState}>
             <MaterialCommunityIcons name="package-variant" size={60} color={mutedColor} />
-            <Text style={[styles.emptyText, { color: textColor }]}>No listings yet</Text>
+            <Text style={[styles.emptyText, { color: textColor }]}>{t('profile.noListings')}</Text>
             <Text style={[styles.emptySubtext, { color: mutedColor }]}>
-                This seller hasn't posted any listings
+                {t('profile.sellerNoListings')}
             </Text>
         </View>
-    ), [mutedColor, textColor]);
+    ), [mutedColor, textColor, t]);
 
     /* RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
     const renderRatingsTab = useCallback(() => (
@@ -138,7 +140,7 @@ export default function SellerProfileScreen() {
     if (isLoading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <Header textColor={textColor} />
+                <Header textColor={textColor} title={t('profile.profile')} />
                 <SellerProfileSkeleton />
             </SafeAreaView>
         );
@@ -148,7 +150,7 @@ export default function SellerProfileScreen() {
     if (!profile) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <Header textColor={textColor} />
+                <Header textColor={textColor} title={t('profile.profile')} />
                 <SellerNotFound />
             </SafeAreaView>
         );
@@ -156,7 +158,7 @@ export default function SellerProfileScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <Header textColor={textColor} onShare={handleShare} />
+            <Header textColor={textColor} onShare={handleShare} title={t('profile.profile')} />
 
             <FlatList
                 data={listings}

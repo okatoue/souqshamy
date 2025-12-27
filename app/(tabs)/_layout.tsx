@@ -3,9 +3,11 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   const { totalUnreadCount } = useAppData();
   const backgroundColor = useThemeColor({}, 'background');
   const inactiveColor = useThemeColor({}, 'tabIconDefault');
@@ -26,7 +28,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -35,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chats"
         options={{
-          title: 'Chats',
+          title: t('tabs.chats'),
           tabBarIcon: ({ color, size }) => (
             <View style={{ position: 'relative' }}>
               <Ionicons name="chatbubbles" size={size} color={color} />
@@ -66,7 +68,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="post"
         options={{
-          title: 'Post',
+          title: t('tabs.post'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="add-circle" size={size} color={color} />
           ),
@@ -75,7 +77,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Favorites',
+          title: t('tabs.favorites'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={size} color={color} />
           ),
@@ -84,7 +86,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="listings"
         options={{
-          title: 'My Listings',
+          title: t('tabs.myListings'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list" size={size} color={color} />
           ),

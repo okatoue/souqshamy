@@ -8,6 +8,7 @@ import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     FlatList,
@@ -20,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SearchScreen() {
+    const { t } = useTranslation();
     const params = useLocalSearchParams<{ q?: string }>();
     const [searchQuery, setSearchQuery] = useState(params.q || '');
     const searchInputRef = useRef<TextInput>(null);
@@ -75,10 +77,10 @@ export default function SearchScreen() {
                 <View style={styles.emptyContainer}>
                     <MaterialIcons name="search" size={64} color="#666" />
                     <Text style={[styles.emptyText, { color: textColor }]}>
-                        Search for listings
+                        {t('search.searchForListings')}
                     </Text>
                     <Text style={styles.emptySubtext}>
-                        Enter a keyword to find items by title or description
+                        {t('search.enterKeyword')}
                     </Text>
                 </View>
             );
@@ -88,10 +90,10 @@ export default function SearchScreen() {
             <View style={styles.emptyContainer}>
                 <MaterialIcons name="search-off" size={64} color="#666" />
                 <Text style={[styles.emptyText, { color: textColor }]}>
-                    No results found
+                    {t('search.noResults')}
                 </Text>
                 <Text style={styles.emptySubtext}>
-                    Try different keywords or check your spelling
+                    {t('search.tryDifferentKeywords')}
                 </Text>
             </View>
         );
@@ -101,12 +103,12 @@ export default function SearchScreen() {
         <View style={styles.emptyContainer}>
             <MaterialIcons name="error-outline" size={64} color="#F44336" />
             <Text style={[styles.emptyText, { color: textColor }]}>
-                Search failed
+                {t('search.searchFailed')}
             </Text>
             <Text style={styles.emptySubtext}>{error?.message}</Text>
             <Pressable style={styles.retryButton} onPress={handleSearch}>
                 <MaterialIcons name="refresh" size={20} color="white" />
-                <Text style={styles.retryButtonText}>Try Again</Text>
+                <Text style={styles.retryButtonText}>{t('common.tryAgain')}</Text>
             </Pressable>
         </View>
     );
@@ -123,7 +125,7 @@ export default function SearchScreen() {
                     <TextInput
                         ref={searchInputRef}
                         style={[styles.searchInput, { color: textColor }]}
-                        placeholder="Search listings..."
+                        placeholder={t('search.searchPlaceholder')}
                         placeholderTextColor="#888"
                         value={searchQuery}
                         onChangeText={setSearchQuery}
@@ -143,7 +145,7 @@ export default function SearchScreen() {
             {listings.length > 0 && (
                 <View style={[styles.resultBar, { borderColor }]}>
                     <Text style={[styles.resultCount, { color: textColor }]}>
-                        {listings.length} {listings.length === 1 ? 'result' : 'results'} for "{searchQuery}"
+                        {t('search.resultsCount', { count: listings.length, query: searchQuery })}
                     </Text>
                 </View>
             )}
@@ -152,7 +154,7 @@ export default function SearchScreen() {
             {isLoading ? (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#007AFF" />
-                    <Text style={[styles.loadingText, { color: textColor }]}>Searching...</Text>
+                    <Text style={[styles.loadingText, { color: textColor }]}>{t('search.searching')}</Text>
                 </View>
             ) : error ? (
                 renderError()

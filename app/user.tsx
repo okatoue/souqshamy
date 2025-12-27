@@ -11,6 +11,7 @@ import { useThemeContext } from '@/lib/theme_context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Alert,
     Image,
@@ -22,18 +23,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Theme labels for display
-const THEME_LABELS: Record<string, string> = {
-    light: 'Light',
-    dark: 'Dark',
-    system: 'System Settings',
-};
-
 export default function UserScreen() {
+    const { t } = useTranslation();
     const { user, signOut } = useAuth();
     const { profile, getDisplayName, fetchProfile } = useProfile();
     const router = useRouter();
     const backgroundColor = useThemeColor({}, 'background');
+
+    // Theme labels for display - using translations
+    const THEME_LABELS: Record<string, string> = {
+        light: t('settings.themeLight'),
+        dark: t('settings.themeDark'),
+        system: t('settings.themeSystem'),
+    };
     const iconColor = useThemeColor({}, 'icon');
     const textColor = useThemeColor({}, 'text');
     const subtitleColor = useThemeColor({ light: '#666', dark: '#999' }, 'text');
@@ -59,19 +61,19 @@ export default function UserScreen() {
 
     const handleLogout = () => {
         Alert.alert(
-            'Log Out',
-            'Are you sure you want to log out?',
+            t('settings.logOut'),
+            t('settings.logOutConfirm'),
             [
-                { text: 'Cancel', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: 'Log Out',
+                    text: t('settings.logOut'),
                     style: 'destructive',
                     onPress: async () => {
                         try {
                             await signOut();
                             router.replace('/(auth)');
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to log out. Please try again.');
+                            Alert.alert(t('alerts.error'), t('settings.logOutFailed'));
                         }
                     },
                 },
@@ -80,7 +82,7 @@ export default function UserScreen() {
     };
 
     const handleComingSoon = (feature: string) => {
-        Alert.alert('Coming Soon', `${feature} will be available in a future update.`);
+        Alert.alert(t('common.comingSoon'), t('common.comingSoonMessage', { feature }));
     };
 
     // If not logged in, show sign in prompt
@@ -90,19 +92,19 @@ export default function UserScreen() {
                 <View style={styles.notLoggedInContainer}>
                     <MaterialCommunityIcons name="account-circle-outline" size={100} color={iconColor} />
                     <ThemedText style={styles.notLoggedInSubtitle}>
-                        Sign in to access your account settings
+                        {t('settings.signInPrompt')}
                     </ThemedText>
                     <Pressable
                         style={styles.signInButton}
                         onPress={() => router.push('/(auth)')}
                     >
-                        <Text style={styles.signInButtonText}>Sign In</Text>
+                        <Text style={styles.signInButtonText}>{t('auth.signIn')}</Text>
                     </Pressable>
                     <Pressable
                         style={styles.signUpLink}
                         onPress={() => router.push('/(auth)')}
                     >
-                        <Text style={styles.signUpLinkText}>Don't have an account? Sign Up</Text>
+                        <Text style={styles.signUpLinkText}>{t('auth.noAccountSignUp')}</Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -114,7 +116,7 @@ export default function UserScreen() {
             {/* Header - Sticky */}
             <ThemedView style={styles.header}>
                 <BackButton />
-                <ThemedText type="title" style={styles.headerTitle}>Account</ThemedText>
+                <ThemedText type="title" style={styles.headerTitle}>{t('settings.account')}</ThemedText>
                 <View style={styles.headerSpacer} />
             </ThemedView>
 
@@ -151,7 +153,7 @@ export default function UserScreen() {
                             </Text>
                         )}
                         <Text style={[styles.userSince, { color: subtitleColor }]}>
-                            Member since {new Date(user.created_at || Date.now()).toLocaleDateString()}
+                            {t('profile.memberSince', { date: new Date(user.created_at || Date.now()).toLocaleDateString() })}
                         </Text>
                     </View>
                     <Ionicons
@@ -163,47 +165,47 @@ export default function UserScreen() {
                 </Pressable>
 
                 {/* Account Settings Section */}
-                <SettingsSection title="ACCOUNT SETTINGS">
+                <SettingsSection title={t('settings.accountSettings')}>
                     <SettingsMenuItem
                         icon="settings-outline"
-                        title="Manage Account"
-                        subtitle="Password, delete account"
+                        title={t('settings.manageAccount')}
+                        subtitle={t('settings.manageAccountSubtitle')}
                         onPress={() => router.push('/manage-account')}
                     />
                 </SettingsSection>
 
                 {/* App Settings Section */}
-                <SettingsSection title="APP SETTINGS">
+                <SettingsSection title={t('settings.appSettings')}>
                     <SettingsMenuItem
                         icon="color-palette-outline"
-                        title="App Theme"
-                        subtitle={THEME_LABELS[themePreference] || 'System Settings'}
+                        title={t('settings.appTheme')}
+                        subtitle={THEME_LABELS[themePreference] || t('settings.themeSystem')}
                         onPress={handleOpenThemePicker}
                     />
                     <SettingsMenuItem
                         icon="notifications-outline"
-                        title="Notification Preferences"
-                        subtitle="Push notifications, email alerts"
+                        title={t('settings.notifications')}
+                        subtitle={t('settings.notificationsSubtitle')}
                         onPress={() => router.push('/notification-settings')}
                     />
                 </SettingsSection>
 
                 {/* Support & Legal Section */}
-                <SettingsSection title="SUPPORT & LEGAL">
+                <SettingsSection title={t('settings.supportLegal')}>
                     <SettingsMenuItem
                         icon="help-circle-outline"
-                        title="Help"
-                        subtitle="FAQs and support"
+                        title={t('settings.help')}
+                        subtitle={t('settings.helpSubtitle')}
                         onPress={() => router.push('/help')}
                     />
                     <SettingsMenuItem
                         icon="document-text-outline"
-                        title="Privacy Policy"
+                        title={t('settings.privacyPolicy')}
                         onPress={() => router.push('/legal/privacy-policy')}
                     />
                     <SettingsMenuItem
                         icon="document-outline"
-                        title="Terms of Use"
+                        title={t('settings.termsOfUse')}
                         onPress={() => router.push('/legal/terms-of-use')}
                     />
                 </SettingsSection>
@@ -212,7 +214,7 @@ export default function UserScreen() {
                 <SettingsSection>
                     <SettingsMenuItem
                         icon="log-out-outline"
-                        title="Log Out"
+                        title={t('settings.logOut')}
                         onPress={handleLogout}
                         showArrow={false}
                         destructive

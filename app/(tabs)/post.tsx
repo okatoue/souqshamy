@@ -18,11 +18,13 @@ import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/u
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { UserIcon } from '../../components/ui/userIcon';
 
 
 export default function PostListingScreen() {
+  const { t } = useTranslation();
   const [listingTitle, setListingTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [selectedSubcategory, setSelectedSubcategory] = useState<Subcategory | null>(null);
@@ -50,12 +52,12 @@ export default function PostListingScreen() {
   const handleContinue = () => {
     // Validate that required fields are filled
     if (!listingTitle.trim()) {
-      Alert.alert('Missing Information', 'Please enter a title for your listing');
+      Alert.alert(t('alerts.error'), t('post.missingTitle'));
       return;
     }
 
     if (!selectedCategory || !selectedSubcategory) {
-      Alert.alert('Missing Information', 'Please select a category');
+      Alert.alert(t('alerts.error'), t('post.missingCategory'));
       return;
     }
 
@@ -78,7 +80,7 @@ export default function PostListingScreen() {
     if (selectedCategory && selectedSubcategory) {
       return `${selectedCategory.icon} ${selectedCategory.name} › ${selectedSubcategory.name}`;
     }
-    return 'Select a Category';
+    return t('post.selectCategory');
   };
 
   return (
@@ -94,12 +96,12 @@ export default function PostListingScreen() {
             </View>
 
             <View style={styles.titleContainer}>
-              <ThemedText type="title">Post a Listing</ThemedText>
+              <ThemedText type="title">{t('post.postListing')}</ThemedText>
             </View>
 
             <View style={[styles.listingContainer, { borderColor }]}>
               <TextInput
-                placeholder="Title..."
+                placeholder={t('post.titlePlaceholder')}
                 value={listingTitle}
                 onChangeText={setListingTitle}
                 style={[styles.listingTitleContent, { color: textColor }]}
@@ -136,7 +138,7 @@ export default function PostListingScreen() {
               activeOpacity={0.8}
               disabled={!listingTitle || !selectedCategory}
             >
-              <Text style={styles.continueButtonText}>Continue</Text>
+              <Text style={styles.continueButtonText}>{t('post.continue')}</Text>
             </TouchableOpacity>
 
             <CategoryBottomSheet

@@ -11,6 +11,7 @@ import { ConversationWithDetails, Message } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     FlatList,
@@ -26,6 +27,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ChatScreen() {
+    const { t } = useTranslation();
     const params = useLocalSearchParams<{ id: string }>();
     const conversationId = params.id;
     const { user } = useAuth();
@@ -149,9 +151,9 @@ export default function ChatScreen() {
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (date.toDateString() === today.toDateString()) {
-            return 'Today';
+            return t('time.today');
         } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Yesterday';
+            return t('time.yesterday');
         } else {
             return date.toLocaleDateString([], {
                 weekday: 'long',
@@ -213,7 +215,7 @@ export default function ChatScreen() {
                                     <View style={styles.failedActions}>
                                         <Pressable onPress={() => handleRetry(item.id)} style={styles.retryButton}>
                                             <Ionicons name="refresh" size={14} color={errorColor} />
-                                            <Text style={[styles.retryText, { color: errorColor }]}>Retry</Text>
+                                            <Text style={[styles.retryText, { color: errorColor }]}>{t('chat.retry')}</Text>
                                         </Pressable>
                                         <Pressable onPress={() => handleDeleteFailed(item.id)} style={styles.deleteButton}>
                                             <Ionicons name="trash-outline" size={14} color={secondaryTextColor} />
@@ -228,7 +230,7 @@ export default function ChatScreen() {
                             </View>
                             {isFailedMessage && (
                                 <Text style={[styles.failedText, { color: errorColor, textAlign: isMyMessage ? 'right' : 'left' }]}>
-                                    Failed to send
+                                    {t('chat.failedToSend')}
                                 </Text>
                             )}
                         </View>
@@ -268,7 +270,7 @@ export default function ChatScreen() {
                                 <View style={[styles.failedActions, { justifyContent: isMyMessage ? 'flex-end' : 'flex-start' }]}>
                                     <Pressable onPress={() => handleRetry(item.id)} style={styles.retryButton}>
                                         <Ionicons name="refresh" size={14} color={errorColor} />
-                                        <Text style={[styles.retryText, { color: errorColor }]}>Retry</Text>
+                                        <Text style={[styles.retryText, { color: errorColor }]}>{t('chat.retry')}</Text>
                                     </Pressable>
                                     <Pressable onPress={() => handleDeleteFailed(item.id)} style={styles.deleteButton}>
                                         <Ionicons name="trash-outline" size={14} color={secondaryTextColor} />
@@ -296,9 +298,9 @@ export default function ChatScreen() {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.errorContainer}>
-                    <ThemedText>Conversation not found</ThemedText>
+                    <ThemedText>{t('chat.conversationNotFound')}</ThemedText>
                     <Pressable style={styles.backButton} onPress={() => router.back()}>
-                        <Text style={styles.backButtonText}>Go Back</Text>
+                        <Text style={styles.backButtonText}>{t('common.goBack')}</Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -365,7 +367,7 @@ export default function ChatScreen() {
                     ListEmptyComponent={
                         <View style={styles.emptyMessages}>
                             <Text style={[styles.emptyMessagesText, { color: secondaryTextColor }]}>
-                                No messages yet. Start the conversation!
+                                {t('chat.noMessages')}
                             </Text>
                         </View>
                     }
@@ -384,14 +386,14 @@ export default function ChatScreen() {
                     {!isRecordingActive && (
                         <TextInput
                             style={[styles.textInput, { backgroundColor: inputBg, color: textColor }]}
-                            placeholder="Type a message..."
+                            placeholder={t('chat.typeMessage')}
                             placeholderTextColor={secondaryTextColor}
                             value={messageText}
                             onChangeText={setMessageText}
                             multiline
                             maxLength={1000}
-                            accessibilityLabel="Message input"
-                            accessibilityHint="Type a message to send"
+                            accessibilityLabel={t('chat.messageInput')}
+                            accessibilityHint={t('chat.typeMessageHint')}
                         />
                     )}
 

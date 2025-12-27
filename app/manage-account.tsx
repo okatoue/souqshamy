@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Alert,
@@ -26,6 +27,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ManageAccountScreen() {
+    const { t } = useTranslation();
     const { user, signOut } = useAuth();
     const backgroundColor = useThemeColor({}, 'background');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'border');
@@ -260,7 +262,7 @@ export default function ManageAccountScreen() {
                 <View style={[styles.header, { borderBottomColor: borderColor }]}>
                     <BackButton />
                     <ThemedText type="title" style={styles.headerTitle}>
-                        Manage Account
+                        {t('settings.manageAccount')}
                     </ThemedText>
                     <View style={styles.headerSpacer} />
                 </View>
@@ -271,22 +273,22 @@ export default function ManageAccountScreen() {
                     showsVerticalScrollIndicator={false}
                 >
                     {/* Security Section */}
-                    <SettingsSection title="SECURITY">
+                    <SettingsSection title={t('settings.security')}>
                         <SettingsMenuItem
                             icon="lock-closed-outline"
-                            title="Change Password"
-                            subtitle={isOAuthUser ? 'Not available for social login' : 'Update your account password'}
+                            title={t('settings.changePassword')}
+                            subtitle={isOAuthUser ? t('settings.notAvailableSocial') : t('settings.changePasswordSubtitle')}
                             onPress={handleChangePassword}
                             disabled={isOAuthUser}
                         />
                     </SettingsSection>
 
                     {/* Your Data Section */}
-                    <SettingsSection title="YOUR DATA">
+                    <SettingsSection title={t('settings.yourData')}>
                         <SettingsMenuItem
                             icon="download-outline"
-                            title="Export My Data"
-                            subtitle="Download a copy of your data"
+                            title={t('settings.exportData')}
+                            subtitle={t('settings.exportDataSubtitle')}
                             onPress={handleExportData}
                             disabled={isExporting}
                             rightElement={isExporting ? <ActivityIndicator size="small" color={BRAND_COLOR} /> : undefined}
@@ -294,11 +296,11 @@ export default function ManageAccountScreen() {
                     </SettingsSection>
 
                     {/* Danger Zone Section */}
-                    <SettingsSection title="DANGER ZONE">
+                    <SettingsSection title={t('settings.dangerZone')}>
                         <SettingsMenuItem
                             icon="trash-outline"
-                            title="Delete Account"
-                            subtitle="Permanently delete your account"
+                            title={t('settings.deleteAccount')}
+                            subtitle={t('settings.deleteAccountSubtitle')}
                             onPress={handleDeleteAccount}
                             showArrow={false}
                             destructive

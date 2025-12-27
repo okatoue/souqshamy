@@ -15,9 +15,11 @@ import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, View } from 'react-native';
 
 export default function PasswordScreen() {
+  const { t } = useTranslation();
   const authStyles = useAuthStyles();
   const params = useLocalSearchParams<{
     emailOrPhone: string;
@@ -36,18 +38,18 @@ export default function PasswordScreen() {
 
   const handleSubmit = async () => {
     if (!password) {
-      Alert.alert('Error', 'Please enter your password');
+      Alert.alert(t('alerts.error'), t('validation.required'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Alert.alert(t('alerts.error'), t('validation.passwordTooShort'));
       return;
     }
 
     if (isNewUser) {
       if (!displayName.trim()) {
-        Alert.alert('Error', 'Please enter your name');
+        Alert.alert(t('alerts.error'), t('validation.required'));
         return;
       }
     }
@@ -113,8 +115,8 @@ export default function PasswordScreen() {
       <AuthLogo />
 
       <AuthTitle
-        title={isNewUser ? 'Create Account' : 'Welcome Back'}
-        subtitle={isNewUser ? 'Set up your account to get started' : 'Enter your password to sign in'}
+        title={isNewUser ? t('auth.createAccount') : t('auth.welcomeBack')}
+        subtitle={isNewUser ? undefined : undefined}
       />
 
       <EmailPhoneDisplay value={email} onChangePress={handleBack} />
@@ -122,8 +124,8 @@ export default function PasswordScreen() {
       <View style={authStyles.formSection}>
         {isNewUser && (
           <AuthInput
-            label="Your Name"
-            placeholder="Enter your full name"
+            label={t('auth.nameLabel')}
+            placeholder={t('auth.namePlaceholder')}
             value={displayName}
             onChangeText={setDisplayName}
             autoCapitalize="words"
@@ -133,18 +135,18 @@ export default function PasswordScreen() {
         )}
 
         <AuthPasswordInput
-          label="Password"
-          placeholder={isNewUser ? 'Create a password' : 'Enter your password'}
+          label={t('auth.passwordLabel')}
+          placeholder={isNewUser ? t('auth.newPasswordPlaceholder') : t('auth.passwordPlaceholder')}
           value={password}
           onChangeText={setPassword}
           editable={!loading}
         />
 
-        {!isNewUser && <AuthButton title="Forgot password?" variant="link" onPress={handleForgotPassword} />}
+        {!isNewUser && <AuthButton title={t('auth.forgotPassword')} variant="link" onPress={handleForgotPassword} />}
       </View>
 
       <AuthButton
-        title={isNewUser ? 'Create Account' : 'Sign In'}
+        title={isNewUser ? t('auth.createAccount') : t('auth.signIn')}
         onPress={handleSubmit}
         loading={loading}
       />

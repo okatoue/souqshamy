@@ -16,9 +16,11 @@ import { useAuth } from '@/lib/auth_context';
 import { supabase } from '@/lib/supabase';
 import { router } from 'expo-router';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function AuthScreen() {
+  const { t } = useTranslation();
   const authStyles = useAuthStyles();
   const { signInWithGoogle, signInWithFacebook } = useAuth();
   const [inputValue, setInputValue] = useState('');
@@ -29,12 +31,12 @@ export default function AuthScreen() {
     const trimmedInput = inputValue.trim();
 
     if (!trimmedInput) {
-      Alert.alert('Error', 'Please enter your email address');
+      Alert.alert(t('alerts.error'), t('validation.required'));
       return;
     }
 
     if (!isValidEmail(trimmedInput)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('alerts.error'), t('validation.invalidEmail'));
       return;
     }
 
@@ -58,9 +60,9 @@ export default function AuthScreen() {
         // User signed up with OAuth only - show alert
         const providerName = getProviderDisplayName(provider);
         Alert.alert(
-          'Sign In Method',
-          `This account was created using ${providerName}. Please use the "${providerName}" button below to sign in.`,
-          [{ text: 'OK' }]
+          t('auth.signInMethod'),
+          t('auth.signInMethodMessage', { provider: providerName }),
+          [{ text: t('common.ok') }]
         );
       } else if (status === 'unverified') {
         // Existing but unverified - resend code and go to verification screen
@@ -120,7 +122,7 @@ export default function AuthScreen() {
         setLoadingProvider(null);
       }
     } else {
-      Alert.alert('Coming Soon', `${provider} login will be available soon!`);
+      Alert.alert(t('settings.comingSoon'), `${provider} login will be available soon!`);
     }
   };
 
@@ -128,12 +130,12 @@ export default function AuthScreen() {
     <AuthLayout>
       <AuthLogo />
 
-      <AuthTitle title="Log in or Sign up" />
+      <AuthTitle title={t('auth.loginOrSignup')} />
 
       <View style={styles.inputSection}>
         <AuthInput
-          label="Email Address"
-          placeholder="Enter your email address"
+          label={t('auth.emailLabel')}
+          placeholder={t('auth.emailPlaceholder')}
           value={inputValue}
           onChangeText={setInputValue}
           keyboardType="email-address"
@@ -144,7 +146,7 @@ export default function AuthScreen() {
         />
       </View>
 
-      <AuthButton title="Continue" onPress={handleContinue} loading={loading} disabled={!!loadingProvider} />
+      <AuthButton title={t('auth.continue')} onPress={handleContinue} loading={loading} disabled={!!loadingProvider} />
 
       <AuthDivider />
 
@@ -156,9 +158,9 @@ export default function AuthScreen() {
 
       <Text style={authStyles.footer}>
         By continuing, you agree to our{' '}
-        <Text style={styles.footerLink}>Terms of Service</Text>
+        <Text style={styles.footerLink}>{t('settings.termsOfUse')}</Text>
         {' '}and{' '}
-        <Text style={styles.footerLink}>Privacy Policy</Text>
+        <Text style={styles.footerLink}>{t('settings.privacyPolicy')}</Text>
       </Text>
     </AuthLayout>
   );
