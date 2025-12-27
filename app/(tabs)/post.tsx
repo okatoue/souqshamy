@@ -177,12 +177,11 @@ const styles = StyleSheet.create({
   listingContainer: {
     marginTop: 100,
     marginBottom: 25,
-    marginLeft: 20,
-    marginRight: 20,
+    marginHorizontal: 20,
     height: 50,
     borderWidth: 1,
     borderRadius: 8,
-    paddingLeft: 8,
+    paddingHorizontal: 8,
     justifyContent: 'center',
   },
   listingTitleContent: {
@@ -194,13 +193,12 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     marginTop: 100,
-    marginLeft: 16,
+    marginHorizontal: 16,
   },
   categoryButton: {
     marginTop: 50,
     marginBottom: 25,
-    marginLeft: 20,
-    marginRight: 20,
+    marginHorizontal: 20,
     height: 50,
     borderWidth: 1,
     borderRadius: 8,

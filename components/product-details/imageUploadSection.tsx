@@ -1,8 +1,11 @@
 import { BORDER_RADIUS, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlTextAlign } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface ImageUploadSectionProps {
@@ -27,6 +30,8 @@ const IMAGE_WIDTH = (AVAILABLE_WIDTH - CARD_GAP) / (2 + PEEK_RATIO);
 const IMAGE_HEIGHT = IMAGE_WIDTH * 1.25; // Maintain 4:5 aspect ratio
 
 export default function ImageUploadSection({ images, setImages }: ImageUploadSectionProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
@@ -38,7 +43,7 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Sorry', 'We need camera roll permissions to upload images');
+      Alert.alert(t('productDetails.permissionDenied'), t('productDetails.cameraRollPermission'));
       return;
     }
 
@@ -59,7 +64,7 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
     if (status !== 'granted') {
-      Alert.alert('Sorry', 'We need camera permissions to take photos');
+      Alert.alert(t('productDetails.permissionDenied'), t('productDetails.cameraPermission'));
       return;
     }
 
@@ -80,12 +85,12 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
   // Show image picker options
   const showImageOptions = () => {
     Alert.alert(
-      'Add Photos',
-      'Choose how you want to add photos',
+      t('productDetails.addPhotos'),
+      '',
       [
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: pickImage },
-        { text: 'Cancel', style: 'cancel' }
+        { text: t('productDetails.takePhoto'), onPress: takePhoto },
+        { text: t('productDetails.chooseFromLibrary'), onPress: pickImage },
+        { text: t('common.cancel'), style: 'cancel' }
       ]
     );
   };
@@ -100,10 +105,10 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
           activeOpacity={0.7}
         >
           <Ionicons name="add" size={48} color={mutedColor} />
-          <Text style={[styles.emptyStateText, { color: mutedColor }]}>Add photos</Text>
+          <Text style={[styles.emptyStateText, { color: mutedColor }]}>{t('productDetails.addPhotos')}</Text>
         </TouchableOpacity>
-        <Text style={[styles.helperText, { color: mutedColor }]}>
-          Photos: 0/{MAX_IMAGES} Select your cover photo first, include pictures with different angles and details.
+        <Text style={[styles.helperText, rtlTextAlign(isRTL), { color: mutedColor }]}>
+          {t('productDetails.photoHelperText', { current: 0, max: MAX_IMAGES })}
         </Text>
       </View>
     );
@@ -123,15 +128,15 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
 
             {/* Cover badge for first image */}
             {index === 0 && (
-              <View style={styles.coverBadge}>
-                <Text style={styles.coverBadgeText}>Cover</Text>
+              <View style={[styles.coverBadge, isRTL && styles.coverBadgeRTL]}>
+                <Text style={styles.coverBadgeText}>{t('productDetails.cover')}</Text>
               </View>
             )}
 
             {/* Make Cover button for non-first images */}
             {index > 0 && (
               <TouchableOpacity
-                style={styles.makeCoverButton}
+                style={[styles.makeCoverButton, isRTL && styles.makeCoverButtonRTL]}
                 onPress={() => {
                   const newImages = [...images];
                   const [moved] = newImages.splice(index, 1);
@@ -140,13 +145,13 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
                 }}
               >
                 <Ionicons name="star" size={12} color="white" />
-                <Text style={styles.makeCoverText}>Cover</Text>
+                <Text style={styles.makeCoverText}>{t('productDetails.cover')}</Text>
               </TouchableOpacity>
             )}
 
             {/* Remove button */}
             <TouchableOpacity
-              style={[styles.removeButton, SHADOWS.sm]}
+              style={[styles.removeButton, SHADOWS.sm, isRTL && styles.removeButtonRTL]}
               onPress={() => removeImage(index)}
             >
               <Ionicons name="close" size={16} color="#666" />
@@ -162,12 +167,12 @@ export default function ImageUploadSection({ images, setImages }: ImageUploadSec
             activeOpacity={0.7}
           >
             <Ionicons name="add" size={32} color={mutedColor} />
-            <Text style={[styles.addMoreText, { color: mutedColor }]}>Add photos</Text>
+            <Text style={[styles.addMoreText, { color: mutedColor }]}>{t('productDetails.addPhotos')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
-      <Text style={[styles.helperText, { color: mutedColor }]}>
-        Photos: {images.length}/{MAX_IMAGES} Select your cover photo first, include pictures with different angles and details.
+      <Text style={[styles.helperText, rtlTextAlign(isRTL), { color: mutedColor }]}>
+        {t('productDetails.photoHelperText', { current: images.length, max: MAX_IMAGES })}
       </Text>
     </View>
   );
@@ -221,6 +226,10 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.xs,
   },
+  coverBadgeRTL: {
+    left: undefined,
+    right: SPACING.sm,
+  },
   coverBadgeText: {
     color: 'white',
     fontSize: 12,
@@ -239,6 +248,10 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.xs,
     gap: 4,
   },
+  makeCoverButtonRTL: {
+    left: undefined,
+    right: SPACING.sm,
+  },
   makeCoverText: {
     color: 'white',
     fontSize: 11,
@@ -255,6 +268,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  removeButtonRTL: {
+    right: undefined,
+    left: SPACING.sm,
   },
   // Add more button
   addMoreButton: {

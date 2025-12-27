@@ -1,8 +1,11 @@
 import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface ContactSectionProps {
@@ -22,6 +25,8 @@ export default function ContactSection({
   sameAsPhone,
   setSameAsPhone,
 }: ContactSectionProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const iconColor = useThemeColor({}, 'icon');
@@ -40,22 +45,24 @@ export default function ContactSection({
 
   return (
     <ThemedView variant="card" style={[styles.section, { borderColor }]}>
-      <Text style={[styles.sectionTitle, { color: textColor }]}>Contact Information</Text>
-      <Text style={[styles.sectionSubtitle, { color: mutedColor }]}>
-        Add at least one way for buyers to contact you
+      <Text style={[styles.sectionTitle, rtlTextAlign(isRTL), { color: textColor }]}>
+        {t('productDetails.contactInfo')}
+      </Text>
+      <Text style={[styles.sectionSubtitle, rtlTextAlign(isRTL), { color: mutedColor }]}>
+        {t('productDetails.contactInfoSubtitle')}
       </Text>
 
       {sameAsPhone ? (
         /* Combined Phone + WhatsApp Input */
-        <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
-          <View style={[styles.combinedIconContainer, { borderColor }]}>
+        <View style={[styles.inputWrapper, rtlRow(isRTL), { backgroundColor: inputBg, borderColor }]}>
+          <View style={[styles.combinedIconContainer, isRTL ? styles.iconContainerRTL : styles.iconContainerLTR, { borderColor }]}>
             <Ionicons name="call-outline" size={18} color={iconColor} />
             <Text style={[styles.iconSeparator, { color: mutedColor }]}>+</Text>
             <Ionicons name="logo-whatsapp" size={18} color="#25D366" />
           </View>
           <TextInput
-            style={[styles.input, { color: textColor }]}
-            placeholder="Phone / WhatsApp"
+            style={[styles.input, rtlTextAlign(isRTL), { color: textColor }]}
+            placeholder={t('productDetails.phoneWhatsappPlaceholder')}
             placeholderTextColor={COLORS.placeholder}
             value={phoneNumber}
             onChangeText={(text) => {
@@ -72,13 +79,13 @@ export default function ContactSection({
         /* Separate Phone and WhatsApp Inputs */
         <>
           {/* Phone Number Input */}
-          <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
-            <View style={[styles.iconContainer, { borderColor }]}>
+          <View style={[styles.inputWrapper, rtlRow(isRTL), { backgroundColor: inputBg, borderColor }]}>
+            <View style={[styles.iconContainer, isRTL ? styles.iconContainerRTL : styles.iconContainerLTR, { borderColor }]}>
               <Ionicons name="call-outline" size={20} color={iconColor} />
             </View>
             <TextInput
-              style={[styles.input, { color: textColor }]}
-              placeholder="Phone Number"
+              style={[styles.input, rtlTextAlign(isRTL), { color: textColor }]}
+              placeholder={t('productDetails.phonePlaceholder')}
               placeholderTextColor={COLORS.placeholder}
               value={phoneNumber}
               onChangeText={setPhoneNumber}
@@ -90,13 +97,13 @@ export default function ContactSection({
           </View>
 
           {/* WhatsApp Number Input */}
-          <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
-            <View style={[styles.iconContainer, { borderColor }]}>
+          <View style={[styles.inputWrapper, rtlRow(isRTL), { backgroundColor: inputBg, borderColor }]}>
+            <View style={[styles.iconContainer, isRTL ? styles.iconContainerRTL : styles.iconContainerLTR, { borderColor }]}>
               <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
             </View>
             <TextInput
-              style={[styles.input, { color: textColor }]}
-              placeholder="WhatsApp Number"
+              style={[styles.input, rtlTextAlign(isRTL), { color: textColor }]}
+              placeholder={t('productDetails.whatsappPlaceholder')}
               placeholderTextColor={COLORS.placeholder}
               value={whatsappNumber}
               onChangeText={setWhatsappNumber}
@@ -111,12 +118,13 @@ export default function ContactSection({
 
       {/* Checkbox: WhatsApp same as phone number */}
       <TouchableOpacity
-        style={styles.checkboxContainer}
+        style={[styles.checkboxContainer, rtlRow(isRTL)]}
         onPress={handleToggleSameAsPhone}
         activeOpacity={0.7}
       >
         <View style={[
           styles.checkbox,
+          isRTL ? styles.checkboxRTL : styles.checkboxLTR,
           { borderColor: sameAsPhone ? primaryColor : borderColor },
           sameAsPhone && { backgroundColor: primaryColor }
         ]}>
@@ -125,7 +133,7 @@ export default function ContactSection({
           )}
         </View>
         <Text style={[styles.checkboxLabel, { color: textColor }]}>
-          WhatsApp same as phone number
+          {t('productDetails.sameAsPhone')}
         </Text>
       </TouchableOpacity>
     </ThemedView>
@@ -159,14 +167,18 @@ const styles = StyleSheet.create({
   iconContainer: {
     paddingHorizontal: SPACING.md,
     paddingVertical: 14,
+  },
+  iconContainerLTR: {
     borderRightWidth: 1,
+  },
+  iconContainerRTL: {
+    borderLeftWidth: 1,
   },
   combinedIconContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: 14,
-    borderRightWidth: 1,
     gap: 4,
   },
   iconSeparator: {
@@ -191,7 +203,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  checkboxLTR: {
     marginRight: SPACING.sm,
+  },
+  checkboxRTL: {
+    marginLeft: SPACING.sm,
   },
   checkboxLabel: {
     fontSize: 14,

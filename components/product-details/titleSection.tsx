@@ -1,7 +1,10 @@
 import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlTextAlign } from '@/lib/rtlStyles';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Keyboard, StyleSheet, Text, TextInput } from 'react-native';
 
 interface TitleSectionProps {
@@ -13,6 +16,8 @@ export default function TitleSection({
   title,
   setTitle
 }: TitleSectionProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
@@ -20,10 +25,12 @@ export default function TitleSection({
 
   return (
     <ThemedView variant="card" style={[styles.section, { borderColor }]}>
-      <Text style={[styles.sectionTitle, { color: textColor }]}>Title</Text>
+      <Text style={[styles.sectionTitle, rtlTextAlign(isRTL), { color: textColor }]}>
+        {t('productDetails.title')}
+      </Text>
       <TextInput
-        style={[styles.titleInput, { backgroundColor: inputBg, borderColor, color: textColor }]}
-        placeholder="What are you selling?"
+        style={[styles.titleInput, rtlTextAlign(isRTL), { backgroundColor: inputBg, borderColor, color: textColor }]}
+        placeholder={t('productDetails.titlePlaceholder')}
         placeholderTextColor={COLORS.placeholder}
         value={title}
         onChangeText={setTitle}

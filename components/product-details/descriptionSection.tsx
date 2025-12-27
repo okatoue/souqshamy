@@ -1,7 +1,10 @@
 import { ThemedView } from '@/components/themed-view';
 import { BORDER_RADIUS, COLORS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlTextAlign } from '@/lib/rtlStyles';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Keyboard, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const MAX_DESCRIPTION_LENGTH = 61000;
@@ -15,6 +18,8 @@ export default function DescriptionSection({
   description,
   setDescription
 }: DescriptionSectionProps) {
+  const { t } = useTranslation();
+  const { isRTL } = useRTL();
   // Theme colors
   const textColor = useThemeColor({}, 'text');
   const borderColor = useThemeColor({}, 'border');
@@ -30,17 +35,20 @@ export default function DescriptionSection({
   return (
     <View>
       <ThemedView variant="card" style={[styles.section, { borderColor }]}>
-        <Text style={[styles.sectionTitle, { color: textColor }]}>Description</Text>
+        <Text style={[styles.sectionTitle, rtlTextAlign(isRTL), { color: textColor }]}>
+          {t('productDetails.description')}
+        </Text>
         <TextInput
           style={[
             styles.descriptionInput,
+            rtlTextAlign(isRTL),
             {
               backgroundColor: inputBg,
               borderColor: isOverLimit ? COLORS.error : borderColor,
               color: textColor
             }
           ]}
-          placeholder="Describe your item in detail..."
+          placeholder={t('productDetails.descriptionPlaceholder')}
           placeholderTextColor={COLORS.placeholder}
           multiline
           numberOfLines={6}
@@ -53,7 +61,7 @@ export default function DescriptionSection({
           onSubmitEditing={Keyboard.dismiss}
         />
       </ThemedView>
-      <Text style={[styles.characterCount, { color: countColor }]}>
+      <Text style={[styles.characterCount, isRTL && styles.characterCountRTL, { color: countColor }]}>
         {charCount.toLocaleString()}/{MAX_DESCRIPTION_LENGTH.toLocaleString()}
       </Text>
     </View>
@@ -86,5 +94,10 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
     marginRight: SPACING.xl,
     marginBottom: SPACING.md,
+  },
+  characterCountRTL: {
+    textAlign: 'left',
+    marginRight: 0,
+    marginLeft: SPACING.xl,
   },
 });

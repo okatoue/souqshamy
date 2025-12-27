@@ -2,6 +2,7 @@ import { BORDER_RADIUS, BRAND_COLOR, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { UploadProgress } from '@/hooks/useCreateListing';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface SubmitButtonProps {
@@ -16,19 +17,21 @@ export default function SubmitButton({
   onPress,
   disabled,
   loading,
-  buttonText = 'Post Listing',
+  buttonText,
   uploadProgress,
 }: SubmitButtonProps) {
+  const { t } = useTranslation();
   const disabledBg = useThemeColor({}, 'border');
+  const displayButtonText = buttonText || t('productDetails.postListing');
 
   const getButtonText = () => {
     if (uploadProgress) {
-      return `Uploading ${uploadProgress.currentImage}/${uploadProgress.total}...`;
+      return t('productDetails.uploadingProgress', { current: uploadProgress.currentImage, total: uploadProgress.total });
     }
     if (loading) {
-      return 'Creating Listing...';
+      return t('productDetails.creatingListing');
     }
-    return buttonText;
+    return displayButtonText;
   };
 
   const isInProgress = loading || uploadProgress;
@@ -59,7 +62,7 @@ export default function SubmitButton({
           )}
         </View>
       ) : (
-        <Text style={styles.submitButtonText}>{buttonText}</Text>
+        <Text style={styles.submitButtonText}>{displayButtonText}</Text>
       )}
     </TouchableOpacity>
   );
