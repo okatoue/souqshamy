@@ -29,19 +29,32 @@ components/
 
 ## Map Configuration
 
-### Current Working Configuration
+### Current Working Configuration (Dual Layer)
 
-All maps use this configuration:
+All maps use a dual-layer configuration for complete world coverage:
 
 ```javascript
-var layer = protomapsL.leafletLayer({
+// LAYER 1: World base layer (low detail, renders everywhere)
+var worldBaseLayer = protomapsL.leafletLayer({
+  url: 'https://images.souqjari.com/maps/world-base.pmtiles',
+  flavor: 'light',
+  maxZoom: 8,
+  minZoom: 0
+});
+worldBaseLayer.addTo(map);
+
+// LAYER 2: Syria detail layer (high detail, Arabic labels)
+var syriaDetailLayer = protomapsL.leafletLayer({
   url: 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles',
   lang: 'ar',      // Arabic labels
   flavor: 'light', // Light theme (NOT 'theme')
   maxZoom: 18,
   minZoom: 5
 });
+syriaDetailLayer.addTo(map);
 ```
+
+**Important:** The world base layer must be added FIRST so the Syria detail layer renders on top.
 
 ### Library Versions
 
@@ -53,7 +66,44 @@ var layer = protomapsL.leafletLayer({
 
 **Important:** We use `@latest` for protomaps-leaflet to ensure we get version 5.x with all features.
 
+## Dual Layer Architecture
+
+The map uses two PMTiles layers for complete world coverage without grey areas:
+
+### Layer 1: World Base (`world-base.pmtiles`)
+- **URL:** `https://images.souqjari.com/maps/world-base.pmtiles`
+- **Size:** ~44 MB
+- **Zoom levels:** 0-6
+- **Content:** Landmass, country borders, major water bodies
+- **Purpose:** Provides context outside Syria coverage area
+
+### Layer 2: Syria Detail (`middle-east-arabic.pmtiles`)
+- **URL:** `https://images.souqjari.com/maps/middle-east-arabic.pmtiles`
+- **Size:** ~1 GB
+- **Zoom levels:** 5-18
+- **Content:** Roads, cities, POIs, buildings, Arabic labels
+- **Coverage:** Syria, Lebanon, Jordan
+
+### How Layers Work Together
+
+| Zoom Level | World Base | Syria Detail | Result |
+|------------|------------|--------------|--------|
+| 0-4 | ✅ Visible | ❌ Not loaded | World map only |
+| 5-6 | ✅ Visible | ✅ Visible | Both layers, Syria on top |
+| 7-8 | ✅ Visible | ✅ Visible | Syria detail dominates in coverage |
+| 9-18 | ❌ Not loaded | ✅ Visible | Syria detail only |
+
+### Benefits
+- No grey areas anywhere in the world
+- No `maxBounds` restrictions needed
+- Smooth user experience when panning
+- Guaranteed Syria accessibility (both files self-hosted)
+
+---
+
 ## PMTiles File Details
+
+### Syria Detail Layer
 
 **URL:** `https://images.souqjari.com/maps/middle-east-arabic.pmtiles`
 
@@ -78,6 +128,17 @@ var layer = protomapsL.leafletLayer({
 - `water` - Water bodies with Arabic labels
 
 All label-supporting layers include the `name:ar` field for proper Arabic rendering.
+
+### World Base Layer
+
+**URL:** `https://images.souqjari.com/maps/world-base.pmtiles`
+
+**Specifications:**
+- **Size:** ~44 MB
+- **Format:** MVT (Mapbox Vector Tiles)
+- **Source:** Protomaps daily planet build (extracted zoom 0-6)
+- **Zoom Levels:** 0-6
+- **Content:** Basic world geography (landmass, borders, water)
 
 ## WebView Configuration
 

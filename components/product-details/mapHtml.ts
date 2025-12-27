@@ -65,38 +65,46 @@ export const MAP_HTML = `
       debugLog('Initializing map', { lat: lat, lng: lng });
 
       try {
-        // Define coverage bounds (Lebanon + Syria + Jordan)
-        var bounds = L.latLngBounds(
-          [29.0, 34.5],  // SW: Southern Jordan
-          [37.5, 43.0]   // NE: Northern Syria
-        );
-
+        // No bounds restrictions - dual layer approach eliminates grey areas
         map = L.map('map', {
           zoomControl: false,
           attributionControl: false,
           minZoom: MIN_ZOOM,
           maxZoom: MAX_ZOOM,
-          bounceAtZoomLimits: false,
-          maxBounds: bounds,          // Restrict panning to coverage area
-          maxBoundsViscosity: 1.0     // Hard boundary
+          bounceAtZoomLimits: false
+          // maxBounds REMOVED - no longer needed with dual layer system
         }).setView([lat, lng], 12);
 
         debugLog('Leaflet map created successfully');
 
-        // Add Arabic map layer from Cloudflare R2 (protomaps-leaflet handles PMTiles internally)
-        var pmtilesUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
-        debugLog('Adding protomaps layer', { url: pmtilesUrl });
+        // LAYER 1: World base layer (low detail, renders everywhere)
+        var worldBaseUrl = 'https://images.souqjari.com/maps/world-base.pmtiles';
+        debugLog('Adding world base layer', { url: worldBaseUrl });
 
-        var layer = protomapsL.leafletLayer({
-          url: pmtilesUrl,
+        var worldBaseLayer = protomapsL.leafletLayer({
+          url: worldBaseUrl,
+          flavor: 'light',
+          maxZoom: 8,
+          minZoom: 0
+        });
+        worldBaseLayer.addTo(map);
+
+        debugLog('World base layer added');
+
+        // LAYER 2: Syria detail layer (high detail, Arabic labels)
+        var syriaDetailUrl = 'https://images.souqjari.com/maps/middle-east-arabic.pmtiles';
+        debugLog('Adding Syria detail layer', { url: syriaDetailUrl });
+
+        var syriaDetailLayer = protomapsL.leafletLayer({
+          url: syriaDetailUrl,
           lang: 'ar',
           flavor: 'light',
           maxZoom: MAX_ZOOM,
           minZoom: MIN_ZOOM
         });
-        layer.addTo(map);
+        syriaDetailLayer.addTo(map);
 
-        debugLog('Protomaps layer added to map');
+        debugLog('Syria detail layer added');
 
         // Add tile loading event listeners
         map.on('tileload', function() {
