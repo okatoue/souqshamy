@@ -114,9 +114,9 @@ export default function HomeScreen() {
             />
           </ThemedView>
 
-          <Text style={[styles.categoryTitle, { color: textColor }]}>
+          <ThemedText type="title" style={styles.categoryTitle}>
             {t('home.categories')}
-          </Text>
+          </ThemedText>
 
           <CategoriesList />
 
@@ -156,8 +156,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryTitle: {
-    fontSize: 20,
-    fontWeight: '700',
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
