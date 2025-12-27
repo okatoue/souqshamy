@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
 
 interface UseCurrentLocationOptions {
@@ -22,6 +23,7 @@ export function useCurrentLocation({
     reverseGeocode,
     onLocationNameReceived,
 }: UseCurrentLocationOptions): UseCurrentLocationResult {
+    const { t } = useTranslation();
     const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
     const handleUseCurrentLocation = useCallback(async () => {
@@ -32,9 +34,9 @@ export function useCurrentLocation({
 
             if (status !== 'granted') {
                 Alert.alert(
-                    'Permission Required',
-                    'Please allow location access to use this feature',
-                    [{ text: 'OK' }]
+                    t('location.permissionRequired'),
+                    t('location.pleaseAllowLocation'),
+                    [{ text: t('common.ok') }]
                 );
                 setIsFetchingLocation(false);
                 return;
@@ -54,11 +56,11 @@ export function useCurrentLocation({
             onLocationNameReceived?.(locationName);
         } catch (error) {
             console.error('Error getting current location:', error);
-            Alert.alert('Error', 'Could not get your current location. Please try again.');
+            Alert.alert(t('alerts.error'), t('location.couldNotGetLocation'));
         } finally {
             setIsFetchingLocation(false);
         }
-    }, [onLocationReceived, reverseGeocode, onLocationNameReceived]);
+    }, [onLocationReceived, reverseGeocode, onLocationNameReceived, t]);
 
     return { isFetchingLocation, handleUseCurrentLocation };
 }

@@ -41,7 +41,7 @@ function StatusBadge({ status }: StatusBadgeProps) {
         color="white"
       />
       <Text style={styles.statusText}>
-        {isSold ? t('listings.sold') : t('listings.inactive')}
+        {isSold ? t('listings.statusSold') : t('listings.statusUnavailable')}
       </Text>
     </View>
   );
