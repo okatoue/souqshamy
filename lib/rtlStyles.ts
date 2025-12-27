@@ -22,10 +22,21 @@ export function rtlRow(isRTL: boolean): Pick<FlexStyle, 'flexDirection'> {
 
 /**
  * Returns the appropriate textAlign for RTL support
+ * When I18nManager.isRTL is true, React Native treats 'left'/'right' as 'start'/'end'
+ * which are then flipped in RTL mode. We need to counteract this by using the opposite value.
  * @param isRTL - Whether the current layout is RTL
  * @returns textAlign style object
  */
 export function rtlTextAlign(isRTL: boolean): Pick<TextStyle, 'textAlign'> {
+  // When I18nManager.isRTL is true, 'left'/'right' are interpreted as 'start'/'end'
+  // and get flipped in RTL mode. Use the opposite value to counteract this.
+  if (I18nManager.isRTL) {
+    return {
+      textAlign: isRTL ? 'left' : 'right',
+    };
+  }
+
+  // System doesn't handle RTL, set alignment normally
   return {
     textAlign: isRTL ? 'right' : 'left',
   };
