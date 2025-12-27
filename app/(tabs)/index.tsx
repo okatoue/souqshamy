@@ -16,7 +16,7 @@ import { useTranslation } from '@/localization';
 import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Keyboard, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Keyboard, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -31,6 +31,7 @@ export default function HomeScreen() {
   useAutoLocationDetection();
 
   const backgroundColor = useThemeColor({}, 'background');
+  const textColor = useThemeColor({}, 'text');
   const searchContainerBg = useThemeColor({ light: '#f0f0f0', dark: '#1a1a1a' }, 'background');
   const searchContainerBorder = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'icon');
   const dividerColor = useThemeColor({}, 'border');
@@ -113,15 +114,14 @@ export default function HomeScreen() {
             />
           </ThemedView>
 
-          <ThemedText
-            type="title"
+          <Text
             style={[
               styles.categoryTitle,
-              { textAlign: isRTL ? 'right' : 'left' }
+              { textAlign: isRTL ? 'right' : 'left', color: textColor }
             ]}
           >
             {t('home.categories')}
-          </ThemedText>
+          </Text>
 
           <CategoriesList />
 
@@ -161,6 +161,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categoryTitle: {
+    fontSize: 20,
+    fontWeight: '700',
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
