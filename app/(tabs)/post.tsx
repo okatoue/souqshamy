@@ -114,7 +114,7 @@ export default function PostListingScreen() {
                 placeholder={t('post.titlePlaceholder')}
                 value={listingTitle}
                 onChangeText={setListingTitle}
-                style={[styles.listingTitleContent, rtlTextAlign(isRTL), { color: textColor }]}
+                style={[styles.listingTitleContent, { color: textColor, textAlign: isRTL ? 'right' : 'left' }]}
                 placeholderTextColor={placeholderColor}
                 returnKeyType="done"
                 blurOnSubmit={true}

@@ -406,8 +406,8 @@ export default function ProductDetailsScreen() {
             keyboardDismissMode="on-drag"
           >
             <CategoryInfo
-              category={currentCategoryName}
-              subcategory={currentSubcategoryName}
+              categoryId={currentCategoryId}
+              subcategoryId={currentSubcategoryId}
               categoryIcon={currentCategoryIcon}
               onChangePress={handleOpenCategorySheet}
             />

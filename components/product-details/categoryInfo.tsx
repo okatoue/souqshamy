@@ -1,5 +1,6 @@
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
 import { useRTL } from '@/lib/rtl_context';
 import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import React from 'react';
@@ -7,15 +8,15 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface CategoryInfoProps {
-  category: string;
-  subcategory: string;
+  categoryId: number;
+  subcategoryId: number;
   categoryIcon?: string;
   onChangePress: () => void;
 }
 
 export default function CategoryInfo({
-  category,
-  subcategory,
+  categoryId,
+  subcategoryId,
   categoryIcon,
   onChangePress
 }: CategoryInfoProps) {
@@ -24,13 +25,17 @@ export default function CategoryInfo({
   const textColor = useThemeColor({}, 'text');
   const mutedColor = useThemeColor({}, 'textMuted');
 
+  // Get translated category and subcategory names
+  const categoryName = getCategoryTranslation(categoryId, t);
+  const subcategoryName = getSubcategoryTranslation(subcategoryId, t);
+
   return (
     <View style={styles.container}>
       <View style={[styles.row, rtlRow(isRTL)]}>
         <Text style={[styles.categoryText, rtlTextAlign(isRTL), { color: textColor }]}>
           {isRTL
-            ? `${categoryIcon} ${subcategory} ‹ ${category}`
-            : `${categoryIcon} ${category} › ${subcategory}`
+            ? `${categoryIcon} ${subcategoryName} ‹ ${categoryName}`
+            : `${categoryIcon} ${categoryName} › ${subcategoryName}`
           }
         </Text>
         <TouchableOpacity onPress={onChangePress}>
