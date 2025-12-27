@@ -2,6 +2,7 @@ import { SettingsMenuItem, SettingsSection, ThemePicker, ThemePickerRefProps } f
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BackButton } from '@/components/ui/BackButton';
+import { LanguageSwitcher } from '@/components/ui/LanguageSwitcher';
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
@@ -186,6 +187,20 @@ export default function UserScreen() {
                         subtitle={THEME_LABELS[themePreference] || t('settings.themeSystem')}
                         onPress={handleOpenThemePicker}
                     />
+                    <View style={[styles.languageRow, { backgroundColor: cardBackground }]}>
+                        <View style={[styles.languageRowLeft, rtlRow(isRTL)]}>
+                            <Ionicons
+                                name="language-outline"
+                                size={22}
+                                color={iconColor}
+                                style={rtlMarginEnd(isRTL, 12)}
+                            />
+                            <Text style={[styles.languageLabel, { color: textColor }]}>
+                                {t('settings.language')}
+                            </Text>
+                        </View>
+                        <LanguageSwitcher />
+                    </View>
                     <SettingsMenuItem
                         icon="notifications-outline"
                         title={t('settings.notifications')}
@@ -303,6 +318,23 @@ const styles = StyleSheet.create({
     },
     versionText: {
         fontSize: 13,
+    },
+    languageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginHorizontal: 15,
+        borderRadius: 12,
+        marginBottom: 8,
+    },
+    languageRowLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    languageLabel: {
+        fontSize: 16,
     },
     // Not logged in styles
     notLoggedInContainer: {
