@@ -13,6 +13,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { formatPrice, UserProfile } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { supabase } from '@/lib/supabase';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -49,6 +51,7 @@ export function navigateToListing(listing: Listing) {
 
 export default function ListingDetailScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const params = useLocalSearchParams<{ id: string; listingData?: string }>();
     const { user } = useAuth();
 
@@ -305,9 +308,9 @@ export default function ListingDetailScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
             {/* Header - Sticky */}
-            <View style={[styles.header, { backgroundColor }]}>
+            <View style={[styles.header, rtlRow(isRTL), { backgroundColor }]}>
                 <BackButton style={styles.headerButton} />
-                <View style={styles.headerRight}>
+                <View style={[styles.headerRight, rtlRow(isRTL)]}>
                     {/* Edit button - only for owner */}
                     {isOwnListing && (
                         <Pressable
@@ -358,6 +361,7 @@ export default function ListingDetailScreen() {
                     {listing.status !== 'active' && (
                         <View style={[
                             styles.statusBadge,
+                            rtlRow(isRTL),
                             { backgroundColor: listing.status === 'sold' ? COLORS.statusSold : COLORS.statusInactive }
                         ]}>
                             <MaterialIcons
@@ -380,7 +384,7 @@ export default function ListingDetailScreen() {
 
                         {/* WhatsApp & Call Buttons - shown if contact info exists */}
                         {(listing.phone_number || listing.whatsapp_number) && listing.status !== 'sold' && !isOwnListing && (
-                            <View style={styles.contactButtonsRow}>
+                            <View style={[styles.contactButtonsRow, rtlRow(isRTL)]}>
                                 {listing.whatsapp_number && (
                                     <Pressable
                                         style={[styles.contactButton, { backgroundColor: COLORS.whatsappButton }]}
@@ -424,7 +428,7 @@ export default function ListingDetailScreen() {
                     {!listing.location_lat && listing.location && (
                         <View style={styles.locationSection}>
                             <Text style={[styles.sectionTitle, { color: textColor }]}>{t('location.location')}</Text>
-                            <View style={styles.locationTextOnly}>
+                            <View style={[styles.locationTextOnly, rtlRow(isRTL)]}>
                                 <Ionicons name="location-outline" size={18} color={placeholderColor} />
                                 <Text style={[styles.locationAddress, { color: textColor }]}>
                                     {listing.location}

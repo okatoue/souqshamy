@@ -6,6 +6,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { getProviderDisplayName, isOAuthOnlyUser, OAuthProvider } from '@/lib/auth-utils';
 import { useAuth } from '@/lib/auth_context';
 import { exportUserData, shareExportedData } from '@/lib/dataExport';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { supabase } from '@/lib/supabase';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -28,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ManageAccountScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const { user, signOut } = useAuth();
     const backgroundColor = useThemeColor({}, 'background');
     const borderColor = useThemeColor({ light: '#e0e0e0', dark: '#333' }, 'border');
@@ -259,7 +262,7 @@ export default function ManageAccountScreen() {
                 style={styles.keyboardView}
             >
                 {/* Header */}
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
+                <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                     <BackButton />
                     <ThemedText type="title" style={styles.headerTitle}>
                         {t('settings.manageAccount')}

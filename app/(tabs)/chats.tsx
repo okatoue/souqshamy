@@ -5,6 +5,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAppData } from '@/lib/app_data_context';
 import { useAuth } from '@/lib/auth_context';
 import { getThumbnailUrl } from '@/lib/imageUtils';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlIcon, rtlMarginEnd, rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { ConversationWithDetails } from '@/types/chat';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -36,6 +38,7 @@ interface ConversationItemProps {
     borderColor: string;
     textColor: string;
     secondaryTextColor: string;
+    isRTL: boolean;
 }
 
 const formatTime = (dateString: string) => {
@@ -63,11 +66,13 @@ const ConversationItem = memo(function ConversationItem({
     borderColor,
     textColor,
     secondaryTextColor,
+    isRTL,
 }: ConversationItemProps) {
     return (
         <Pressable
             style={({ pressed }) => [
                 styles.conversationItem,
+                rtlRow(isRTL),
                 { backgroundColor: cardBg, borderBottomColor: borderColor },
                 pressed && styles.conversationItemPressed,
                 isEditMode && isSelected && styles.selectedItem
@@ -79,7 +84,7 @@ const ConversationItem = memo(function ConversationItem({
         >
             {/* Selection checkbox in edit mode */}
             {isEditMode && (
-                <View style={styles.checkboxContainer}>
+                <View style={[styles.checkboxContainer, rtlMarginEnd(isRTL, SPACING.sm)]}>
                     <Ionicons
                         name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
                         size={24}
@@ -111,12 +116,13 @@ const ConversationItem = memo(function ConversationItem({
             </View>
 
             {/* Conversation Details */}
-            <View style={styles.conversationDetails}>
-                <View style={styles.topRow}>
+            <View style={[styles.conversationDetails, rtlMarginStart(isRTL, SPACING.md), rtlMarginEnd(isRTL, SPACING.sm)]}>
+                <View style={[styles.topRow, rtlRow(isRTL)]}>
                     <Text
                         style={[
                             styles.userName,
                             { color: secondaryTextColor },
+                            rtlMarginEnd(isRTL, SPACING.sm),
                             item.unread_count > 0 && styles.unreadUserName
                         ]}
                         numberOfLines={1}
@@ -151,13 +157,14 @@ const ConversationItem = memo(function ConversationItem({
                 </Text>
             </View>
 
-            <Ionicons name="chevron-forward" size={20} color={secondaryTextColor} />
+            <Ionicons name={rtlIcon(isRTL, 'chevron-forward', 'chevron-back')} size={20} color={secondaryTextColor} />
         </Pressable>
     );
 });
 
 export default function ChatsScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const { user } = useAuth();
     const router = useRouter();
 
@@ -281,9 +288,10 @@ export default function ChatsScreen() {
                 borderColor={borderColor}
                 textColor={textColor}
                 secondaryTextColor={secondaryTextColor}
+                isRTL={isRTL}
             />
         );
-    }, [isEditMode, selectedIds, handleConversationPress, toggleSelection, cardBg, borderColor, textColor, secondaryTextColor]);
+    }, [isEditMode, selectedIds, handleConversationPress, toggleSelection, cardBg, borderColor, textColor, secondaryTextColor, isRTL]);
 
     // Memoized keyExtractor
     const keyExtractor = useCallback((item: ConversationWithDetails) => item.id, []);
@@ -296,7 +304,7 @@ export default function ChatsScreen() {
                 {t('chat.noConversationsSubtext')}
             </ThemedText>
             <Pressable
-                style={[styles.browseButton, { backgroundColor: BRAND_COLOR }]}
+                style={[styles.browseButton, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]}
                 onPress={() => router.push('/(tabs)')}
             >
                 <Ionicons name="search" size={20} color="white" />
@@ -363,7 +371,7 @@ const styles = StyleSheet.create({
         padding: SPACING.xs,
     },
     checkboxContainer: {
-        marginRight: SPACING.sm,
+        // RTL margin applied dynamically
     },
     selectedItem: {
         backgroundColor: 'rgba(255, 59, 48, 0.08)',
@@ -403,7 +411,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     conversationItem: {
-        flexDirection: 'row',
+        // RTL flexDirection applied dynamically
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.md,
@@ -445,11 +453,10 @@ const styles = StyleSheet.create({
     },
     conversationDetails: {
         flex: 1,
-        marginLeft: SPACING.md,
-        marginRight: SPACING.sm,
+        // RTL margins applied dynamically
     },
     topRow: {
-        flexDirection: 'row',
+        // RTL flexDirection applied dynamically
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 2,
@@ -458,7 +465,7 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '400',
         flex: 1,
-        marginRight: SPACING.sm,
+        // RTL margin applied dynamically
     },
     unreadUserName: {
         fontWeight: '600',

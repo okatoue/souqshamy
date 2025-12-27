@@ -8,6 +8,8 @@ import { SearchBar } from '@/components/ui/SearchBar';
 import { BRAND_COLOR } from '@/constants/theme';
 import { useTheme, useThemeColor } from '@/hooks/use-theme-color';
 import { useCategoryListings } from '@/hooks/useCategoryListings';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlMarginStart, rtlRow } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -27,6 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CategoryListingScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useRTL();
   const params = useLocalSearchParams<{ id: string; name: string; subcategoryId?: string }>();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,9 +175,9 @@ export default function CategoryListingScreen() {
       </Text>
 
       {!searchQuery && (
-        <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={() => router.push('/post')}>
+        <Pressable style={[styles.postButton, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]} onPress={() => router.push('/post')}>
           <MaterialIcons name="add" size={20} color="white" />
-          <Text style={styles.postButtonText}>{t('post.postListing')}</Text>
+          <Text style={[styles.postButtonText, rtlMarginStart(isRTL, 8)]}>{t('post.postListing')}</Text>
         </Pressable>
       )}
     </View>
@@ -187,9 +190,9 @@ export default function CategoryListingScreen() {
         {t('errors.loadListingsFailed')}
       </Text>
       <Text style={[styles.emptySubtext, { color: textMutedColor }]}>{error?.message}</Text>
-      <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={refetch}>
+      <Pressable style={[styles.postButton, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]} onPress={refetch}>
         <MaterialIcons name="refresh" size={20} color="white" />
-        <Text style={styles.postButtonText}>{t('common.tryAgain')}</Text>
+        <Text style={[styles.postButtonText, rtlMarginStart(isRTL, 8)]}>{t('common.tryAgain')}</Text>
       </Pressable>
     </View>
   );
@@ -219,7 +222,7 @@ export default function CategoryListingScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: BRAND_COLOR }]}>
+      <View style={[styles.header, rtlRow(isRTL), { backgroundColor: BRAND_COLOR }]}>
         <BackButton variant="arrow" size={24} light />
         <Text style={styles.headerTitle}>{params.name || selectedCategory?.name}</Text>
         <View style={styles.headerRight} />
@@ -346,7 +349,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
-    marginLeft: 8,
+    // RTL margin applied dynamically
   },
   loadingContainer: {
     flex: 1,

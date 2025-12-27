@@ -19,6 +19,8 @@ import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSellerProfile } from '@/hooks/useSellerProfile';
 import { getDisplayName } from '@/lib/formatters';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -42,9 +44,9 @@ const CARD_GAP = SPACING.sm;
 const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 2 - CARD_GAP) / 2;
 
 // Header component
-function Header({ textColor, onShare, title }: { textColor: string; onShare?: () => void; title: string }) {
+function Header({ textColor, onShare, title, isRTL }: { textColor: string; onShare?: () => void; title: string; isRTL: boolean }) {
     return (
-        <View style={styles.header}>
+        <View style={[styles.header, rtlRow(isRTL)]}>
             <BackButton style={styles.headerButton} />
             <Text style={[styles.headerTitle, { color: textColor }]}>{title}</Text>
             {onShare ? (
@@ -60,6 +62,7 @@ function Header({ textColor, onShare, title }: { textColor: string; onShare?: ()
 
 export default function SellerProfileScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const { sellerId } = useLocalSearchParams<{ sellerId: string }>();
     const { profile, listings, isLoading } = useSellerProfile(sellerId);
     // RATING SYSTEM - COMMENTED OUT FOR FUTURE REUSE
@@ -140,7 +143,7 @@ export default function SellerProfileScreen() {
     if (isLoading) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <Header textColor={textColor} title={t('profile.profile')} />
+                <Header textColor={textColor} title={t('profile.profile')} isRTL={isRTL} />
                 <SellerProfileSkeleton />
             </SafeAreaView>
         );
@@ -150,7 +153,7 @@ export default function SellerProfileScreen() {
     if (!profile) {
         return (
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
-                <Header textColor={textColor} title={t('profile.profile')} />
+                <Header textColor={textColor} title={t('profile.profile')} isRTL={isRTL} />
                 <SellerNotFound />
             </SafeAreaView>
         );
@@ -158,7 +161,7 @@ export default function SellerProfileScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor }]}>
-            <Header textColor={textColor} onShare={handleShare} title={t('profile.profile')} />
+            <Header textColor={textColor} onShare={handleShare} title={t('profile.profile')} isRTL={isRTL} />
 
             <FlatList
                 data={listings}

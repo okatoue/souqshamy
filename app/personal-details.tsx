@@ -6,6 +6,8 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProfile } from '@/hooks/userProfile';
 import { useAuth } from '@/lib/auth_context';
 import { deleteAvatar, uploadAvatar } from '@/lib/avatarUpload';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
@@ -28,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function PersonalDetailsScreen() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const { user } = useAuth();
     const { profile, isLoading, updateProfile } = useProfile();
 
@@ -230,7 +233,7 @@ export default function PersonalDetailsScreen() {
                 style={styles.keyboardView}
             >
                 {/* Header */}
-                <View style={[styles.header, { borderBottomColor: borderColor }]}>
+                <View style={[styles.header, rtlRow(isRTL), { borderBottomColor: borderColor }]}>
                     <BackButton onPress={handleBack} />
                     <ThemedText type="title" style={styles.headerTitle}>
                         {t('profile.personalDetails')}
@@ -300,12 +303,13 @@ export default function PersonalDetailsScreen() {
                     <ThemedView style={styles.formContainer}>
                         {/* Display Name */}
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: labelColor }]}>
+                            <Text style={[styles.label, rtlTextAlign(isRTL), { color: labelColor }]}>
                                 {t('profile.displayName')}
                             </Text>
                             <TextInput
                                 style={[
                                     styles.input,
+                                    rtlTextAlign(isRTL),
                                     {
                                         backgroundColor: inputBackground,
                                         borderColor: borderColor,
@@ -323,7 +327,7 @@ export default function PersonalDetailsScreen() {
 
                         {/* Email (Read-only) */}
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: labelColor }]}>
+                            <Text style={[styles.label, rtlTextAlign(isRTL), { color: labelColor }]}>
                                 {t('auth.emailLabel')}
                             </Text>
                             <View style={styles.inputWrapper}>
@@ -331,6 +335,7 @@ export default function PersonalDetailsScreen() {
                                     style={[
                                         styles.input,
                                         styles.disabledInput,
+                                        rtlTextAlign(isRTL),
                                         {
                                             backgroundColor: disabledBg,
                                             borderColor: borderColor,
@@ -342,23 +347,24 @@ export default function PersonalDetailsScreen() {
                                     placeholder={t('profile.noEmailSet')}
                                     placeholderTextColor={COLORS.placeholder}
                                 />
-                                <View style={styles.lockIconContainer}>
+                                <View style={[styles.lockIconContainer, { [isRTL ? 'left' : 'right']: SPACING.lg }]}>
                                     <Ionicons name="lock-closed" size={16} color={COLORS.muted} />
                                 </View>
                             </View>
-                            <Text style={[styles.helperText, { color: labelColor }]}>
+                            <Text style={[styles.helperText, rtlTextAlign(isRTL), { color: labelColor }]}>
                                 {t('profile.emailSecurityNote')}
                             </Text>
                         </View>
 
                         {/* Phone Number */}
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: labelColor }]}>
+                            <Text style={[styles.label, rtlTextAlign(isRTL), { color: labelColor }]}>
                                 {t('profile.phoneNumber')}
                             </Text>
                             <TextInput
                                 style={[
                                     styles.input,
+                                    rtlTextAlign(isRTL),
                                     {
                                         backgroundColor: inputBackground,
                                         borderColor: borderColor,
@@ -376,13 +382,14 @@ export default function PersonalDetailsScreen() {
 
                         {/* Bio */}
                         <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: labelColor }]}>
+                            <Text style={[styles.label, rtlTextAlign(isRTL), { color: labelColor }]}>
                                 {t('profile.bio')}
                             </Text>
                             <TextInput
                                 style={[
                                     styles.input,
                                     styles.textArea,
+                                    rtlTextAlign(isRTL),
                                     {
                                         backgroundColor: inputBackground,
                                         borderColor: borderColor,
@@ -398,7 +405,7 @@ export default function PersonalDetailsScreen() {
                                 maxLength={500}
                                 textAlignVertical="top"
                             />
-                            <Text style={[styles.charCount, { color: labelColor }]}>
+                            <Text style={[styles.charCount, { color: labelColor, textAlign: isRTL ? 'left' : 'right' }]}>
                                 {bio.length}/500
                             </Text>
                         </View>
