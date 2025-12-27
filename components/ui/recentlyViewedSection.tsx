@@ -3,6 +3,9 @@ import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme'
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { formatPrice } from '@/lib/formatters';
 import { getThumbnailUrl } from '@/lib/imageUtils';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow, rtlTextAlign } from '@/lib/rtlStyles';
+import { useTranslation } from '@/localization';
 import { Listing } from '@/types/listing';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
@@ -36,6 +39,8 @@ function SkeletonCard({ skeletonBg }: { skeletonBg: string }) {
 }
 
 export function RecentlyViewedSection({ listings, isLoading, onClear }: RecentlyViewedSectionProps) {
+    const { t } = useTranslation();
+    const { isRTL } = useRTL();
     // Theme colors
     const textColor = useThemeColor({}, 'text');
     const cardBg = useThemeColor({}, 'cardBackgroundSecondary');
@@ -52,8 +57,10 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     if (isLoading) {
         return (
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
+                <View style={[styles.header, rtlRow(isRTL)]}>
+                    <Text style={[styles.title, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('home.recentlyViewed')}
+                    </Text>
                 </View>
                 <ScrollView
                     horizontal
@@ -73,16 +80,18 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     if (listings.length === 0) {
         return (
             <View style={styles.container}>
-                <View style={styles.header} accessibilityRole="header">
-                    <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
+                <View style={[styles.header, rtlRow(isRTL)]} accessibilityRole="header">
+                    <Text style={[styles.title, rtlTextAlign(isRTL), { color: textColor }]}>
+                        {t('home.recentlyViewed')}
+                    </Text>
                 </View>
-                <View style={styles.emptyState} accessibilityLabel="No recently viewed listings. Listings you view will appear here.">
+                <View style={styles.emptyState} accessibilityLabel={t('home.noRecentlyViewedSubtext')}>
                     <Ionicons name="time-outline" size={48} color={secondaryText} />
                     <Text style={[styles.emptyTitle, { color: textColor }]}>
-                        No Recently Viewed
+                        {t('home.noRecentlyViewed')}
                     </Text>
                     <Text style={[styles.emptySubtext, { color: secondaryText }]}>
-                        Listings you view will appear here
+                        {t('home.noRecentlyViewedSubtext')}
                     </Text>
                 </View>
             </View>
@@ -93,17 +102,21 @@ export function RecentlyViewedSection({ listings, isLoading, onClear }: Recently
     return (
         <View style={styles.container}>
             {/* Header */}
-            <View style={styles.header} accessibilityRole="header">
-                <Text style={[styles.title, { color: textColor }]}>Recently Viewed</Text>
+            <View style={[styles.header, rtlRow(isRTL)]} accessibilityRole="header">
+                <Text style={[styles.title, rtlTextAlign(isRTL), { color: textColor }]}>
+                    {t('home.recentlyViewed')}
+                </Text>
                 {onClear && listings.length > 0 && (
                     <Pressable
                         onPress={onClear}
                         style={styles.clearButton}
-                        accessibilityLabel="Clear recently viewed items"
+                        accessibilityLabel={t('home.clearRecentlyViewed')}
                         accessibilityRole="button"
                         accessibilityHint="Removes all items from your recently viewed history"
                     >
-                        <Text style={[styles.clearButtonText, { color: BRAND_COLOR }]}>Clear</Text>
+                        <Text style={[styles.clearButtonText, { color: BRAND_COLOR }]}>
+                            {t('home.clearRecentlyViewed')}
+                        </Text>
                     </Pressable>
                 )}
             </View>

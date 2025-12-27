@@ -99,8 +99,53 @@ const ar: TranslationKeys = {
     searchPlaceholder: 'ابحث في الإعلانات...',
     categories: 'الفئات',
     recentlyViewed: 'شوهد مؤخراً',
-    noRecentlyViewed: 'لم تشاهد أي إعلانات بعد',
+    noRecentlyViewed: 'لا توجد مشاهدات مؤخراً',
+    noRecentlyViewedSubtext: 'الإعلانات التي تشاهدها ستظهر هنا',
+    clearRecentlyViewed: 'مسح',
     browseListings: 'تصفح الإعلانات',
+  },
+  categories: {
+    // Main categories
+    buySell: 'بيع وشراء',
+    cars: 'سيارات',
+    realEstate: 'عقارات',
+    jobs: 'وظائف',
+    services: 'خدمات',
+    pets: 'حيوانات أليفة',
+    // Buy & Sell subcategories
+    electronics: 'إلكترونيات',
+    furniture: 'أثاث',
+    clothing: 'ملابس',
+    books: 'كتب',
+    phones: 'هواتف',
+    computers: 'حواسيب',
+    homeAppliances: 'أجهزة منزلية',
+    toysGames: 'ألعاب',
+    sportsEquipment: 'معدات رياضية',
+    // Cars subcategories
+    carsTrucks: 'سيارات وشاحنات',
+    motorcycles: 'دراجات نارية',
+    vehicleParts: 'قطع غيار',
+    // Real Estate subcategories
+    forRent: 'للإيجار',
+    forSale: 'للبيع',
+    // Jobs subcategories
+    accounting: 'محاسبة',
+    customerService: 'خدمة عملاء',
+    healthcare: 'رعاية صحية',
+    sales: 'مبيعات',
+    itProgramming: 'تقنية وبرمجة',
+    // Services subcategories
+    homeMaintenance: 'صيانة منزلية',
+    tutoring: 'دروس خصوصية',
+    cleaning: 'تنظيف',
+    moving: 'نقل',
+    // Pets subcategories
+    cats: 'قطط',
+    dogs: 'كلاب',
+    birds: 'طيور',
+    // Common
+    other: 'أخرى',
   },
   listings: {
     myListings: 'إعلاناتي',
