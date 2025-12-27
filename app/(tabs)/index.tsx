@@ -113,12 +113,15 @@ export default function HomeScreen() {
             />
           </ThemedView>
 
-          <ThemedView style={[
-            styles.titleContainer,
-            { justifyContent: isRTL ? 'flex-end' : 'flex-start' }
-          ]}>
-            <ThemedText type="title">{t('home.categories')}</ThemedText>
-          </ThemedView>
+          <ThemedText
+            type="title"
+            style={[
+              styles.categoryTitle,
+              { textAlign: isRTL ? 'right' : 'left' }
+            ]}
+          >
+            {t('home.categories')}
+          </ThemedText>
 
           <CategoriesList />
 
@@ -157,10 +160,7 @@ const styles = StyleSheet.create({
   searchBarContent: {
     flex: 1,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  categoryTitle: {
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
