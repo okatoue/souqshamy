@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Alert,
   Keyboard,
@@ -36,6 +37,7 @@ import { useAppColorScheme } from '@/lib/theme_context';
 import { Category, Subcategory } from '@/assets/categories';
 
 export default function ProductDetailsScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams();
 
   const router = useRouter();
@@ -242,9 +244,9 @@ export default function ProductDetailsScreen() {
 
     if (error) {
       Alert.alert(
-        'Error',
-        `Failed to create listing: ${error.message}`,
-        [{ text: 'OK' }]
+        t('alerts.error'),
+        `${t('productDetails.createFailed')}: ${error.message}`,
+        [{ text: t('common.ok') }]
       );
       return;
     }
@@ -255,17 +257,17 @@ export default function ProductDetailsScreen() {
     if (warning) {
       // Show warning but still navigate to success
       Alert.alert(
-        'Listing Created',
-        warning + '\n\nYou can add more images by editing the listing.',
-        [{ text: 'OK', onPress: () => router.replace('/(tabs)/listings') }]
+        t('productDetails.listingCreated'),
+        warning + '\n\n' + t('productDetails.addMoreImages'),
+        [{ text: t('common.ok'), onPress: () => router.replace('/(tabs)/listings') }]
       );
     } else {
       Alert.alert(
-        'Success!',
-        'Your listing has been created',
+        t('alerts.success'),
+        t('productDetails.listingCreatedSuccess'),
         [
           {
-            text: 'OK',
+            text: t('common.ok'),
             onPress: () => router.replace('/(tabs)/listings')
           }
         ]
@@ -277,44 +279,44 @@ export default function ProductDetailsScreen() {
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to post a listing');
+      Alert.alert(t('productDetails.authRequired'), t('productDetails.signInToPost'));
       router.push('/(auth)');
       return;
     }
 
     // Required field validation
     if (!description.trim()) {
-      Alert.alert('Missing Information', 'Please add a description');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.addDescription'));
       return;
     }
 
     if (price === '') {
-      Alert.alert('Missing Information', 'Please set a price (can be 0)');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.setPrice'));
       return;
     }
 
     if (!location || !locationCoordinates) {
-      Alert.alert('Missing Information', 'Please select a location');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.selectLocation'));
       return;
     }
 
     // Warning for no images (not blocking)
     if (images.length === 0) {
       Alert.alert(
-        'No Images Added',
-        'Images boost views and drive sales. Are you sure you want to post without images?',
+        t('productDetails.noImages'),
+        t('productDetails.noImagesWarning'),
         [
-          { text: 'Add Images', style: 'cancel' },
-          { text: 'Post Anyway', onPress: () => {
+          { text: t('productDetails.addImages'), style: 'cancel' },
+          { text: t('productDetails.postAnyway'), onPress: () => {
             // Check contact info before submitting
             const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
             if (!hasContact) {
               Alert.alert(
-                'No Contact Information',
-                "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+                t('productDetails.noContact'),
+                t('productDetails.noContactWarning'),
                 [
-                  { text: 'Add Contact', style: 'cancel' },
-                  { text: 'Continue', onPress: () => submitListing() }
+                  { text: t('productDetails.addContact'), style: 'cancel' },
+                  { text: t('common.continue'), onPress: () => submitListing() }
                 ]
               );
             } else {
@@ -330,11 +332,11 @@ export default function ProductDetailsScreen() {
     const hasContact = phoneNumber.trim() !== '' || whatsappNumber.trim() !== '';
     if (!hasContact) {
       Alert.alert(
-        'No Contact Information',
-        "Buyers won't be able to contact you directly. They can still use in-app chat. Continue?",
+        t('productDetails.noContact'),
+        t('productDetails.noContactWarning'),
         [
-          { text: 'Add Contact', style: 'cancel' },
-          { text: 'Continue', onPress: () => submitListing() }
+          { text: t('productDetails.addContact'), style: 'cancel' },
+          { text: t('common.continue'), onPress: () => submitListing() }
         ]
       );
       return;
@@ -358,23 +360,23 @@ export default function ProductDetailsScreen() {
           <View style={styles.draftPromptContainer}>
             <View style={[styles.draftPromptCard, { backgroundColor: cardBg }]}>
               <Text style={[styles.draftPromptTitle, { color: textColor }]}>
-                Unsaved Draft Found
+                {t('productDetails.draftFound')}
               </Text>
               <Text style={[styles.draftPromptText, { color: textColor }]}>
-                You have an unsaved listing draft. Would you like to restore it or start fresh?
+                {t('productDetails.draftRestorePrompt')}
               </Text>
               <View style={styles.draftPromptButtons}>
                 <Pressable
                   style={[styles.draftButton, styles.draftButtonSecondary]}
                   onPress={handleDiscardDraft}
                 >
-                  <Text style={styles.draftButtonSecondaryText}>Discard</Text>
+                  <Text style={styles.draftButtonSecondaryText}>{t('common.discard')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.draftButton, styles.draftButtonPrimary]}
                   onPress={handleRestoreDraft}
                 >
-                  <Text style={styles.draftButtonPrimaryText}>Restore</Text>
+                  <Text style={styles.draftButtonPrimaryText}>{t('common.restore')}</Text>
                 </Pressable>
               </View>
             </View>

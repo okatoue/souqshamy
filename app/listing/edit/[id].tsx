@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
@@ -39,6 +40,7 @@ import { Listing } from '@/types/listing';
 import { useAppData } from '@/lib/app_data_context';
 
 export default function EditListingScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
@@ -109,7 +111,7 @@ export default function EditListingScreen() {
   useEffect(() => {
     const fetchListing = async () => {
       if (!params.id || !user) {
-        Alert.alert('Error', 'Invalid request');
+        Alert.alert(t('alerts.error'), t('errors.invalidRequest'));
         router.back();
         return;
       }
@@ -125,7 +127,7 @@ export default function EditListingScreen() {
         if (error) throw error;
 
         if (!data) {
-          Alert.alert('Error', 'Listing not found or you do not have permission to edit it');
+          Alert.alert(t('alerts.error'), t('errors.listingNotFoundOrNoPermission'));
           router.back();
           return;
         }
@@ -172,7 +174,7 @@ export default function EditListingScreen() {
 
       } catch (error) {
         console.error('Error fetching listing:', error);
-        Alert.alert('Error', 'Failed to load listing');
+        Alert.alert(t('alerts.error'), t('errors.loadListingFailed'));
         router.back();
       } finally {
         setIsLoading(false);
@@ -206,23 +208,23 @@ export default function EditListingScreen() {
   const handleSubmit = async () => {
     // Validation
     if (!user) {
-      Alert.alert('Authentication Required', 'Please sign in to edit this listing');
+      Alert.alert(t('productDetails.authRequired'), t('productDetails.signInToEdit'));
       router.push('/(auth)');
       return;
     }
 
     if (!description.trim()) {
-      Alert.alert('Missing Information', 'Please add a description');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.addDescription'));
       return;
     }
 
     if (price === '') {
-      Alert.alert('Missing Information', 'Please set a price (can be 0)');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.setPrice'));
       return;
     }
 
     if (!location || !locationCoordinates) {
-      Alert.alert('Missing Information', 'Please select a location');
+      Alert.alert(t('productDetails.missingInfo'), t('productDetails.selectLocation'));
       return;
     }
 
@@ -239,7 +241,7 @@ export default function EditListingScreen() {
         try {
           uploadedUrls = await uploadListingImages(newImages, user.id);
         } catch (uploadError: any) {
-          Alert.alert('Upload Error', uploadError.message || 'Failed to upload new images');
+          Alert.alert(t('productDetails.uploadError'), uploadError.message || t('productDetails.uploadFailed'));
           setIsSubmitting(false);
           return;
         }
@@ -292,13 +294,13 @@ export default function EditListingScreen() {
       // Refresh the user listings
       await fetchUserListings(true);
 
-      Alert.alert('Success', 'Listing updated successfully', [
-        { text: 'OK', onPress: () => router.back() }
+      Alert.alert(t('alerts.success'), t('productDetails.updateSuccess'), [
+        { text: t('common.ok'), onPress: () => router.back() }
       ]);
 
     } catch (error: any) {
       console.error('Error updating listing:', error);
-      Alert.alert('Error', error.message || 'Failed to update listing');
+      Alert.alert(t('alerts.error'), error.message || t('productDetails.updateFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -315,10 +317,10 @@ export default function EditListingScreen() {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView style={[styles.container, { backgroundColor }]} edges={['top', 'left', 'right']}>
-          <ProductHeader onBack={() => router.back()} title="Edit Listing" />
+          <ProductHeader onBack={() => router.back()} title={t('productDetails.editListing')} />
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={BRAND_COLOR} />
-            <Text style={[styles.loadingText, { color: textColor }]}>Loading listing...</Text>
+            <Text style={[styles.loadingText, { color: textColor }]}>{t('common.loading')}</Text>
           </View>
         </SafeAreaView>
       </GestureHandlerRootView>
@@ -332,7 +334,7 @@ export default function EditListingScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
         >
-          <ProductHeader onBack={() => router.back()} title="Edit Listing" />
+          <ProductHeader onBack={() => router.back()} title={t('productDetails.editListing')} />
 
           <ScrollView
             style={styles.scrollContainer}
@@ -389,7 +391,7 @@ export default function EditListingScreen() {
               onPress={handleSubmit}
               disabled={!isFormValid || isSubmitting}
               loading={isSubmitting}
-              buttonText="Update Listing"
+              buttonText={t('productDetails.updateListing')}
             />
           </ScrollView>
         </KeyboardAvoidingView>

@@ -12,6 +12,7 @@ import { Listing } from '@/types/listing';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   FlatList,
@@ -25,6 +26,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CategoryListingScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ id: string; name: string; subcategoryId?: string }>();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,7 +115,7 @@ export default function CategoryListingScreen() {
                 { color: selectedSubcategory === null ? '#fff' : textColor },
               ]}
             >
-              All
+              {t('listings.filterAll')}
             </Text>
           </Pressable>
 
@@ -162,17 +164,17 @@ export default function CategoryListingScreen() {
       <MaterialIcons name="inbox" size={64} color={iconMutedColor} />
       <Text style={[styles.emptyText, { color: textColor }]}>
         {searchQuery
-          ? 'No listings match your search'
-          : 'No listings in this category yet'}
+          ? t('search.noMatchingListings')
+          : t('listings.noListingsInCategory')}
       </Text>
       <Text style={[styles.emptySubtext, { color: textMutedColor }]}>
-        {searchQuery ? 'Try different keywords' : 'Be the first to post something!'}
+        {searchQuery ? t('search.tryDifferentKeywords') : t('listings.beFirstToPost')}
       </Text>
 
       {!searchQuery && (
         <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={() => router.push('/post')}>
           <MaterialIcons name="add" size={20} color="white" />
-          <Text style={styles.postButtonText}>Post a Listing</Text>
+          <Text style={styles.postButtonText}>{t('post.postListing')}</Text>
         </Pressable>
       )}
     </View>
@@ -182,12 +184,12 @@ export default function CategoryListingScreen() {
     <View style={styles.emptyContainer}>
       <MaterialIcons name="error-outline" size={64} color="#F44336" />
       <Text style={[styles.emptyText, { color: textColor }]}>
-        Failed to load listings
+        {t('errors.loadListingsFailed')}
       </Text>
       <Text style={[styles.emptySubtext, { color: textMutedColor }]}>{error?.message}</Text>
       <Pressable style={[styles.postButton, { backgroundColor: BRAND_COLOR }]} onPress={refetch}>
         <MaterialIcons name="refresh" size={20} color="white" />
-        <Text style={styles.postButtonText}>Try Again</Text>
+        <Text style={styles.postButtonText}>{t('common.tryAgain')}</Text>
       </Pressable>
     </View>
   );
@@ -195,7 +197,7 @@ export default function CategoryListingScreen() {
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={BRAND_COLOR} />
-      <Text style={[styles.loadingText, { color: textColor }]}>Loading listings...</Text>
+      <Text style={[styles.loadingText, { color: textColor }]}>{t('common.loading')}</Text>
     </View>
   );
 
@@ -228,7 +230,7 @@ export default function CategoryListingScreen() {
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder={`Search in ${params.name || 'category'}...`}
+          placeholder={t('search.searchInCategory', { category: params.name || t('common.category') })}
           style={styles.searchBar}
         />
       </View>

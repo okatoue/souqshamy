@@ -18,6 +18,7 @@ import { Listing } from '@/types/listing';
 import { Ionicons, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     ActivityIndicator,
     Alert,
@@ -47,6 +48,7 @@ export function navigateToListing(listing: Listing) {
 }
 
 export default function ListingDetailScreen() {
+    const { t } = useTranslation();
     const params = useLocalSearchParams<{ id: string; listingData?: string }>();
     const { user } = useAuth();
 
@@ -113,7 +115,7 @@ export default function ListingDetailScreen() {
                 }
             } catch (error) {
                 console.error('Error fetching listing:', error);
-                Alert.alert('Error', 'Failed to load listing');
+                Alert.alert(t('alerts.error'), t('errors.loadListingFailed'));
             } finally {
                 setLoading(false);
             }
@@ -167,7 +169,7 @@ export default function ListingDetailScreen() {
         if (listing?.phone_number) {
             const phoneUrl = `tel:${listing.phone_number}`;
             Linking.openURL(phoneUrl).catch(() =>
-                Alert.alert('Error', 'Unable to make phone call')
+                Alert.alert(t('alerts.error'), t('errors.unableToCall'))
             );
         }
     };
@@ -177,7 +179,7 @@ export default function ListingDetailScreen() {
             const cleanNumber = listing.whatsapp_number.replace(/\D/g, '');
             const whatsappUrl = `whatsapp://send?phone=${cleanNumber}`;
             Linking.openURL(whatsappUrl).catch(() =>
-                Alert.alert('Error', 'WhatsApp is not installed')
+                Alert.alert(t('alerts.error'), t('errors.whatsappNotInstalled'))
             );
         }
     };
@@ -188,11 +190,11 @@ export default function ListingDetailScreen() {
         // Check if user is logged in
         if (!user) {
             Alert.alert(
-                'Sign In Required',
-                'Please sign in to chat with the seller',
+                t('chat.signInRequired'),
+                t('chat.signInToChat'),
                 [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Sign In', onPress: () => router.push('/(auth)') }
+                    { text: t('common.cancel'), style: 'cancel' },
+                    { text: t('auth.signIn'), onPress: () => router.push('/(auth)') }
                 ]
             );
             return;
@@ -200,7 +202,7 @@ export default function ListingDetailScreen() {
 
         // Check if user is trying to chat with themselves
         if (user.id === listing.user_id) {
-            Alert.alert('Info', "You can't chat with yourself on your own listing");
+            Alert.alert(t('common.info'), t('chat.cantChatSelf'));
             return;
         }
 
@@ -215,11 +217,11 @@ export default function ListingDetailScreen() {
                     params: { id: conversationId }
                 });
             } else {
-                Alert.alert('Error', 'Failed to start conversation');
+                Alert.alert(t('alerts.error'), t('chat.startFailed'));
             }
         } catch (error) {
             console.error('Error starting chat:', error);
-            Alert.alert('Error', 'Failed to start conversation');
+            Alert.alert(t('alerts.error'), t('chat.startFailed'));
         } finally {
             setIsStartingChat(false);
         }
@@ -289,9 +291,9 @@ export default function ListingDetailScreen() {
             <SafeAreaView style={[styles.container, { backgroundColor }]}>
                 <View style={styles.errorContainer}>
                     <MaterialCommunityIcons name="alert-circle-outline" size={80} color={mutedColor} />
-                    <Text style={[styles.errorText, { color: textColor }]}>Listing not found</Text>
+                    <Text style={[styles.errorText, { color: textColor }]}>{t('listings.notFound')}</Text>
                     <Pressable style={[styles.backButton, { backgroundColor: BRAND_COLOR }]} onPress={() => router.back()}>
-                        <Text style={styles.backButtonText}>Go Back</Text>
+                        <Text style={styles.backButtonText}>{t('common.goBack')}</Text>
                     </Pressable>
                 </View>
             </SafeAreaView>
@@ -364,14 +366,14 @@ export default function ListingDetailScreen() {
                                 color="white"
                             />
                             <Text style={styles.statusText}>
-                                {listing.status === 'sold' ? 'Sold' : 'Unavailable'}
+                                {listing.status === 'sold' ? t('listings.statusSold') : t('listings.statusUnavailable')}
                             </Text>
                         </View>
                     )}
 
                     {/* Description */}
                     <View style={styles.descriptionSection}>
-                        <Text style={[styles.sectionTitle, { color: textColor }]}>Description</Text>
+                        <Text style={[styles.sectionTitle, { color: textColor }]}>{t('listings.description')}</Text>
                         <Text style={[styles.description, { color: textColor }]}>
                             {listing.description}
                         </Text>
@@ -404,7 +406,7 @@ export default function ListingDetailScreen() {
                     {/* Location Section - with map if coordinates exist */}
                     {listing.location_lat && listing.location_lon && (
                         <View style={styles.locationSection}>
-                            <Text style={[styles.sectionTitle, { color: textColor }]}>Location</Text>
+                            <Text style={[styles.sectionTitle, { color: textColor }]}>{t('location.location')}</Text>
                             <LocationPreviewCard
                                 location={listing.location}
                                 coordinates={{
@@ -413,7 +415,7 @@ export default function ListingDetailScreen() {
                                 }}
                                 radius={1000}
                                 onPress={handleOpenMaps}
-                                tapHintText="Open in Maps"
+                                tapHintText={t('location.openInMaps')}
                             />
                         </View>
                     )}
@@ -421,7 +423,7 @@ export default function ListingDetailScreen() {
                     {/* Location Section - text only if no coordinates */}
                     {!listing.location_lat && listing.location && (
                         <View style={styles.locationSection}>
-                            <Text style={[styles.sectionTitle, { color: textColor }]}>Location</Text>
+                            <Text style={[styles.sectionTitle, { color: textColor }]}>{t('location.location')}</Text>
                             <View style={styles.locationTextOnly}>
                                 <Ionicons name="location-outline" size={18} color={placeholderColor} />
                                 <Text style={[styles.locationAddress, { color: textColor }]}>
