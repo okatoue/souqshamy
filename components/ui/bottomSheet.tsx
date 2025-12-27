@@ -4,6 +4,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { BORDER_RADIUS, BRAND_COLOR, SHADOWS, SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Category, Subcategory } from '../../assets/categories';
 import categoriesData from '../../assets/categories.json';
 
@@ -139,6 +144,8 @@ interface CategoryBottomSheetProps {
  */
 const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBottomSheetProps>(
     ({ onCategorySelect, showCategories = true, children, title }, ref) => {
+        const { t } = useTranslation();
+        const { isRTL } = useRTL();
         const bottomSheetRef = useRef<BottomSheetModal>(null);
         const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
@@ -203,8 +210,8 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
         }, []);
 
         const currentTitle = showCategories
-            ? (selectedCategory ? selectedCategory.name : 'Select Category')
-            : (title || 'Options');
+            ? (selectedCategory ? getCategoryTranslation(selectedCategory.id, t) : t('post.selectCategory'))
+            : (title || t('common.options', 'Options'));
 
         return (
             <BottomSheetModal
@@ -217,18 +224,25 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                 onChange={handleSheetChanges}
             >
                 <View style={styles.contentContainer} accessibilityViewIsModal={true}>
-                    <View style={styles.header} accessibilityRole="header">
+                    <View style={[styles.header, rtlRow(isRTL)]} accessibilityRole="header">
                         {showCategories && selectedCategory && (
                             <TouchableOpacity
                                 style={styles.backButton}
                                 onPress={handleBackPress}
                                 activeOpacity={0.7}
-                                accessibilityLabel="Go back to categories"
+                                accessibilityLabel={t('common.back')}
                                 accessibilityRole="button"
                             >
-                                <Text style={[styles.backButtonText, { color: BRAND_COLOR }]}>
-                                    {'‹ Back'}
-                                </Text>
+                                <View style={[styles.backButtonContent, rtlRow(isRTL)]}>
+                                    <Ionicons
+                                        name={isRTL ? "chevron-forward" : "chevron-back"}
+                                        size={18}
+                                        color={BRAND_COLOR}
+                                    />
+                                    <Text style={[styles.backButtonText, { color: BRAND_COLOR }]}>
+                                        {t('common.back')}
+                                    </Text>
+                                </View>
                             </TouchableOpacity>
                         )}
                         <Text style={[
@@ -250,35 +264,39 @@ const CategoryBottomSheet = forwardRef<CategoryBottomSheetRefProps, CategoryBott
                                 ? selectedCategory.subcategories.map((subcategory) => (
                                     <TouchableOpacity
                                         key={subcategory.id}
-                                        style={[styles.categoryItem, { backgroundColor: itemBackground }]}
+                                        style={[styles.categoryItem, rtlRow(isRTL), { backgroundColor: itemBackground }]}
                                         onPress={() => handleSubcategoryPress(subcategory)}
                                         activeOpacity={0.7}
-                                        accessibilityLabel={`Select ${subcategory.name}`}
+                                        accessibilityLabel={`Select ${getSubcategoryTranslation(subcategory.id, t)}`}
                                         accessibilityRole="button"
                                     >
                                         <Text style={[styles.categoryText, { color: textColor }]}>
-                                            {subcategory.name}
+                                            {getSubcategoryTranslation(subcategory.id, t)}
                                         </Text>
                                     </TouchableOpacity>
                                 ))
                                 : categoriesData.categories.map((category) => (
                                     <TouchableOpacity
                                         key={category.id}
-                                        style={[styles.categoryItem, { backgroundColor: itemBackground }]}
+                                        style={[styles.categoryItem, rtlRow(isRTL), { backgroundColor: itemBackground }]}
                                         onPress={() => handleCategoryPress(category)}
                                         activeOpacity={0.7}
-                                        accessibilityLabel={`${category.name} category. Tap to see subcategories`}
+                                        accessibilityLabel={`${getCategoryTranslation(category.id, t)} category. Tap to see subcategories`}
                                         accessibilityRole="button"
                                     >
-                                        <View style={styles.categoryContent}>
+                                        <View style={[styles.categoryContent, rtlRow(isRTL)]}>
                                             <Text style={[styles.categoryIcon, { color: iconColor }]}>
                                                 {category.icon}
                                             </Text>
                                             <Text style={[styles.categoryText, { color: textColor }]}>
-                                                {category.name}
+                                                {getCategoryTranslation(category.id, t)}
                                             </Text>
                                         </View>
-                                        <Text style={[styles.chevron, { color: chevronColor }]}>{'›'}</Text>
+                                        <Ionicons
+                                            name={isRTL ? "chevron-back" : "chevron-forward"}
+                                            size={20}
+                                            color={chevronColor}
+                                        />
                                     </TouchableOpacity>
                                 ))
                         ) : (
@@ -330,6 +348,11 @@ const styles = StyleSheet.create({
         zIndex: 1,
         padding: SPACING.sm,
     },
+    backButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
     backButtonText: {
         fontSize: 16,
         fontWeight: '500',
@@ -363,9 +386,5 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
         flex: 1,
-    },
-    chevron: {
-        fontSize: 24,
-        marginLeft: SPACING.sm,
     },
 });

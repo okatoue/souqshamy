@@ -57,6 +57,7 @@ export interface CommonTranslations {
   item: string;
   items: string;
   keep: string;
+  options: string;
 }
 
 export interface AuthTranslations {

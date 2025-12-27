@@ -33,6 +33,7 @@ const en: TranslationKeys = {
     item: 'item',
     items: 'items',
     keep: 'Keep',
+    options: 'Options',
   },
   auth: {
     loginOrSignup: 'Log in or Sign up',

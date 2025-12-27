@@ -4,6 +4,8 @@ import CategoryBottomSheet, { CategoryBottomSheetRefProps } from '@/components/u
 import { SPACING } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getCategoryTranslation, getSubcategoryTranslation } from '@/lib/categoryTranslations';
+import { useRTL } from '@/lib/rtl_context';
+import { rtlRow } from '@/lib/rtlStyles';
 import { useTranslation } from '@/localization';
 import { MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -24,6 +26,7 @@ interface CategoryDisplayItem {
 
 export function CategoriesList() {
     const { t } = useTranslation();
+    const { isRTL } = useRTL();
     const textColor = useThemeColor({}, 'text');
     const itemBackground = useThemeColor({ light: '#F5F5F5', dark: '#1a1a1a' }, 'background');
 
@@ -66,11 +69,12 @@ export function CategoriesList() {
     const handleSubcategoryPress = (subcategory: { id: number; name: string }) => {
         bottomSheetRef.current?.close();
         // Navigate to category page with Buy & Sell category ID and selected subcategory
+        // Use translated name for display
         router.push({
             pathname: '/category/[id]',
             params: {
                 id: buySellCategory?.id.toString() || '1',
-                name: buySellCategory?.name || 'Buy & Sell',
+                name: getCategoryTranslation(buySellCategory?.id || 1, t),
                 subcategoryId: subcategory.id.toString()
             }
         });
@@ -144,7 +148,7 @@ export function CategoriesList() {
                     {buySellCategory?.subcategories.map((subcategory) => (
                         <TouchableOpacity
                             key={subcategory.id}
-                            style={[styles.sheetItem, { backgroundColor: itemBackground }]}
+                            style={[styles.sheetItem, rtlRow(isRTL), { backgroundColor: itemBackground }]}
                             onPress={() => handleSubcategoryPress(subcategory)}
                             activeOpacity={0.7}
                             accessibilityLabel={`Select ${getSubcategoryTranslation(subcategory.id, t)}`}
@@ -154,7 +158,12 @@ export function CategoriesList() {
                             <Text style={[styles.sheetItemText, { color: textColor }]}>
                                 {getSubcategoryTranslation(subcategory.id, t)}
                             </Text>
-                            <MaterialIcons name="chevron-right" size={24} color={textColor} style={{ opacity: 0.5 }} />
+                            <MaterialIcons
+                                name={isRTL ? "chevron-left" : "chevron-right"}
+                                size={24}
+                                color={textColor}
+                                style={{ opacity: 0.5 }}
+                            />
                         </TouchableOpacity>
                     ))}
                 </View>
